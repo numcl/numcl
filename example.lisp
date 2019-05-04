@@ -1,10 +1,42 @@
 (ql:quickload :numcl)
 (in-package :numcl)
+
+;; initialization
 (zeros 5)
 (zeros '(5 5))
 (zeros 5 :type 'fixnum)
 (ones 5)
 (arange 10)
+
+;; reshaping
+(reshape (arange 10) '(2 5))
+
+;; arange with negative steps
+(arange -10 10 3)
+(arange 10 -10 -3)
+
+;; concatenation, stacking, unstacking
+(concatenate (list (zeros 10) (ones  10)))
+
+(concatenate (list (reshape (zeros 10) '(2 5))
+                   (reshape (ones  10) '(2 5))))
+(concatenate (list (reshape (zeros 10) '(2 5))
+                   (reshape (ones  10) '(2 5)))
+             :axis 1)
+
+(stack (list (reshape (zeros 10) '(2 5))
+             (reshape (ones  10) '(2 5))))
+(stack (list (reshape (zeros 10) '(2 5))
+             (reshape (ones  10) '(2 5)))
+       :axis 1)
+(stack (list (reshape (zeros 10) '(2 5))
+             (reshape (ones  10) '(2 5)))
+       :axis 2)
+
+(unstack (reshape (ones  10) '(2 5)))
+(unstack (reshape (ones  10) '(2 5)) :axis 1)
+
+;; array slice access
 (defparameter *a* (reshape (arange 100) '(4 5 5)))
 *a*
 (aref *a* 0)
@@ -13,8 +45,7 @@
 (setf (aref *a* 2 '(0 2) 1) (full 2 100))
 *a*
 
-(arange -10 10 3)
-(arange 10 -10 -3)
+;; broadcasting
 (numcl:+ (arange 5) (reshape (arange 3) '(3 1)))
 (numcl:* (arange 5) (reshape (arange 3) '(3 1)))
 
@@ -61,7 +92,9 @@
 (< (arange 5) (reshape (arange 1 6) '(t 1))) ;; #2A((1 0 0 0 0) (1 1 0 0 0) (1 1 1 0 0) (1 1 1 1 0) (1 1 1 1 1))
 (logand (arange 5) (arange 1 6))
 
+;; type inference on logand
 (logand (uniform 3 7 3) (reshape (uniform 3 7 3) '(t 1)))
 (logand (uniform 3 7 3) (reshape (uniform 3 7 3) '(t 1)))
 (logand (uniform -3 7 3) (reshape (uniform 3 7 3) '(t 1)))
+;; (logand minus minus) is guaranteed to be minus, therefore this is a signed-integer
 (logand (uniform -3 7 3) (reshape (uniform -3 7 3) '(t 1)))

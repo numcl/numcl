@@ -24,6 +24,11 @@ At the moment the library is written in pure Common Lisp, focusing more on corre
   + (+ (asarray '(1 2 3)) (ones 3)) returns an (unsigned-byte 4)
     vector. (upgraded array element type of (unsigned-byte 3).)
 
+** Examples
+
+./example.lisp contains a script that you can explore the functionarity already
+implemented in NUMCL.
+
 ** Packages
 
 NUMCL defines several symbols which have the same name as the corresponding CL
@@ -63,18 +68,20 @@ The behavior depends on the implementation and is called *float substitution rul
 
 ---
 
-In NUMCL, =ratio= does not exist.
-This is because CL prohibits =ratio= to have denominator 1 (e.g. 3/1), and thus
-does not allow arrays to have a specialized array for =rational=.
-
-More crucially for numerical operaion, ratio computation requires an additional
+In NUMCL, =ratio= does not exist due to three reasons:
+First, CL prohibits =ratio= to have a denominator 1 (e.g. 3/1), and thus
+the operations on ratios are not closed.
+Second, no implementations provide a specialized array for =rational=.
+Finally, ratio computation requires an additional
 simplification phase (e.g. 2/4 -> 1/2) which does not finish in a constant
 number of operations and is incompatible to SIMD operations.
 
 As a result, =ratios= are always converted to =*numcl-default-float-format*=, which is single-float by default.
 This means that =/= always returns a float array (except atomic numbers are given).
 
-We also assume irrational functions always return floats.
+We also force irrational functions to always return floats, by
+coercion. (Implementations are allowed to return rationals for certain
+constants, e.g. (sin pi).)
 
 =(array bignum)= does not exist either. However, when the result of numerical computation causes
 a fixnum overflow, it signals an error instead of overflowing silently.
@@ -93,7 +100,7 @@ NUMCL arrays are not based on custom classes or structures. They are merely the 
 The base function for creating a new array is =%make-array=, but this is not exported in NUMCL.
 You should use the wrapper functions like =ones=, =zeros=, =ones-like=, =arange=, =linspace=, =asarray= etc.
 They are always inline-expanded to =%make-array=, therefore there is no worry about the performance.
-These functions analyze the input and return a most specialized array for the input,
+These functions analyze the input and return the most specialized array for the input,
 but you can also specify the element type.
 
 =%make-array= instantiates a new flattened array and returns another array
@@ -126,6 +133,8 @@ with a future support for SIMD operations in mind.
 + [X] type inference
 + [X] comparison functions
 + [X] bitwise operations
++ [ ] compile-time type checking
++ [ ] operator fusion
 + [ ] reducer functions
 + [ ] matrix operations
 + [ ] autodiff

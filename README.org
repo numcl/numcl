@@ -145,6 +145,7 @@ with a future support for SIMD operations in mind.
 This library is at least tested on implementation listed below:
 
 + SBCL 1.4.12 on X86-64 Linux 4.4.0-141-generic (author's environment)
++ SBCL 1.5.1  on X86-64 Linux 4.4.0-141-generic (author's environment)
 
 Also, it depends on the following libraries:
 
@@ -154,12 +155,8 @@ Also, it depends on the following libraries:
     Alexandria is a collection of portable public domain utilities.
 + iterate by ** :
     Jonathan Amsterdam's iterator/gatherer/accumulator facility
-+ lla :
-    
-+ magicl :
-    
 
-** Installation
+[[./numcl.png]]
 
 ** Author, License, Copyright
 

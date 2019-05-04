@@ -1,0 +1,15 @@
+machine:
+  environment:
+    PATH: ~/.roswell/bin:$PATH
+
+dependencies:
+  pre:
+    - curl -L https://raw.githubusercontent.com/snmsts/roswell/master/scripts/install-for-ci.sh | sh
+    - ros install ccl-bin
+  cache_directories:
+    - ~/.roswell/
+
+test:
+  override:
+    - ros -L sbcl-bin testscr.ros
+    - ros -L ccl-bin testscr.ros

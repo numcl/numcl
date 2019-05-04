@@ -1,0 +1,178 @@
+#|
+
+This file is a part of NUMCL project.
+Copyright (c) 2019 IBM Corporation
+SPDX-License-Identifier: LGPL-3.0-or-later
+
+NUMCL is free software: you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+NUMCL is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+NUMCL.  If not, see <http://www.gnu.org/licenses/>.
+
+|#
+
+(in-package :cl-user)
+
+(defpackage :numcl.exported
+  (:export
+
+   ;; 2type
+   #:fixnum-overflow
+   #:fixnum-underflow
+   
+   ;; 2alias
+   #:shape
+   #:size
+   #:rank
+   #:dtype
+   #:length
+   #:to-simple-array
+   #:reshape
+   #:flatten
+   #:squeeze
+   #:expand-dims
+   ;; #:transpose ; not yet
+
+   ;; 3aref
+   #:aref
+
+   ;; 3arange
+   #:arange
+   #:linspace
+
+   ;; 3array
+   #:asarray
+
+   ;; 3copy
+   #:copy
+   #:astype
+
+   ;; 3zeros
+   #:zeros
+   #:ones
+   #:empty
+   #:full
+   #:empty-like
+   #:full-like
+   #:zeros-like
+   #:ones-like
+   #:eye
+
+   ;; 4concatenate
+   #:concatenate
+   #:stack
+
+   ;; 4split
+   #:unstack
+
+   ;; 5numeric
+   #:sin #:cos #:tan
+   #:asin #:acos #:atan
+   #:sinh #:cosh #:tanh
+   #:exp #:log
+   #:abs #:signum
+   #:1+ #:1-
+   #:cis #:conjugate #:phase #:realpart #:imagpart
+   ;; #:complex
+   #:numerator #:denominator
+   #:logcount #:integer-length
+   ;; #:float
+
+   #:-
+   #:+
+   #:*
+   #:/
+   #:max
+   #:min
+   #:=
+   #:<
+   #:>
+   #:<=
+   #:>=
+   #:/=
+
+   #:logand  
+   #:logandc1
+   #:logandc2
+   #:logeqv  
+   #:logior  
+   #:lognand 
+   #:lognor  
+   #:logorc1 
+   #:logorc2 
+   #:logxor
+   #:lognot
+   
+   #:+ #:++ #:+++
+   #:* #:** #:***
+   #:/ #:// #:///
+
+   #:mod      
+   #:rem      
+   #:round    
+   #:floor    
+   #:ceiling  
+   #:truncate 
+   #:fround   
+   #:ffloor           
+   #:fceiling 
+   #:ftruncate
+   
+   ;; 5random
+   #:shuffle
+   #:bernoulli
+   #:bernoulli-like
+   #:beta
+   #:binomial
+   #:chisquare
+   #:dirichlet
+   #:exponential
+   #:f
+   #:gamma
+   #:geometric
+   #:gumbel
+   #:hypergeometric
+   #:laplace
+   #:logistic
+   #:lognormal
+   #:logseries
+   #:multinomial
+   #:multivariate-normal
+   #:negative-binomial
+   #:noncentral-chisquare
+   #:noncentral-f
+   #:normal
+   #:pareto
+   #:poisson
+   #:power
+   #:rayleigh
+   #:standard-cauchy
+   #:standard-exponential
+   #:standard-gamma
+   #:standard-normal
+   #:standard-t
+   #:triangular
+   #:uniform
+   #:vonmises
+   #:wald
+   #:weibull
+   #:zipf))
+
+(uiop:define-package :numcl.impl
+    (:mix :cl                           ; want to use cl:aref
+          :numcl.exported
+          :alexandria)                  ; but not want to use alexandria:flatten etc
+  ;;  :magicl
+  (:use :trivia :iterate :type-r :constantfold))
+
+(uiop:define-package :numcl
+    (:mix :numcl.exported :cl)
+  (:reexport :numcl.exported)
+  (:reexport :cl))

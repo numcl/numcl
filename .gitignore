@@ -1,0 +1,10 @@
+.DS_Store
+*.fasl
+*.dx32fsl
+*.dx64fsl
+*.lx32fsl
+*.lx64fsl
+*.x86f
+*~
+.#*
+*.backup

@@ -142,19 +142,14 @@ with a future support for SIMD operations in mind.
 + [ ] MAGICL/LLA/MGL-MAT backend
 
 ** Dependencies
+
+NUMCL depends on https://github.com/numcl/constantfold .
 This library is at least tested on implementation listed below:
 
 + SBCL 1.4.12 on X86-64 Linux 4.4.0-141-generic (author's environment)
 + SBCL 1.5.1  on X86-64 Linux 4.4.0-141-generic (author's environment)
 
-Also, it depends on the following libraries:
-
-+ trivia by *Masataro Asai* :
-    NON-optimized pattern matcher compatible with OPTIMA, with extensible optimizer interface and clean codebase
-+ alexandria by *Nikodemus Siivola <nikodemus@sb-studio.net>, and others.* :
-    Alexandria is a collection of portable public domain utilities.
-+ iterate by ** :
-    Jonathan Amsterdam's iterator/gatherer/accumulator facility
+Dependency graph:
 
 [[./numcl.png]]
 

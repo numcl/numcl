@@ -297,3 +297,22 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (test (arange :compile-at :run-time)
   (is (= 5 (length (arange 5))))
   (is (= 5 (length (arange 5 10)))))
+
+(test (asarray :compile-at :run-time)
+  (is (= 1 (array-rank (asarray '((1) (1 2))))))
+  (is (= 2 (array-rank (asarray '(((1) (1 2)) ((3) (3 4)))))))
+  (is (= 2 (array-rank (asarray '((1 2) (3 4))))))
+  (is (= 2 (array-rank (asarray #(#(1 2) #(3 4))))))
+  (is (= 2 (array-rank (asarray #((1 2) (3 4))))))
+  
+  (is (= 2 (array-rank (asarray #(#(1 2) #(3 4))))))
+  (is (= 1 (array-rank (asarray #(#(1 2) #(3 4 5))))))
+  (is (= 2 (array-rank (asarray #("aa" "aa")))))
+  (is (= 1 (array-rank (asarray #("aa" "aaa")))))
+  
+  (is (= 1 (array-rank (asarray #(#(1 2) #(3 4))   :type 'vector))))
+  (is (= 1 (array-rank (asarray #(#(1 2) #(3 4 5)) :type 'vector))))
+  (is (= 1 (array-rank (asarray #("aa" "aa")  :type 'string))))
+  (is (= 1 (array-rank (asarray #("aa" "aaa") :type 'string))))
+  (signals error
+    (asarray '((1 2) (3 4))   :type '(array fixnum (* *)))))

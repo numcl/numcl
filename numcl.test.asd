@@ -28,7 +28,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   :author "Masataro Asai"
   :mailto "guicho2.71828@gmail.com"
   :description "Test system of numcl"
-  :license "LLGPL"
+  :license "LGPL"
   :depends-on (:numcl
                :fiveam)
   :components ((:module "t"

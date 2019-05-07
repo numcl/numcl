@@ -279,7 +279,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                              '(t -1 2 t))))))
 
 (test (1+/1- :compile-at :run-time)
-  (is (equal '(unsigned-byte 2)
+  (is (equal (upgraded-array-element-type '(unsigned-byte 2))
              (array-element-type
               (1+ (zeros 10))))))
 

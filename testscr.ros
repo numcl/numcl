@@ -9,8 +9,7 @@ exec ros -Q -- $0 "$@"
   (uiop:quit (if (handler-case
                      (progn
                        (ql:quickload :numcl.test)
-                       (eval (read-from-string "(5am:run! :numcl)"))
-)
+                       (eval (read-from-string "(5am:run! :numcl)")))
                    (serious-condition (c)
                      (describe c)
                      (uiop:quit 2)))

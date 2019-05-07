@@ -29,6 +29,18 @@ At the moment the library is written in pure Common Lisp, focusing more on corre
 ./example.lisp contains a script that you can explore the functionarity already
 implemented in NUMCL.
 
+** Dependencies
+
+NUMCL depends on https://github.com/numcl/constantfold .
+This library is at least tested on implementation listed below:
+
++ SBCL 1.4.12 on X86-64 Linux 4.4.0-141-generic (author's environment)
++ SBCL 1.5.1  on X86-64 Linux 4.4.0-141-generic (author's environment)
+
+Dependency graph:
+
+[[./numcl.png]]
+
 ** Packages
 
 NUMCL defines several symbols which have the same name as the corresponding CL
@@ -140,18 +152,6 @@ with a future support for SIMD operations in mind.
 + [ ] autodiff
 + [ ] backend interface
 + [ ] MAGICL/LLA/MGL-MAT backend
-
-** Dependencies
-
-NUMCL depends on https://github.com/numcl/constantfold .
-This library is at least tested on implementation listed below:
-
-+ SBCL 1.4.12 on X86-64 Linux 4.4.0-141-generic (author's environment)
-+ SBCL 1.5.1  on X86-64 Linux 4.4.0-141-generic (author's environment)
-
-Dependency graph:
-
-[[./numcl.png]]
 
 ** Author, License, Copyright
 

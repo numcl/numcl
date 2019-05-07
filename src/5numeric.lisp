@@ -304,6 +304,16 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:<  (x y) (broadcast '</bit  x y))
 (defun numcl:>  (x y) (broadcast '>/bit  x y))
 
+;; better trivia pattern integration
+
+(defpattern numcl:=  (x) `(=  ,x))
+(defpattern numcl:/= (x) `(/= ,x))
+(defpattern numcl:<= (x) `(<= ,x))
+(defpattern numcl:>= (x) `(>= ,x))
+(defpattern numcl:<  (x) `(<  ,x))
+(defpattern numcl:>  (x) `(>  ,x))
+
+
 ;; bitwise operations
 
 (defun numcl:logand   (&rest args) (reduce (lambda (x y) (broadcast 'logand   x y)) args))

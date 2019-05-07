@@ -26,36 +26,61 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   "Copy CONTENTS to a new array.
 When CONTENTS is a multidimentional array, its elements are copied to a new array that guarantees the NUMCL assumption.
 When CONTENTS is a nested sequence, it is traversed up to the depth that guarantees the sane shape for an array.
+When elements are copied, it is coerced to TYPE.
+When TYPE is not given, it is replaced with the float-contagion type deduced from the elements of CONTENTS.
+It may return a 0-dimensional array with CONTENTS being the only element.
 
 For example:
 
- (asarray '((1) (1 2))) -> #((1) (1 2)) 
+ (asarray '((1) (1 2))) -> #((1) (1 2))                               ; a vector of two lists.
+ (asarray '(((1) (1 2)) ((3) (3 4)))) -> #2A(((1) (1 2)) ((3) (3 4))) ; a 2D array of 4 lists.
 
  (asarray '((1 2) (3 4)))    -> #2A((1 2) (3 4))
  (asarray #(#(1 2) #(3 4)))  -> #2A((1 2) (3 4))
  (asarray #((1 2) (3 4)))    -> #2A((1 2) (3 4))
 
-When elements are copied, it is coerced to TYPE or the float-contagion type deduced from the elements of CONTENTS.
+However, this behavior may not be ideal because the resulting shape could be affected by the lengths of the strings.
 
-Finally, when neither cases apply, it returns a 0-dimensional array with CONTENTS being the only element.
+ (asarray #(#(1 2) #(3 4)))   -> #2A((1 2) (3 4))
+ (asarray #(#(1 2) #(3 4 5))) -> #(#(1 2) #(3 4 5))
+
+ (asarray #(\"aa\" \"aa\"))   -> #2A((#\a #\a) (#\a #\a))
+ (asarray #(\"aa\" \"aaa\"))  -> #(\"aa\" \"aaa\")
+
+As a remedy to this problem, we allow TYPE to be a specifier for vector subtypes. Providing such a type specifier
+will keep the leaf objects (e.g. strings) from split into individual elements.
+We don't allow it to be a multidimentional array [at the moment.]
+
+ (asarray #(#(1 2) #(3 4))   :type '(array fixnum (*))) -> #(#(1 2) #(3 4))
+ (asarray #(#(1 2) #(3 4 5)) :type '(array fixnum (*))) -> #(#(1 2) #(3 4 5))
+
+ (asarray #(\"aa\" \"aa\")  :type 'string)    -> #(\"aa\" \"aa\")
+ (asarray #(\"aa\" \"aaa\") :type 'string)    -> #(\"aa\" \"aaa\")
+
+ (asarray '((1 2) (3 4))   :type '(array fixnum (* *)))  -> error
+
 "
-  (multiple-value-bind (shape deduced-type) (determine-array-spec contents)
-    (let ((newtype (or type deduced-type)))
-      (cond
-        ((and (arrayp contents)
-              (equal (shape contents) shape))
-         (multiple-value-bind (a base) (%make-array shape :element-type newtype)
-           (dotimes (i (array-total-size contents))
-             (setf (aref base i) (%coerce (row-major-aref contents i) newtype)))
-           (values a base)))
-        ((typep contents 'sequence)
-         (multiple-value-bind (a base) (%make-array shape :element-type newtype)
-           (%nested-coerce-and-insert base contents newtype (length shape))
-           (values a base)))
-        (t
-         (multiple-value-bind (a base) (%make-array nil :element-type newtype)
-           (setf (aref base 0) (%coerce contents newtype))
-           (values a base)))))))
+  (when (array-subtype-p type)
+    (assert (vector-subtype-p type)))
+  (identity
+   ;; ensure-singleton
+   (multiple-value-bind (shape deduced-type) (determine-array-spec contents type)
+     (let ((newtype (or type deduced-type)))
+       (cond
+         ((and (arrayp contents)
+               (equal (shape contents) shape))
+          (multiple-value-bind (a base) (%make-array shape :element-type newtype)
+            (dotimes (i (array-total-size contents))
+              (setf (aref base i) (%coerce (row-major-aref contents i) newtype)))
+            (values a base)))
+         ((typep contents 'sequence)
+          (multiple-value-bind (a base) (%make-array shape :element-type newtype)
+            (%nested-coerce-and-insert base contents newtype (length shape))
+            (values a base)))
+         (t
+          (multiple-value-bind (a base) (%make-array nil :element-type newtype)
+            (setf (aref base 0) (%coerce contents newtype))
+            (values a base))))))))
 
 (defun infer-type-from-contents (contents)
   (if (every #'numberp contents)
@@ -104,13 +129,17 @@ Finally, when neither cases apply, it returns a 0-dimensional array with CONTENT
                           ,(coerce (max (realpart x) (imagpart x)) type)))))))
       t))
 
-(defun determine-array-spec (contents)
+(defun determine-array-spec (contents type)
   (cond
     ((and (arrayp contents)
           (> (rank contents) 1))
      
      (values (array-dimensions contents)
              (array-element-type contents)))
+
+    ((and (vector-subtype-p type) (typep contents type))
+     (values nil
+             (type-of contents)))
     
     ((typep contents 'sequence)
      (if (every (lambda (x) (typep x 'sequence)) contents)
@@ -119,8 +148,8 @@ Finally, when neither cases apply, it returns a 0-dimensional array with CONTENT
                (with shape*       = nil)
                (with inconsistent = nil)
                (with types        = nil)
-               (for (values shape type) = (determine-array-spec x))
-               (push type types)
+               (for (values shape deduced-type) = (determine-array-spec x type))
+               (push deduced-type types)
                (setf shape*
                      (if (first-time-p)
                          shape
@@ -139,7 +168,9 @@ Finally, when neither cases apply, it returns a 0-dimensional array with CONTENT
                               t
                               (if (every #'number-subtype-p types)
                                   (reduce #'bind-to-float-type types)
-                                  t))))))
+                                  (if (every #'equal types (rest types)) ; compare adjacent
+                                      (first types)
+                                      t)))))))
 
          (values (list (length contents))
                  (infer-type-from-contents contents))))

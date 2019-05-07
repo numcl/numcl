@@ -1,4 +1,4 @@
-* Numcl
+* Numcl [[https://travis-ci.org/numcl/numcl][https://travis-ci.org/numcl/numcl.svg?branch=master]]
 
 This is a Numpy clone in Common Lisp.
 At the moment the library is written in pure Common Lisp, focusing more on correctness and usefullness, not speed.

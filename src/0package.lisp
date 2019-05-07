@@ -21,6 +21,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (in-package :cl-user)
 
 (defpackage :numcl.exported
+  ;; pitfall: When you do not provide :use keyword in defpackage, it defaults to
+  ;; the default value of make-package, which has an implementation dependent
+  ;; value. SBCL defaults to NIL and CCL defaults to '(:common-lisp :ccl).
+  ;; It is thus necessary to explicitly provide (:use) so that it creates an empty package.
+  (:use )
   (:export
 
    ;; 2type

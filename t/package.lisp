@@ -23,7 +23,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (:shadowing-import-from :numcl :flatten :shuffle)
   (:use :numcl
         :fiveam
-        :trivia :alexandria :iterate :magicl))
+        :trivia :alexandria :iterate))
 (in-package :numcl.test)
 
 

@@ -31,6 +31,10 @@ matrix:
 
 install:
   - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
+  - ( cd ~/lisp/ ; git clone https://github.com/guicho271828/lisp-namespace.git )
+  - ( cd ~/lisp/ ; git clone https://github.com/guicho271828/type-i.git )
+  - ( cd ~/lisp/ ; git clone https://github.com/guicho271828/trivia.git )
+  - ( cd ~/lisp/ ; git clone https://github.com/numcl/constantfold.git )
 
 cache:
   directories:

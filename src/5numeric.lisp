@@ -117,36 +117,35 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (declaim (inline broadcast))
 (defun broadcast (fn x y &key type)
   "For binary functions"
-  (assert (symbolp fn))
-  (assert (broadcast-p x y))
-  (when (and (numberp x) (numberp y))
-    (return-from broadcast
-      (funcall fn x y)))
-  ;; example: 
-  ;; x shape: (10 3 1 4)
-  ;; y shape: (2 10 1 2 4)
-  (let* ((x (asarray x))
-         (y (asarray y))
-         (type (or type (infer-type fn
-                                    (array-element-type x)
-                                    (array-element-type y))))
-         (rrank (max (rank x) (rank y)))
-         ;; make their ranks equal, e.g.
-         ;; (1 10 3 1 4)
-         ;; (2 10 1 2 4)
-         ;; 
-         (xshape (append (make-list (- rrank (rank x)) :initial-element 1) (shape x)))
-         (yshape (append (make-list (- rrank (rank y)) :initial-element 1) (shape y)))
-         ;; result shape:       (2 10 3 2 4)
-         (rshape (mapcar #'max xshape yshape)))
-    (multiple-value-bind (r rbase) (empty rshape :type type)
-      (multiple-value-bind (xbase xoffset) (array-displacement x)
-        (multiple-value-bind (ybase yoffset) (array-displacement y)
-          (broadcast-core fn type
-                          xbase xoffset xshape
-                          ybase yoffset yshape
-                          rbase 0       rshape)
-          (values r rbase))))))
+  (if (and (numberp x) (numberp y))
+      (funcall fn x y)
+      ;; example: 
+      ;; x shape: (10 3 1 4)
+      ;; y shape: (2 10 1 2 4)
+      (progn
+        (assert (broadcast-p x y))
+        (let* ((x (asarray x))
+               (y (asarray y))
+               (type (or type (infer-type fn
+                                          (array-element-type x)
+                                          (array-element-type y))))
+               (rrank (max (rank x) (rank y)))
+               ;; make their ranks equal, e.g.
+               ;; (1 10 3 1 4)
+               ;; (2 10 1 2 4)
+               ;; 
+               (xshape (append (make-list (- rrank (rank x)) :initial-element 1) (shape x)))
+               (yshape (append (make-list (- rrank (rank y)) :initial-element 1) (shape y)))
+               ;; result shape:       (2 10 3 2 4)
+               (rshape (mapcar #'max xshape yshape)))
+          (multiple-value-bind (r rbase) (empty rshape :type type)
+            (multiple-value-bind (xbase xoffset) (array-displacement x)
+              (multiple-value-bind (ybase yoffset) (array-displacement y)
+                (broadcast-core fn type
+                                xbase xoffset xshape
+                                ybase yoffset yshape
+                                rbase 0       rshape)
+                (values r rbase))))))))
 
 (defun broadcast-core (fn type
                        xbase xoffset xshape

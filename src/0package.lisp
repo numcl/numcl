@@ -78,6 +78,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:unstack
 
    ;; 5numeric
+   #:map
+   #:map-into
+   #:map-array
+   #:broadcast
+   
    #:sin #:cos #:tan
    #:asin #:acos #:atan
    #:sinh #:cosh #:tanh

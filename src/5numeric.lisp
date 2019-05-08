@@ -34,6 +34,21 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 ;; thus by inlining map-array under a suitable set of declarations, the pattern matching simply disappears.
 
+(declaim (inline numcl:map-into))
+(defun numcl:map-into (result-sequence function &rest sequences)
+  (if (and (every    (of-type 'array)  sequences)
+           (notevery (of-type 'vector) sequences))
+      (apply #'map-array-into result-sequence function sequences)
+      (apply #'map-into result-sequence function sequences)))
+
+(declaim (inline numcl:map))
+(defun numcl:map (result-type function &rest sequences)
+  (if (and (every    (of-type 'array)  sequences)
+           (notevery (of-type 'vector) sequences))
+      (coerce (apply #'map-array       function sequences) result-type)
+      (apply #'map result-type function sequences)))
+
+
 (declaim (inline map-array-into))
 (defun map-array-into (array fn &rest arrays)
   (let ((type (array-element-type array)))

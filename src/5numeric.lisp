@@ -227,6 +227,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 ;; TODO: optimization
+(declaim (inline numcl:sin numcl:cos numcl:tan numcl:asin numcl:acos numcl:atan
+                 numcl:sinh numcl:cosh numcl:tanh numcl:exp numcl:log numcl:abs
+                 numcl:signum numcl:cis numcl:conjugate numcl:phase
+                 numcl:realpart numcl:imagpart numcl:numerator numcl:denominator
+                 numcl:logcount numcl:integer-length))
+
+;; inlining makes them as fast as the normal CL functions when the arguments are numbers
 
 (defun numcl:sin            (x) (map-array 'sin x))
 (defun numcl:cos            (x) (map-array 'cos x))
@@ -265,6 +272,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; TODO: optimize by reusing intermediate results
 ;; TODO: optimize by loop fusion
 
+(declaim (inline numcl:+ numcl:- numcl:* numcl:/ numcl:max numcl:min))
+
 (defun numcl:+   (&rest args) (reduce (lambda (x y) (broadcast '+ x y)) args))
 (defun numcl:-   (&rest args) (reduce (lambda (x y) (broadcast '- x y)) args))
 (defun numcl:*   (&rest args) (reduce (lambda (x y) (broadcast '* x y)) args))
@@ -283,6 +292,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (define-symbol-macro numcl:/// ///)
 
 ;; round
+
+(declaim (inline numcl:mod numcl:rem numcl:round numcl:floor numcl:ceiling
+                 numcl:truncate numcl:fround numcl:ffloor numcl:fceiling
+                 numcl:ftruncate))
 
 (defun numcl:mod       (number divisor) (broadcast 'mod       number divisor))
 (defun numcl:rem       (number divisor) (broadcast 'rem       number divisor))
@@ -312,6 +325,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (declaim (inline >/bit))
 (defun >/bit  (x y) (if (>  x y) 1 0))
 
+(declaim (inline numcl:= numcl:/= numcl:<= numcl:>= numcl:< numcl:>))
+
 (defun numcl:=  (x y) (broadcast '=/bit  x y))
 (defun numcl:/= (x y) (broadcast '/=/bit x y))
 (defun numcl:<= (x y) (broadcast '<=/bit x y))
@@ -330,6 +345,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 ;; bitwise operations
+
+(declaim (inline numcl:logand numcl:logandc1 numcl:logandc2 numcl:logeqv
+                 numcl:logior numcl:lognand numcl:lognor numcl:logorc1
+                 numcl:logorc2 numcl:logxor numcl:lognot))
+
 
 (defun numcl:logand   (&rest args) (reduce (lambda (x y) (broadcast 'logand   x y)) args))
 (defun numcl:logandc1 (&rest args) (reduce (lambda (x y) (broadcast 'logandc1 x y)) args))

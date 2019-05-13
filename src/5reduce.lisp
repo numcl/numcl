@@ -136,7 +136,23 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; (defun all (array &key axes type) (reduce-array '+ axes type))
 ;; (defun any (array &key axes type) (reduce-array '+ axes type))
 
-(defun onehot (array &key axes type) (reduce-array '+ axes type))
+;; memo: perhaps eye-based argmax is better
 
-(defun argmax (array &key axes type) (reduce-array '+ axes type))
-(defun argmin (array &key axes type) (reduce-array '+ axes type))
+#+(or)
+(defun argmax (array &key (axis 0) (type (array-element-type array)))
+  (print array)
+  (print (numcl:max array :axes axis :type type))
+  (print (expand-dims (numcl:max array :axes axis :type type) axis))
+  (print (numcl:= array
+                  (expand-dims (numcl:max array :axes axis :type type) axis)))
+  (print (arange (elt (shape array) axis)))
+  ;; (print (expand-dims (arange (elt (shape array) axis)) axis))
+  (numcl:sum (numcl:* (arange (elt (shape array) axis))
+                      (numcl:= array
+                               (expand-dims (numcl:max array :axes axis :type type) axis)))
+             :axes axis))
+  
+  
+#+(or)
+(defun argmin (array &key axes type)
+  (reduce-array '+ axes type))

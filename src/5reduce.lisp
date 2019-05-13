@@ -32,15 +32,15 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
            (array-dimension array axes))))
 
 
-(defun reduce-array (fn array &key (axes (iota (array-rank array))) type)
+(defun reduce-array (fn array &key (axes (iota (rank array))) type (initial-element 0))
   (ensure-singleton
    (ematch axes
      (nil
-      (%reduce-array fn array axes type))
+      (%reduce-array fn array axes type initial-element))
      ((fixnum)
-      (%reduce-array fn array (list axes) type))
+      (%reduce-array fn array (list axes) type initial-element))
      ((type list)
-      (%reduce-array fn array (sort (copy-list axes) #'<) type)))))
+      (%reduce-array fn array (sort (copy-list axes) #'<) type initial-element)))))
 
 (defun %reduce-array-result-shape (array axes)
   (iter (for i from 0 below (array-rank array))
@@ -53,9 +53,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (assert (equal '(5 6 8) (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 3)))))
 (assert (equal nil (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 1 2 3 4)))))
 
-(defun %reduce-array (fn array axes type)
+(defun %reduce-array (fn array axes type initial-element)
   (let ((shape (%reduce-array-result-shape array axes)))
-    (multiple-value-bind (result base-array) (empty shape :type (float-substitution type :int-result 'fixnum))
+    (multiple-value-bind (result base-array) (full shape initial-element :type (float-substitution type :int-result 'fixnum))
       ;; I know this is super slow due to the compilation overhead, but this is
       ;; the most intuitive way to implement it
       (funcall (compile nil (with-gensyms (r a)
@@ -81,24 +81,24 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (print (make-reducer-lambda 'r 'a '+ 0 '(5 5 5 5 5) '(1 3) nil nil))
 
-(defun numcl:sum  (array &key (axes nil) (type (array-element-type array))) (reduce-array '+   array :axes axes :type type))
-(defun numcl:prod (array &key (axes nil) (type (array-element-type array))) (reduce-array '*   array :axes axes :type type))
-(defun numcl:max  (array &key (axes nil) (type (array-element-type array))) (reduce-array 'max array :axes axes :type type))
-(defun numcl:min  (array &key (axes nil) (type (array-element-type array))) (reduce-array 'min array :axes axes :type type))
+(defun numcl:sum  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '+   array :axes axes :type type))
+(defun numcl:prod (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '*   array :axes axes :type type :initial-element 1))
+(defun numcl:max  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'max array :axes axes :type type))
+(defun numcl:min  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'min array :axes axes :type type))
 
 
 
-(defun numcl:mean  (array &key (axes nil) (type (array-element-type array)))
+(defun numcl:mean  (array &key (axes (iota (rank array))) (type (array-element-type array)))
   (if (sequencep array)
       (alexandria:mean array)
       (numcl:/ (reduce-array '+ array :axes axes :type type)
                (array-dimension* array axes))))
-(defun numcl:variance (array &key (axes nil) (type (array-element-type array)))
+(defun numcl:variance (array &key (axes (iota (rank array))) (type (array-element-type array)))
   (if (sequencep array)
       (alexandria:variance array)
       (numcl:/ (reduce-array '+ (square array) :axes axes :type type)
                (array-dimension* array axes))))
-(defun numcl:standard-deviation (array &key (axes nil) (type (array-element-type array)))
+(defun numcl:standard-deviation (array &key (axes (iota (rank array))) (type (array-element-type array)))
   (if (sequencep array)
       (alexandria:standard-deviation array)
       (numcl:sqrt

@@ -3,6 +3,8 @@
 This is a Numpy clone in Common Lisp.
 At the moment the library is written in pure Common Lisp, focusing more on correctness and usefullness, not speed.
 
+[[https://asciinema.org/a/245792][https://asciinema.org/a/245792.svg]]
+
 ** Goals
 
 + *Closely follow the numpy API, but still make it lispy.*

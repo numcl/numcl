@@ -296,16 +296,16 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                  numcl:truncate numcl:fround numcl:ffloor numcl:fceiling
                  numcl:ftruncate))
 
-(defun numcl:mod       (number divisor) (broadcast 'mod       number divisor))
-(defun numcl:rem       (number divisor) (broadcast 'rem       number divisor))
-(defun numcl:round     (number divisor) (broadcast 'round     number divisor))
-(defun numcl:floor     (number divisor) (broadcast 'floor     number divisor))
-(defun numcl:ceiling   (number divisor) (broadcast 'ceiling   number divisor))
-(defun numcl:truncate  (number divisor) (broadcast 'truncate  number divisor))
-(defun numcl:fround    (number divisor) (broadcast 'fround    number divisor))
-(defun numcl:ffloor    (number divisor) (broadcast 'ffloor    number divisor))
-(defun numcl:fceiling  (number divisor) (broadcast 'fceiling  number divisor))
-(defun numcl:ftruncate (number divisor) (broadcast 'ftruncate number divisor))
+(defun numcl:mod       (number &optional (divisor 1)) (broadcast 'mod       number divisor))
+(defun numcl:rem       (number &optional (divisor 1)) (broadcast 'rem       number divisor))
+(defun numcl:round     (number &optional (divisor 1)) (broadcast 'round     number divisor))
+(defun numcl:floor     (number &optional (divisor 1)) (broadcast 'floor     number divisor))
+(defun numcl:ceiling   (number &optional (divisor 1)) (broadcast 'ceiling   number divisor))
+(defun numcl:truncate  (number &optional (divisor 1)) (broadcast 'truncate  number divisor))
+(defun numcl:fround    (number &optional (divisor 1)) (broadcast 'fround    number divisor))
+(defun numcl:ffloor    (number &optional (divisor 1)) (broadcast 'ffloor    number divisor))
+(defun numcl:fceiling  (number &optional (divisor 1)) (broadcast 'fceiling  number divisor))
+(defun numcl:ftruncate (number &optional (divisor 1)) (broadcast 'ftruncate number divisor))
 
 ;; comparisons
 

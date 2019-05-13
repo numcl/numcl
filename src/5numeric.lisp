@@ -81,39 +81,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
          (reverse (shape x))
          (reverse (shape y))))
 
-
-(defun m2shape (mshape)
-  (iter (for mdim in mshape)
-        (for mdim-prev previous mdim)
-        (when (first-iteration-p)
-          (collect mdim)
-          (next-iteration))
-        (if (= 1 mdim)
-            (if (= 1 mdim-prev)
-                nil
-                (collect mdim))
-            (collect mdim))))
-
-;; (m2shape '(1 1 10 1 1 1 3 1 1))
-;; (1 10 1 3 1)
-
-(defun r2shape (mshape rshape)
-  (iter (for mdim in mshape)
-        (for mdim-prev previous mdim)
-        (for rdim in rshape)
-        (with acc = nil)
-        (when (first-iteration-p)
-          (push rdim acc)
-          (next-iteration))
-        (if (= 1 mdim mdim-prev)
-            (setf (first acc) (* (first acc) rdim))
-            (push rdim acc))
-        (finally
-         (return (nreverse acc)))))
-
-;; (r2shape '(1 10 1 1 4) '(2 10 2 3 4))
-;; (2 10 6 4)
-
 (declaim (inline broadcast))
 (defun broadcast (fn x y &key type)
   "For binary functions"
@@ -368,4 +335,43 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:logxor   (&rest args) (reduce (lambda (x y) (broadcast 'logxor   x y)) args))
 
 (defun numcl:lognot (x) (map-array 'lognot x))
+
+
+
+
+;; unused functions
+
+#+(or)
+(defun m2shape (mshape)
+  (iter (for mdim in mshape)
+        (for mdim-prev previous mdim)
+        (when (first-iteration-p)
+          (collect mdim)
+          (next-iteration))
+        (if (= 1 mdim)
+            (if (= 1 mdim-prev)
+                nil
+                (collect mdim))
+            (collect mdim))))
+
+;; (m2shape '(1 1 10 1 1 1 3 1 1))
+;; (1 10 1 3 1)
+
+#+(or)
+(defun r2shape (mshape rshape)
+  (iter (for mdim in mshape)
+        (for mdim-prev previous mdim)
+        (for rdim in rshape)
+        (with acc = nil)
+        (when (first-iteration-p)
+          (push rdim acc)
+          (next-iteration))
+        (if (= 1 mdim mdim-prev)
+            (setf (first acc) (* (first acc) rdim))
+            (push rdim acc))
+        (finally
+         (return (nreverse acc)))))
+
+;; (r2shape '(1 10 1 1 4) '(2 10 2 3 4))
+;; (2 10 6 4)
 

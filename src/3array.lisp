@@ -173,7 +173,9 @@ We don't allow it to be a multidimentional array [at the moment.]
                                       t)))))))
 
          (values (list (length contents))
-                 (infer-type-from-contents contents))))
+                 (if (= 1 (length contents))
+                     (infer-type-from-content (elt contents 0))
+                     (infer-type-from-contents contents)))))
     (t
      (values nil
              (infer-type-from-content contents)))))

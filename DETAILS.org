@@ -1,4 +1,14 @@
-In this document, we detail the inner working of NUMCL...
+In this document, we detail the inner working of NUMCL.
+
+* Packages
+
+NUMCL defines several symbols which have the same name as the corresponding CL
+symbols. We call them *conflicting symbols*.  To avoid the confusion in the code
+base, we use 3 packages:
++ =NUMCL.IMPL= (internal package) for implementing numcl.
++ =NUMCL.EXPORTED= (external package), for storing the numcl exported symbols,
++ =NUMCL= package, that replaces =COMMON-LISP= package by shadowing-import
+  symbols from =NUMCL.EXPORTED= on top of =COMMON-LISP= package.
 
 * Types
 

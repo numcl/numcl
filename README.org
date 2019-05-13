@@ -8,11 +8,12 @@ At the moment the library is written in pure Common Lisp, focusing more on corre
 ** Goals
 
 + *Closely follow the numpy API, but still make it lispy.*
-  +  Delegate the documentation effort to Numpy community.
+  + Delegate the documentation effort to Numpy community.
 + *Replace the Common Lisp array interface.*
   + We do not deviate from the traditional symbols/idioms in Common Lisp unless necessary.
     Therefore we provide symbols that conflicts the Common Lisp symbol.
     Math functions become aliases to the original CL functions when the inputs are not arrays.
+  + See [[./DETAILS.org#packages][./DETAILS.org#packages]] .
 
 ** Features/Contracts
 
@@ -27,10 +28,12 @@ At the moment the library is written in pure Common Lisp, focusing more on corre
   + (zeros 5) returns a bit vector.
   + (asarray '(1 2 3)) returns an (unsigned-byte 2) vector.
   + (+ 1 (arange 5)) returns an (unsigned-byte 7) vector.
+  + See [[./DETAILS.org#types][./DETAILS.org#types]] .
 + NUMCL Arrays are CL arrays.
   + As this library aims to extend Common Lisp (not to replace part of it) in a
     compatible way, we do not introduce custom structures/classes for
     representing an array.
+  + See [[./DETAILS.org#representation][./DETAILS.org#representation]] .
 
 ** Examples & documentation
 
@@ -51,16 +54,6 @@ This library is at least tested on implementation listed below:
 Dependency graph:
 
 [[./numcl.png]]
-
-** Packages
-
-NUMCL defines several symbols which have the same name as the corresponding CL
-symbols. We call them *conflicting symbols*.  To avoid the confusion in the code
-base, we use 3 packages:
-+ =NUMCL.IMPL= (internal package) for implementing numcl.
-+ =NUMCL.EXPORTED= (external package), for storing the numcl exported symbols,
-+ =NUMCL= package, that replaces =COMMON-LISP= package by shadowing-import
-  symbols from =NUMCL.EXPORTED= on top of =COMMON-LISP= package.
 
 ** Milestones
 

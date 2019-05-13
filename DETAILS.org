@@ -1,0 +1,80 @@
+In this document, we detail the inner working of NUMCL...
+
+* Types
+
+Common Lisp has the following types for numbers.
+
+#+begin_src lisp
+number = (or complex real)
+real   = (or float rational)
+rational = (or ratio integer)
+integer  = (or fixnum bignum)
+float    = (or short-float ... long-float) (== irrational).
+#+end_src
+
+Common Lisp defines several rules for the type of the values returned by the numerical operations.
+The detail of the rules are explained in [[http://clhs.lisp.se/Body/12_a.htm][CLHS 12.1 Number Concepts]].
+
+/Rational functions/ behave as =rational* -> rational=, =float* -> float=, ={rational,float}* -> float=.
+This rule is called *float contagion* rule.
+
+Rational functions do not guarantee =integer -> integer=, primarily due to =/= ,
+which returns =integer* -> (or ratio integer)=.
+
+Irrational functions behaves as =rational -> (or rational float)=, =float -> float=:
+For a certain irrational functions, implementations are allowed to
+return the exact rational number or its float approximation.
+Examples are =(sin pi) -> 1/2=.
+The behavior depends on the implementation and is called *float substitution rule*.
+
+---
+
+In NUMCL, =ratio= does not exist due to three reasons:
+First, CL prohibits =ratio= to have a denominator 1 (e.g. 3/1), and thus
+the operations on ratios are not closed.
+Second, no implementations provide a specialized array for =rational=.
+Finally, ratio computation requires an additional
+simplification phase (e.g. 2/4 -> 1/2) which does not finish in a constant
+number of operations and is incompatible to SIMD operations.
+
+As a result, =ratios= are always converted to =*numcl-default-float-format*=, which is single-float by default.
+This means that =/= always returns a float array (except atomic numbers are given).
+
+We also force irrational functions to always return floats, by
+coercion. (Implementations are allowed to return rationals for certain
+constants, e.g. (sin pi).)
+
+=(array bignum)= does not exist either. However, when the result of numerical computation causes
+a fixnum overflow, it signals an error instead of overflowing silently.
+
+For complex arrays, only =(complex *-float)= exists (for each float type).
+Both complex integers and complex ratios are converted into floats.
+This is because CL does not allow rational complex with imagpart 0
+(cf. http://clhs.lisp.se/Body/t_comple.htm),
+thus the numerical operation always coerces the result into reals.
+This prevents us from having (ARRAY (COMPLEX FIXNUM)).
+
+* Representation
+
+NUMCL arrays are not based on custom classes or structures. They are merely the displaced multidimentional arrays.
+
+The base function for creating a new array is =%make-array=, but this is not exported in NUMCL.
+You should use the wrapper functions like =ones=, =zeros=, =ones-like=, =arange=, =linspace=, =asarray= etc.
+They are always inline-expanded to =%make-array=, therefore there is no worry about the performance.
+These functions analyze the input and return the most specialized array for the input,
+but you can also specify the element type.
+
+=%make-array= instantiates a new flattened array and returns another array
+displaced to it with the specified shape. The flattened array is returned as the
+secondary value (as does all wrapper functions).
+
+The justification for this scheme is that some implementations (esp. SBCL)
+require an indirection for accessing the array element (e.g. through
+array-header in SBCL) even for a simple multi-dimentional array and thus using a
+displacing array has essentially no performance penalty over using a simple
+multi-dimentional array.
+
+We also ensure that the length of the base arrays are the multiples of 8.
+This ensures that the program can safely iterate over the extended region
+with a future support for SIMD operations in mind.
+

@@ -245,6 +245,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:tanh           (x) (map-array 'tanh x))
 (defun numcl:exp            (x) (map-array 'exp x))
 (defun numcl:log            (x) (map-array 'log x))
+(defun numcl:sqrt           (x) (map-array 'sqrt x))
 (defun numcl:abs            (x) (map-array 'abs x))
 (defun numcl:signum         (x) (map-array 'signum x))
 (defun numcl:cis            (x) (map-array 'cis x))

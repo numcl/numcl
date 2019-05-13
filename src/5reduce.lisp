@@ -32,11 +32,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
            (array-dimension array axes))))
 
 
-(defun reduce-array (fn array &key axes type)
+(defun reduce-array (fn array &key (axes (iota (array-rank array))) type)
   (ensure-singleton
    (ematch axes
      (nil
-      (%reduce-array fn array (iota (array-rank array)) type))
+      (%reduce-array fn array axes type))
      ((fixnum)
       (%reduce-array fn array (list axes) type))
      ((type list)
@@ -55,7 +55,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (defun %reduce-array (fn array axes type)
   (let ((shape (%reduce-array-result-shape array axes)))
-    (multiple-value-bind (result base-array) (empty shape :type type)
+    (multiple-value-bind (result base-array) (empty shape :type (float-substitution type :int-result 'fixnum))
       ;; I know this is super slow due to the compilation overhead, but this is
       ;; the most intuitive way to implement it
       (funcall (compile nil (with-gensyms (r a)
@@ -69,7 +69,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (match dims
     (nil
      `(setf (aref ,rvar ,@(reverse sum-index))
-            (funcall ,fn
+            (funcall ',fn
                      (aref ,rvar ,@(reverse sum-index))
                      (aref ,avar ,@(reverse loop-index)))))
     ((list* dim  dims)

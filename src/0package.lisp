@@ -138,6 +138,19 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:ffloor           
    #:fceiling 
    #:ftruncate
+
+   ;; 5reduce
+   #:reduce-array
+   #:sum
+   #:prod
+   #:max
+   #:min
+   #:mean
+   #:variance
+   #:standard-deviation
+   #:onehot
+   #:argmax
+   #:argmin
    
    ;; 5random
    #:shuffle
@@ -182,9 +195,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (uiop:define-package :numcl.impl
     (:mix :cl                           ; want to use cl:aref
           :numcl.exported
-          :alexandria)                  ; but not want to use alexandria:flatten etc
+          :alexandria                   ; but not want to use alexandria:flatten etc
+          :iterate)                     ; same for iterate; for SUM
   ;;  :magicl
-  (:use :trivia :iterate :type-r :constantfold))
+  (:use :trivia :type-r :constantfold))
 
 (uiop:define-package :numcl
     (:mix :numcl.exported :cl)

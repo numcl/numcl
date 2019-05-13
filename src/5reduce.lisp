@@ -83,9 +83,36 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (defun numcl:sum  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '+   array :axes axes :type type))
 (defun numcl:prod (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '*   array :axes axes :type type :initial-element 1))
-(defun numcl:max  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'max array :axes axes :type type))
-(defun numcl:min  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'min array :axes axes :type type))
+(defun numcl:max  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'max array :axes axes :type type :initial-element (%minimum-value type)))
+(defun numcl:min  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'min array :axes axes :type type :initial-element (%maximum-value type)))
 
+(defun %maximum-value (t1)
+  (ematch t1
+    ((or (ratio-type) (float-type))
+     (case *numcl-default-float-format*
+       (short-float most-positive-short-float)
+       (single-float most-positive-single-float)
+       (single-float most-positive-double-float)
+       (long-float most-positive-long-float)))
+    ((long-float-type)           most-positive-long-float)
+    ((double-float-type)         most-positive-double-float)
+    ((single-float-type)         most-positive-single-float)
+    ((short-float-type)          most-positive-short-float)
+    ((integer-subtype)           most-positive-fixnum)))
+
+(defun %minimum-value (t1)
+  (ematch t1
+    ((or (ratio-type) (float-type))
+     (case *numcl-default-float-format*
+       (short-float most-negative-short-float)
+       (single-float most-negative-single-float)
+       (single-float most-negative-double-float)
+       (long-float most-negative-long-float)))
+    ((long-float-type)           most-negative-long-float)
+    ((double-float-type)         most-negative-double-float)
+    ((single-float-type)         most-negative-single-float)
+    ((short-float-type)          most-negative-short-float)
+    ((integer-subtype)           most-negative-fixnum)))
 
 
 (defun numcl:mean  (array &key (axes (iota (rank array))) (type (array-element-type array)))

@@ -2,6 +2,7 @@
 
 This is a Numpy clone in Common Lisp.
 At the moment the library is written in pure Common Lisp, focusing more on correctness and usefullness, not speed.
+Track the progress at https://github.com/numcl/numcl/projects/1 .
 
 [[https://asciinema.org/a/245792][https://asciinema.org/a/245792.svg]]
 
@@ -54,30 +55,6 @@ This library is at least tested on implementation listed below:
 Dependency graph:
 
 [[./numcl.png]]
-
-** Milestones
-
-+ [X] basic array representation
-+ [X] shape manipulations
-+ [X] aref
-+ [X] arange
-+ [X] asarray
-+ [X] zeros, ones, empty, full
-+ [X] concatenate, stack, unstack
-+ [X] various random functions
-+ [X] unary functions
-+ [X] binary functions
-+ [X] broadcasting
-+ [X] type inference
-+ [X] comparison functions
-+ [X] bitwise operations
-+ [ ] compile-time type checking
-+ [ ] operator fusion
-+ [X] reducer functions *(new! 5/13)*
-+ [ ] matrix operations
-+ [ ] autodiff
-+ [ ] backend interface
-+ [ ] MAGICL/LLA/MGL-MAT backend
 
 ** Author, License, Copyright
 

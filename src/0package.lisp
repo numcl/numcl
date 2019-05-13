@@ -81,8 +81,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:map
    #:map-into
    #:map-array
+   #:map-array-into
    #:broadcast
-   
+
    #:sin #:cos #:tan
    #:asin #:acos #:atan
    #:sinh #:cosh #:tanh

@@ -36,40 +36,44 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline numcl:map-into))
 (defun numcl:map-into (result-sequence function &rest sequences)
-  (if (and (every    (of-type 'array)  sequences)
-           (notevery (of-type 'vector) sequences))
-      (apply #'map-array-into result-sequence function sequences)
-      (apply #'map-into result-sequence function sequences)))
+  (if (every (of-type 'sequence) sequences)
+      (apply #'map-into result-sequence function sequences)
+      (apply #'map-array-into result-sequence function sequences)))
 
 (declaim (inline numcl:map))
 (defun numcl:map (result-type function &rest sequences)
-  (if (and (every    (of-type 'array)  sequences)
-           (notevery (of-type 'vector) sequences))
-      (coerce (apply #'map-array       function sequences) result-type)
-      (apply #'map result-type function sequences)))
-
+  (if (every (of-type 'sequence) sequences)
+      (apply #'map result-type function sequences)
+      (apply #'map-array-into
+             (empty (shape (first sequences)) :type (array-subtype-element-type result-type))
+             function
+             sequences)))
 
 (declaim (inline map-array-into))
-(defun map-array-into (array fn &rest arrays)
-  (let ((type (array-element-type array)))
+(defun map-array-into (result-sequence function &rest sequences)
+
+  (assert (every #'arrayp sequences))
+  (assert (every #'equal
+                 (map 'vector #'shape sequences)
+                 (map 'vector #'shape (cdr sequences))))
+  (assert (equal (shape result-sequence)
+                 (shape (first sequences))))
+  
+  (let ((type (array-element-type result-sequence)))
     (flet ((fn (x)
-             (coerce (funcall fn x) type)))
+             (coerce (funcall function x) type)))
       (declare (inline fn))
-      (apply #'map-into array #'fn (mapcar #'flatten arrays)))))
+      (declare (dynamic-extent #'fn))
+      (apply #'map-into (flatten result-sequence) #'fn (mapcar #'flatten sequences)))))
 
 (declaim (inline map-array))
-(defun map-array (fn &rest arrays)
-  (let ((type (apply #'infer-type fn
-                     (mapcar #'array-element-type arrays))))
-    (multiple-value-bind (a base-array2)
-        (empty (shape (first arrays)) :type type)
-      (flet ((fn (x)
-               (coerce (funcall fn x) type)))
-        (declare (inline fn))
-        (apply #'map-into base-array2
-               #'fn
-               (mapcar #'flatten arrays)))
-      a)))
+(defun map-array (function &rest sequences)
+  (let ((type (apply #'infer-type function
+                     (mapcar #'array-element-type sequences))))
+    (apply #'map-array-into
+           (empty (shape (first sequences)) :type type)
+           function
+           sequences)))
 
 (declaim (inline broadcast-p))
 (defun broadcast-p (x y)

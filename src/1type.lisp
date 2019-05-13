@@ -267,6 +267,7 @@ For an unsupported type, it signals an error.
   (declare (symbol int-result))
   (labels ((rec (t1)
              (ematch t1
+               (t t)
                (nil nil)
                ;; irrationals
                ((float-type)                *numcl-default-float-format*)
@@ -312,6 +313,8 @@ Keyword INT-INT-RESULT alters the result of binary operations over integers (def
   (declare (symbol int-int-result))
   (labels ((rec (t1 t2)
              (ematch* (t1 t2)
+               ((t _) t)
+               ((_ t) t)
                ((nil _) nil)
                ((_ nil) nil)
                ((_ (long-float-type))   'long-float)
@@ -401,6 +404,8 @@ When two interval designators are not connected, it returns OR types.
 If you want them to be merged as a single type, use bind-to-float-type."
   (labels ((fn (prev now)
              (ematch* (prev now)
+               ((t _) t)
+               ((_ t) t)
                ((nil _) now)
                ((_ nil) prev)
                
@@ -445,6 +450,8 @@ If you want them to be merged as a single type, use bind-to-float-type."
 to the least specific FLOAT type when any one of them are not fixnums."
   (labels ((fn (prev now)
              (ematch* (prev now)
+               ((t _) t)
+               ((_ t) t)
                ((nil _) nil)
                ((_ nil) nil)
                

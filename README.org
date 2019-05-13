@@ -73,7 +73,7 @@ Dependency graph:
 + [X] bitwise operations
 + [ ] compile-time type checking
 + [ ] operator fusion
-+ [ ] reducer functions
++ [X] reducer functions *(new! 5/13)*
 + [ ] matrix operations
 + [ ] autodiff
 + [ ] backend interface

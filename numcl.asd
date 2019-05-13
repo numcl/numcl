@@ -34,6 +34,7 @@
                             (:file "4concatenate")
                             (:file "4split")
                             (:file "5numeric")
+                            (:file "5reduce")
                             (:file "5random"))))
  :description "Numpy clone in Common Lisp, using MAGICL/LLA/MGL-MAT as the backend (in the future)"
  :in-order-to ((test-op (test-op :numcl.test))))

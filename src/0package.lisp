@@ -108,6 +108,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:>=
    #:/=
 
+   #:square
+   
    #:logand  
    #:logandc1
    #:logandc2

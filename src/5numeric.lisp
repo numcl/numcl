@@ -259,6 +259,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:integer-length (x) (map-array 'integer-length x))
 ;; (defun float          (x) (map-array 'float x))
 
+(declaim (inline %square))
+(defun %square (x) (* x x))
+(defun numcl:square            (x) (map-array '%square x))
+
+
 ;; type upgrading. Why this is not available by default in common lisp??
 
 (declaim (inline numcl:1+))

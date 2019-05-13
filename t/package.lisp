@@ -320,3 +320,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (finishes
     (print (asarray '(1)))))
 
+(test (mixed :compile-at :run-time)
+  (finishes
+   ;; should return #2A((1 2) (1 2))
+   (aref (asarray '((1 2 "text") (1 2 "text"))) t '(0 2))))

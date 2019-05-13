@@ -315,4 +315,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (= 1 (array-rank (asarray #("aa" "aa")  :type 'string))))
   (is (= 1 (array-rank (asarray #("aa" "aaa") :type 'string))))
   (signals error
-    (asarray '((1 2) (3 4))   :type '(array fixnum (* *)))))
+    (asarray '((1 2) (3 4))   :type '(array fixnum (* *))))
+
+  (finishes
+    (print (asarray '(1)))))
+

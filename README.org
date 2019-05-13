@@ -21,14 +21,12 @@ At the moment the library is written in pure Common Lisp, focusing more on corre
   + This does not mean the API is functional --- we use procedural code.
 + Still, zero overhead.
   + The APIs are simply the wrappers over simple functions and designed to be fully inlined.
-  + Trivial constants are meant to be constant folded.
   + Optimization will be done on the compiler side, not by macros.
 + Operations are type-correct.
   + They always return arrays of the most specific array-element-type. For example,
   + (zeros 5) returns a bit vector.
   + (asarray '(1 2 3)) returns an (unsigned-byte 2) vector.
-  + (+ (arange 5) (ones 3)) returns an (unsigned-byte 4)
-    vector. (upgraded array element type of (unsigned-byte 3).)
+  + (+ 1 (arange 5)) returns an (unsigned-byte 7) vector.
 + NUMCL Arrays are CL arrays.
   + As this library aims to extend Common Lisp (not to replace part of it) in a
     compatible way, we do not introduce custom structures/classes for

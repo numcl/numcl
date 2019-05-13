@@ -95,9 +95,21 @@ Example of reshaping (3 8 5):
                :element-type (array-element-type a)
                :displaced-to a))
 
-(defun expand-dims (a axis)
-  (let ((dims (shape a)))
-    (%make-array (append (subseq dims 0 axis) '(1) (subseq dims axis))
+(defun expand-dims (a axes)
+  "axes: an int or a list of ints"
+  (let ((dims (shape a))
+        (axes (ensure-list axes)))
+    (%make-array (iter
+                   outer
+                   (for j from 0 to (rank a))
+                   (iter (while (and (first axes) (<= (first axes) j)))
+                     (in outer
+                         (collect 1))
+                     (pop axes))
+                   (when (first dims)
+                     (collect (first dims))
+                     (pop dims)))
+                   
                  :element-type (array-element-type a)
                  :displaced-to a)))
 

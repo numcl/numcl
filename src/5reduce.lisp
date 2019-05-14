@@ -83,8 +83,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (defun numcl:sum  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '+   array :axes axes :type type))
 (defun numcl:prod (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '*   array :axes axes :type type :initial-element 1))
-(defun numcl:max  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'max array :axes axes :type type :initial-element (%minimum-value type)))
-(defun numcl:min  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'min array :axes axes :type type :initial-element (%maximum-value type)))
+(defun numcl:amax  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'max array :axes axes :type type :initial-element (%minimum-value type)))
+(defun numcl:amin  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'min array :axes axes :type type :initial-element (%maximum-value type)))
 
 (defun %maximum-value (t1)
   (ematch t1

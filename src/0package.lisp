@@ -143,8 +143,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:reduce-array
    #:sum
    #:prod
-   #:max
-   #:min
+   #:amax
+   #:amin
    #:mean
    #:variance
    #:standard-deviation

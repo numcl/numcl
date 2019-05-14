@@ -112,10 +112,10 @@
 (prod (reshape (1+ (arange 16)) '(4 4)))
 (prod (reshape (1+ (arange 16)) '(4 4)) :axes '(0))
 
-(max (reshape (arange 16) '(4 4)))
-(max (reshape (arange 16) '(4 4)) :axes '(0))
-(max (reshape (arange 16) '(4 4)) :axes '(1))
+(amax (reshape (arange 16) '(4 4)))
+(amax (reshape (arange 16) '(4 4)) :axes '(0))
+(amax (reshape (arange 16) '(4 4)) :axes '(1))
 
-(min (reshape (arange 16) '(4 4)))
-(min (reshape (arange 16) '(4 4)) :axes '(0))
-(min (reshape (arange 16) '(4 4)) :axes '(1))
+(amin (reshape (arange 16) '(4 4)))
+(amin (reshape (arange 16) '(4 4)) :axes '(0))
+(amin (reshape (arange 16) '(4 4)) :axes '(1))

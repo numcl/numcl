@@ -324,3 +324,23 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (finishes
    ;; should return #2A((1 2) (1 2))
    (aref (asarray '((1 2 "text") (1 2 "text"))) t '(0 2))))
+
+(test (reduce :compile-at :run-time)
+  (is (cl:= 10 (sum (arange 5))))
+  (finishes
+    (sum (reshape (arange 125) '(5 5 5)))                ; sum all elements
+    (sum (reshape (arange 125) '(5 5 5)) :axes '())      ; does nothing
+    (sum (reshape (arange 125) '(5 5 5)) :axes '(0))
+    (sum (reshape (arange 125) '(5 5 5)) :axes '(0 1))
+    (sum (reshape (arange 125) '(5 5 5)) :axes '(0 1 2)) ; sum all elements, again
+
+    (prod (reshape (1+ (arange 16)) '(4 4)))
+    (prod (reshape (1+ (arange 16)) '(4 4)) :axes '(0))
+
+    (amax (reshape (arange 16) '(4 4)))
+    (amax (reshape (arange 16) '(4 4)) :axes '(0))
+    (amax (reshape (arange 16) '(4 4)) :axes '(1))
+
+    (amin (reshape (arange 16) '(4 4)))
+    (amin (reshape (arange 16) '(4 4)) :axes '(0))
+    (amin (reshape (arange 16) '(4 4)) :axes '(1)))) 

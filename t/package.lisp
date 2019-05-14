@@ -19,9 +19,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 |#
 
 (in-package :cl-user)
-(defpackage :numcl.test
-  (:shadowing-import-from :numcl :flatten :shuffle)
-  (:use :numcl
+(uiop:define-package :numcl.test
+  (:use)
+  (:mix :numcl
         :fiveam
         :trivia :alexandria :iterate))
 (in-package :numcl.test)

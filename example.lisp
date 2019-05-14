@@ -102,6 +102,7 @@
 
 ;; reduction
 
+(sum (arange 5))
 (sum (reshape (arange 125) '(5 5 5)))                ; sum all elements
 (sum (reshape (arange 125) '(5 5 5)) :axes '())      ; does nothing
 (sum (reshape (arange 125) '(5 5 5)) :axes '(0))
@@ -111,9 +112,10 @@
 (prod (reshape (1+ (arange 16)) '(4 4)))
 (prod (reshape (1+ (arange 16)) '(4 4)) :axes '(0))
 
-(max (reshape (1+ (arange 16)) '(4 4)))
-(max (reshape (1+ (arange 16)) '(4 4)) :axes '(0))
+(max (reshape (arange 16) '(4 4)))
+(max (reshape (arange 16) '(4 4)) :axes '(0))
+(max (reshape (arange 16) '(4 4)) :axes '(1))
 
-(min (reshape (1+ (arange 16)) '(4 4)))
-(min (reshape (1+ (arange 16)) '(4 4)) :axes '(0))
-
+(min (reshape (arange 16) '(4 4)))
+(min (reshape (arange 16) '(4 4)) :axes '(0))
+(min (reshape (arange 16) '(4 4)) :axes '(1))

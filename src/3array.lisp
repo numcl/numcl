@@ -137,7 +137,9 @@ We don't allow it to be a multidimentional array [at the moment.]
      (values (array-dimensions contents)
              (array-element-type contents)))
 
-    ((and (subtypep type 'vector) (typep contents type))
+    ((and (subtypep type 'vector)
+          (typep contents type)
+          (notevery (of-type type) contents))
      (values nil
              (type-of contents)))
     

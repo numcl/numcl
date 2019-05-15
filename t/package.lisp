@@ -344,3 +344,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (amin (reshape (arange 16) '(4 4)))
     (amin (reshape (arange 16) '(4 4)) :axes '(0))
     (amin (reshape (arange 16) '(4 4)) :axes '(1)))) 
+
+(test (equality :compile-at :run-time)
+  ;; it should return NIL (from cl:=), not 0
+  (is (eq t (= 10 10)))
+  (is (eq nil (= 10 11))))

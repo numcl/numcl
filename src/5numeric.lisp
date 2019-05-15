@@ -86,10 +86,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
          (reverse (shape y))))
 
 (declaim (inline broadcast))
-(defun broadcast (fn x y &key type)
+(defun broadcast (fn x y &key type (atomic (fdefinition fn)))
   "For binary functions"
-  (if (and (numberp x) (numberp y))
-      (funcall fn x y)
+  (if (and (not (arrayp x)) (not (arrayp y)))
+      (funcall atomic x y)
       ;; example: 
       ;; x shape: (10 3 1 4)
       ;; y shape: (2 10 1 2 4)
@@ -305,12 +305,12 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline numcl:= numcl:/= numcl:<= numcl:>= numcl:< numcl:>))
 
-(defun numcl:=  (x y) (broadcast '=/bit  x y))
-(defun numcl:/= (x y) (broadcast '/=/bit x y))
-(defun numcl:<= (x y) (broadcast '<=/bit x y))
-(defun numcl:>= (x y) (broadcast '>=/bit x y))
-(defun numcl:<  (x y) (broadcast '</bit  x y))
-(defun numcl:>  (x y) (broadcast '>/bit  x y))
+(defun numcl:=  (x y) (broadcast '=/bit  x y :atomic #'= ))
+(defun numcl:/= (x y) (broadcast '/=/bit x y :atomic #'/=))
+(defun numcl:<= (x y) (broadcast '<=/bit x y :atomic #'<=))
+(defun numcl:>= (x y) (broadcast '>=/bit x y :atomic #'>=))
+(defun numcl:<  (x y) (broadcast '</bit  x y :atomic #'< ))
+(defun numcl:>  (x y) (broadcast '>/bit  x y :atomic #'> ))
 
 ;; better trivia pattern integration
 

@@ -49,7 +49,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun reshape (a shape)
   "Reshape the array while sharing the backing 1D array.
 -1 implies that the axis size is deduced from the other axes.
-T  implies that the axis size is preserved.
+T  implies that the axis size is preserved as many times, i.e., similar to the python ellipses [1, 2, ...].
    Since the rank may change, T is allowed only when it is the leftmost/rightmost axis,
    or is adjacent to another valid T.
 
@@ -57,6 +57,7 @@ Example of reshaping (3 8 5):
 
  valid:   (6 -1 10)   = (6 2 10)
  valid:   (t 2 2 2 t) = (3 2 2 2 5)
+ valid:   (3 t)       = (3 8 5)
  valid:   (2 -1 2 2 t) --- (2 3 2 2 5)
  invalid: (2 t 2 2 t)
 "

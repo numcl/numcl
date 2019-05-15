@@ -94,7 +94,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
       ;; x shape: (10 3 1 4)
       ;; y shape: (2 10 1 2 4)
       (progn
-        (assert (broadcast-p x y))
+        (assert (broadcast-p x y) nil
+                "Given arrays have incompatible shape for broadcasting:~% ~a and ~a.~_ Arrays:~%~a~%~a"
+                (shape x) (shape y) x y)
         (let* ((x (asarray x))
                (y (asarray y))
                (type (or type (infer-type fn

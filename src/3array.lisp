@@ -60,8 +60,8 @@ We don't allow it to be a multidimentional array [at the moment.]
  (asarray '((1 2) (3 4))   :type '(array fixnum (* *)))  -> error
 
 "
-  (when (array-subtype-p type)
-    (assert (vector-subtype-p type)))
+  (when (subtypep 'array type)
+    (assert (subtypep 'vector type)))
   (identity
    ;; ensure-singleton
    (multiple-value-bind (shape deduced-type) (determine-array-spec contents type)

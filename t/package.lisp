@@ -286,6 +286,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (test (arithmetic :compile-at :run-time)
 
+  (finishes (print (sin pi)))
   (is (typep (/ 1 2) 'ratio))
   (is (typep (/ (ones 5) 2) '(array single-float)))
   (is (subtypep (array-element-type (* (ones 5) 2)) 'fixnum))

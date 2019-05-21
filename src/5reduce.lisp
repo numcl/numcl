@@ -116,17 +116,17 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 (defun numcl:mean  (array &key (axes (iota (rank array))) (type (array-element-type array)))
-  (if (sequencep array)
+  (if (typep array 'sequence)
       (alexandria:mean array)
       (numcl:/ (reduce-array '+ array :axes axes :type type)
                (array-dimension* array axes))))
 (defun numcl:variance (array &key (axes (iota (rank array))) (type (array-element-type array)))
-  (if (sequencep array)
+  (if (typep array 'sequence)
       (alexandria:variance array)
       (numcl:/ (reduce-array '+ (square array) :axes axes :type type)
                (array-dimension* array axes))))
 (defun numcl:standard-deviation (array &key (axes (iota (rank array))) (type (array-element-type array)))
-  (if (sequencep array)
+  (if (typep array 'sequence)
       (alexandria:standard-deviation array)
       (numcl:sqrt
        (numcl:/ (reduce-array '+ (square array) :axes axes :type type)

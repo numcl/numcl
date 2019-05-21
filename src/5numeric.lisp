@@ -64,7 +64,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              (coerce (funcall function x) type)))
       (declare (inline fn))
       (declare (dynamic-extent #'fn))
-      (apply #'map-into (flatten result-sequence) #'fn (mapcar #'flatten sequences)))))
+      (apply #'map-into (flatten result-sequence) #'fn (mapcar #'flatten sequences))
+      result-sequence)))
 
 (declaim (inline map-array))
 (defun map-array (function &rest sequences)

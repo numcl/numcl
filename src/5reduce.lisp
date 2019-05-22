@@ -164,8 +164,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 (defun numcl:histogram (array &key (low (amin array)) (high (amax array)) (split 1))
-  (let ((histogram (zeros (ceiling (/ (- high low) split)) :type 'fixnum))
-        (index (numcl:floor (numcl:- array low) split)))
+  (let* ((size (floor (/ (- high low) split)))
+         (histogram (zeros (+ 2 size) :type 'fixnum))
+         ;; full width + 1 (all values above the lowest interval) + 1 (all values above the highest interval)
+         (index (clip (numcl:1+ (numcl:floor (numcl:- array low) split)) 0 (1+ size))))
     (map-array (lambda (i)
                  (incf (aref histogram i)))
                index)

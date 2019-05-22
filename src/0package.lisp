@@ -151,6 +151,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:onehot
    #:argmax
    #:argmin
+   #:histogram
    
    ;; 5random
    #:shuffle

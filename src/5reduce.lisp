@@ -156,3 +156,20 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 #+(or)
 (defun argmin (array &key axes type)
   (reduce-array '+ axes type))
+
+
+
+
+
+
+
+(defun numcl:histogram (array &key (low (amin array)) (high (amax array)) (split 1))
+  (let ((histogram (zeros (ceiling (/ (- high low) split)) :type 'fixnum))
+        (index (numcl:floor (numcl:- array low) split)))
+    (map-array (lambda (i)
+                 (incf (aref histogram i)))
+               index)
+    histogram))
+
+
+

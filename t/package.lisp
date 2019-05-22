@@ -352,4 +352,5 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (eq nil (= 10 11))))
 
 (test (histogram :compile-at :run-time)
+  (finishes (histogram (arange 5)))
   (finishes (histogram (uniform 5.0 10.0 10000))))

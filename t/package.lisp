@@ -350,3 +350,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   ;; it should return NIL (from cl:=), not 0
   (is (eq t (= 10 10)))
   (is (eq nil (= 10 11))))
+
+(test (histogram :compile-at :run-time)
+  (finishes (histogram (uniform 5.0 10.0 10000))))

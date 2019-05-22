@@ -251,7 +251,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; TODO: optimize by reusing intermediate results
 ;; TODO: optimize by loop fusion
 
-(declaim (inline numcl:+ numcl:- numcl:* numcl:/ numcl:max numcl:min))
+(declaim (inline numcl:+ numcl:- numcl:* numcl:/ numcl:max numcl:min numcl:clip))
 
 (defun numcl:+   (&rest args) (reduce (lambda (x y) (broadcast '+ x y)) args))
 (defun numcl:-   (&rest args) (reduce (lambda (x y) (broadcast '- x y)) args))
@@ -259,6 +259,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:/   (&rest args) (reduce (lambda (x y) (broadcast '/ x y)) args))
 (defun numcl:max (&rest args) (reduce (lambda (x y) (broadcast 'max x y)) args))
 (defun numcl:min (&rest args) (reduce (lambda (x y) (broadcast 'min x y)) args))
+
+(defun numcl:clip (array min max) (broadcast 'max min (broadcast 'min array max)))
 
 (define-symbol-macro numcl:+ +)
 (define-symbol-macro numcl:++ ++)

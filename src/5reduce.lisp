@@ -164,6 +164,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 (defun numcl:histogram (array &key (low (amin array)) (high (amax array)) (split 1))
+  "Returns a fixnum vector representing a histogram of values.
+The interval between LOW and HIGH are split by STEP value.
+All values less than LOW are put in the 0-th bucket;
+All values greater than equal to HIGH are put in the last bucket."
   (let* ((size (floor (/ (- high low) split)))
          (histogram (zeros (+ 2 size) :type 'fixnum))
          ;; full width + 1 (all values above the lowest interval) + 1 (all values above the highest interval)

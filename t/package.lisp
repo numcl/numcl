@@ -356,6 +356,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (finishes (histogram (uniform 5.0 10.0 10000))))
 
 (test (random :compile-at :run-time)
+  (is (integerp (bernoulli 0.3)))
+  (is (typep (bernoulli 0.3 5) 'bit-vector))
+  (is (typep (bernoulli 0.3 '(5 5)) '(array bit)))
+  (is (typep (bernoulli-like (zeros '(5 5))) '(array bit (5 5))))
+  
   (is (integerp (uniform 0 5)))
   (is (floatp (uniform 0 5.0)))
   (is (typep (uniform 0 5 5) `(VECTOR ,(upgraded-array-element-type '(integer 0 5)) 5))))

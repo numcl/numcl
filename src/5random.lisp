@@ -113,9 +113,11 @@ This code extends alexandria:shuffle.
 (declaim (inline bernoulli))
 (defun bernoulli (p &optional shape)
   "Returns a bit array whose elements are 1 with probability P"
-  (multiple-value-bind (a base-array) (empty shape :type 'bit)
-    (map-into base-array (lambda () (if (< (random 1.0) p) 1 0)))
-    (values a base-array)))
+  (if shape
+      (multiple-value-bind (a base-array) (empty shape :type 'bit)
+        (map-into base-array (lambda () (if (< (random 1.0) p) 1 0)))
+        (values a base-array))
+      (if (< (random 1.0) p) 1 0)))
 
 (declaim (inline bernoulli))
 (defun bernoulli-like (a)

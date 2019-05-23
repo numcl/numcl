@@ -522,6 +522,29 @@ to the least specific FLOAT type when any one of them are not fixnums."
       (round object)
       (coerce object type)))
 
+;;;; type-of
+
+(defun strict-type-of (x)
+  "stricter version of type-of, which does not simplify the type -- e.g., (type-of 5) is (integer 5 5), not fixnum."
+  (etypecase x
+    (integer
+     `(integer ,x ,x))
+    ;; note: ratio does not have any upper bound
+    (ratio
+     'ratio)
+    (rational
+     `(rational ,x ,x))
+    (single-float
+     `(single-float ,x ,x))
+    (double-float
+     `(double-float ,x ,x))
+    (short-float
+     `(short-float ,x ,x))
+    (long-float
+     `(long-float ,x ,x))
+    (t
+     (type-of x))))
+
 ;;;; helper functions for ensuring bit length
 
 (declaim (inline ub))

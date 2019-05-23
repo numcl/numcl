@@ -20,7 +20,27 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :numcl.impl)
 
-
+(defun strict-type-of (x)
+  "stricter version of type-of, which does not simplify the type -- e.g., (type-of 5) is (integer 5 5), not fixnum."
+  (etypecase x
+    (integer
+     `(integer ,x ,x))
+    ;; note: ratio does not have any upper bound
+    (ratio
+     'ratio)
+    (rational
+     `(rational ,x ,x))
+    (single-float
+     `(single-float ,x ,x))
+    (double-float
+     `(double-float ,x ,x))
+    (short-float
+     `(short-float ,x ,x))
+    (long-float
+     `(long-float ,x ,x))
+    (t
+     (type-of x))))
+    
 
 (defun asarray (contents &key type)
   "Copy CONTENTS to a new array.
@@ -85,7 +105,7 @@ We don't allow it to be a multidimentional array [at the moment.]
 (defun infer-type-from-contents (contents)
   (if (every #'numberp contents)
       (if (every #'realp contents)
-          (let ((type (reduce #'float-contagion contents :key #'type-of)))
+          (let ((type (reduce #'float-contagion contents :key #'strict-type-of)))
             (list type
                   (coerce (reduce #'min contents) type)
                   (coerce (reduce #'max contents) type)))
@@ -96,7 +116,7 @@ We don't allow it to be a multidimentional array [at the moment.]
                                    (float    (complex x))
                                    (complex  (coerce x `(complex ,*numcl-default-float-format*)))))
                                contents))
-                (type (reduce #'float-contagion contents :key #'type-of)))
+                (type (reduce #'float-contagion contents :key #'strict-type-of)))
             (list 'complex
                   (list type
                         (coerce (min (reduce #'min contents :key #'realpart)
@@ -111,13 +131,13 @@ We don't allow it to be a multidimentional array [at the moment.]
   (if (numberp x)
       (if (realp x)
           ;; without this mechanism, any number can return a larger subtype, e.g. 5 -> (unsigned-byte 62)
-          (let ((type (float-substitution (type-of x))))
+          (let ((type (float-substitution (strict-type-of x))))
             (list type
                   (coerce x type)
                   (coerce x type)))
           (etypecase x
             ((complex float)
-             (let ((type (float-substitution (type-of x))))
+             (let ((type (float-substitution (strict-type-of x))))
                `(complex (,type
                           ,(coerce (min (realpart x) (imagpart x)) type)
                           ,(coerce (max (realpart x) (imagpart x)) type)))))
@@ -141,7 +161,7 @@ We don't allow it to be a multidimentional array [at the moment.]
           (typep contents type)
           (notevery (of-type type) contents))
      (values nil
-             (type-of contents)))
+             (strict-type-of contents)))
     
     ((typep contents 'sequence)
      (if (every (lambda (x) (typep x 'sequence)) contents)

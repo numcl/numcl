@@ -49,8 +49,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
         (pop axes)
         (collect (array-dimension array i)))))
 
+#+(or)
 (assert (equal '(5 8) (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 2 3)))))
+#+(or)
 (assert (equal '(5 6 8) (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 3)))))
+#+(or)
 (assert (equal nil (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 1 2 3 4)))))
 
 (defun %reduce-array (fn array axes type initial-element)
@@ -79,6 +82,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                (make-reducer-lambda rvar avar fn (1+ current-axis) dims sum-axes (cons i loop-index) sum-index)
                (make-reducer-lambda rvar avar fn (1+ current-axis) dims sum-axes (cons i loop-index) (cons i sum-index))))))))
 
+#+(or)
 (print (make-reducer-lambda 'r 'a '+ 0 '(5 5 5 5 5) '(1 3) nil nil))
 
 (defun numcl:sum  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '+   array :axes axes :type type))

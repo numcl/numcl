@@ -270,11 +270,14 @@ cl-variates --- not feature-rich
 ;; uniform([low, high, size]) 	Draw samples from a uniform distribution.
 
 (declaim (inline uniform))
-(defun uniform (&optional (low 0.0) (high 1.0) shape (type (union-to-float-type (type-of low) (type-of high))))
-  (multiple-value-bind (array base-array) (empty shape :type type)
-    (let ((d (- high low)))
-      (map-into base-array (lambda () (coerce (+ low (random d)) type))))
-    (values array base-array)))
+(defun uniform (&optional (low 0.0) (high 1.0) shape type)
+  (let ((d (- high low)))
+    (if shape
+        (let ((type (or type (bind-to-float-type (strict-type-of low) (strict-type-of high)))))
+          (multiple-value-bind (array base-array) (empty shape :type type)
+            (map-into base-array (lambda () (coerce (+ low (random d)) type)))
+            (values array base-array)))
+        (+ low (random d)))))
 
 ;; vonmises(mu, kappa[, size]) 	Draw samples from a von Mises distribution.
 

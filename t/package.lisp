@@ -354,3 +354,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (test (histogram :compile-at :run-time)
   (finishes (histogram (arange 5)))
   (finishes (histogram (uniform 5.0 10.0 10000))))
+
+(test (random :compile-at :run-time)
+  (is (integerp (uniform 0 5)))
+  (is (floatp (uniform 0 5.0)))
+  (is (typep (uniform 0 5 5) `(VECTOR ,(upgraded-array-element-type '(integer 0 5)) 5))))

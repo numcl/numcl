@@ -22,8 +22,8 @@
  :components ((:module "src"
                :components ((:file "0package")
                             (:file "1instantiate")
-                            (:file "1util")
                             (:file "1type")
+                            (:file "1util")
                             (:file "2alias")
                             (:file "2aref")
                             (:file "2typeinfer")
@@ -34,7 +34,8 @@
                             (:file "4concatenate")
                             (:file "4split")
                             (:file "5numeric")
+                            (:file "5random")
                             (:file "5reduce")
-                            (:file "5random"))))
+                            (:file "6linear-algebra"))))
  :description "Numpy clone in Common Lisp, using MAGICL/LLA/MGL-MAT as the backend (in the future)"
  :in-order-to ((test-op (test-op :numcl.test))))

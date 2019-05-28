@@ -176,7 +176,8 @@ All values greater than equal to HIGH are put in the last bucket."
          (histogram (zeros (+ 2 size) :type 'fixnum))
          ;; full width + 1 (all values above the lowest interval) + 1 (all values above the highest interval)
          (index (clip (numcl:1+ (numcl:floor (numcl:- array low) split)) 0 (1+ size))))
-    (map-array (lambda (i)
+    (numcl:map nil
+               (lambda (i)
                  (incf (aref histogram i)))
                index)
     histogram))

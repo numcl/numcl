@@ -43,6 +43,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline nonzero))
 (defun nonzero (array)
+  "collect multidimentional indices where the element is nonzero"
   (ematch array
     ((array :displaced-to base :total-size s)
      (declare ((simple-array * 1) base))

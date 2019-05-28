@@ -155,6 +155,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:histogram
 
    ;; where
+   #:array-index-from-row-major-index
    #:nonzero
    
    ;; 5random

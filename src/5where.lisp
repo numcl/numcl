@@ -20,6 +20,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :numcl.impl)
 
+(declaim (inline array-index-from-row-major-index))
 (defun array-index-from-row-major-index (array row-major-index)
   "Takes a multidimentional array and a row-major-index; returns a list containing the normal index."
   (let* ((r (rank array))

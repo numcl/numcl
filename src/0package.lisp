@@ -153,6 +153,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:argmax
    #:argmin
    #:histogram
+
+   ;; where
+   #:nonzero
    
    ;; 5random
    #:shuffle

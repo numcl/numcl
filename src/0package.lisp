@@ -158,6 +158,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:array-index-from-row-major-index
    #:where
    #:nonzero
+   #:take
    
    ;; 5random
    #:shuffle

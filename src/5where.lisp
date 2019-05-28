@@ -20,9 +20,15 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :numcl.impl)
 
+
+;; These interfaces return a list instead of arrays;
+;; Indexing routines are fundamentally dynamic, and there is no reason
+;; for storing them in an array.
+
 (declaim (inline array-index-from-row-major-index))
 (defun array-index-from-row-major-index (array row-major-index)
-  "Takes a multidimentional array and a row-major-index; returns a list containing the normal index."
+  "Takes a multidimentional array and a row-major-index.
+ Returns a list containing the normal index."
   (let* ((r (rank array))
          (s (asarray (shape array) :type 'fixnum))
          (result '()))
@@ -64,3 +70,14 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (print b)
   (print (nonzero b))
   (print (where b #'evenp)))
+
+(declaim (inline take))
+(defun take (array indices)
+  "collect elements from the list of multidimentional indices"
+  (declare (array array)
+           (list indices))
+  (mapcar (lambda (indice)
+            (declare (list indice))
+            (apply #'aref array indice))
+          indices))
+

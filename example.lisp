@@ -123,4 +123,7 @@
 (let ((b (uniform 0 10 '(5 5))))
   (print b)
   (print (nonzero b))
-  (print (where b #'evenp)))
+  (print (where b #'evenp))
+  (print (take b (where b #'zerop)))
+  (print (take b (where b #'plusp)))
+  (print (take b (where b #'evenp))))

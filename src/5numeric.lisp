@@ -44,10 +44,15 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:map (result-type function &rest sequences)
   (if (every (of-type 'sequence) sequences)
       (apply #'map result-type function sequences)
-      (apply #'map-array-into
-             (empty (shape (first sequences)) :type (array-subtype-element-type result-type))
-             function
-             sequences)))
+      (if result-type
+          (apply #'map-array-into
+                 (empty (shape (first sequences)) :type (array-subtype-element-type result-type))
+                 function
+                 sequences)
+          ;; when result-type is nil, do not collect the results into a new array.
+          (apply #'map nil
+                 function
+                 (mapcar #'flatten sequences)))))
 
 (declaim (inline map-array-into))
 (defun map-array-into (result-sequence function &rest sequences)

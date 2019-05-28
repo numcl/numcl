@@ -42,15 +42,22 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; (let ((a (reshape (arange 27) '(3 3 3))))
 ;;   (apply #'aref a (coerce (array-index-from-row-major-index a 14) 'list)))
 
+(declaim (inline where))
+(defun where (array fn)
+  "collect multidimentional indices where the predicate FN is satisfied"
+  (declare (array array)
+           ((function (T) boolean) fn))
+  (let ((base (array-displacement array)))
+    (declare ((simple-array * 1) base))
+    (iter (for i below (array-total-size array))
+          (declare (declare-variables))
+          (when (funcall fn (aref base i))
+            (collect (array-index-from-row-major-index array i))))))
+
 (declaim (inline nonzero))
 (defun nonzero (array)
   "collect multidimentional indices where the element is nonzero"
-  (ematch array
-    ((array :displaced-to base :total-size s)
-     (declare ((simple-array * 1) base))
-     (iter (for i below s)
-           (unless (zerop (aref base i))
-             (collect (array-index-from-row-major-index array i)))))))
+  (where array (lambda (x) (not (zerop x)))))
 
 #+(or)
 (let ((b (bernoulli 0.5 '(5 5))))

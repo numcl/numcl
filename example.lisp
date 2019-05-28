@@ -119,3 +119,8 @@
 (amin (reshape (arange 16) '(4 4)))
 (amin (reshape (arange 16) '(4 4)) :axes '(0))
 (amin (reshape (arange 16) '(4 4)) :axes '(1))
+
+(let ((b (uniform 0 10 '(5 5))))
+  (print b)
+  (print (nonzero b))
+  (print (where b #'evenp)))

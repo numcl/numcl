@@ -60,6 +60,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (where array (lambda (x) (not (zerop x)))))
 
 #+(or)
-(let ((b (bernoulli 0.5 '(5 5))))
+(let ((b (uniform 0 10 '(5 5))))
   (print b)
-  (print (nonzero b)))
+  (print (nonzero b))
+  (print (where b #'evenp)))

@@ -364,3 +364,31 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (integerp (uniform 0 5)))
   (is (floatp (uniform 0 5.0)))
   (is (typep (uniform 0 5 5) `(VECTOR ,(upgraded-array-element-type '(integer 0 5)) 5))))
+
+(test (einsum :compile-at :run-time)
+
+  (is (equalp (ones 5)
+              (einsum '(i) (ones 5))))
+  (is (equalp (ones 5)
+              (einsum '(i -> i) (ones 5))))
+  (is (equalp 5
+              (einsum '(i ->) (ones 5 :type 'fixnum))))
+  
+  (is (equalp 25 (einsum '(ij ->) (ones '(5 5) :type 'fixnum))))
+  (is (equalp 5  (einsum '(ii ->) (ones '(5 5) :type 'fixnum ))))
+  (is (equalp (ones 5)
+              (einsum '(ii -> i) (ones '(5 5) :type 'fixnum ))))
+  
+  (is (equalp (ones '(5 5) :type 'fixnum)
+              (einsum '(ij) (ones '(5 5) :type 'fixnum))))
+  (is (equalp (full 5 5)
+              (einsum '(ij -> i) (ones '(5 5) :type 'fixnum))))
+
+  (is (equalp #2A((7 8) (31 36))
+              (einsum '(ij jk -> ik)
+                      #2A((0 1)
+                          (2 3)) #2A((5 6)
+                                     (7 8))))))
+
+
+

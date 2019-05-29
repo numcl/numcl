@@ -199,7 +199,14 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:vonmises
    #:wald
    #:weibull
-   #:zipf))
+   #:zipf
+
+   ;; 6 linarg
+   #:einsum
+
+
+
+   ))
 
 (uiop:define-package :numcl.impl
     (:mix :cl                           ; want to use cl:aref
@@ -207,7 +214,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           :alexandria                   ; but not want to use alexandria:flatten etc
           :iterate)                     ; same for iterate; for SUM
   ;;  :magicl
-  (:use :trivia :type-r :constantfold))
+  (:use :trivia :type-r :constantfold :gtype))
 
 (uiop:define-package :numcl
     (:mix :numcl.exported :cl)

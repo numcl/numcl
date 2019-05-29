@@ -17,7 +17,8 @@
               :type-r
               :constantfold
               :lisp-namespace
-              :cl-randist)
+              :cl-randist
+              :gtype)
  :serial t
  :components ((:module "src"
                :components ((:file "0package")

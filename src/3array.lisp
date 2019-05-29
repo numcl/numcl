@@ -62,23 +62,22 @@ We don't allow it to be a multidimentional array [at the moment.]
     (assert (subtypep 'vector type)))
   (identity
    ;; ensure-singleton
-   (multiple-value-bind (shape deduced-type) (determine-array-spec contents type)
-     (let ((newtype (or type deduced-type)))
-       (cond
-         ((and (arrayp contents)
-               (equal (shape contents) shape))
-          (multiple-value-bind (a base) (%make-array shape :element-type newtype)
-            (dotimes (i (array-total-size contents))
-              (setf (aref base i) (%coerce (row-major-aref contents i) newtype)))
-            (values a base)))
-         ((typep contents 'sequence)
-          (multiple-value-bind (a base) (%make-array shape :element-type newtype)
-            (%nested-coerce-and-insert base contents newtype (length shape))
-            (values a base)))
-         (t
-          (multiple-value-bind (a base) (%make-array nil :element-type newtype)
-            (setf (aref base 0) (%coerce contents newtype))
-            (values a base))))))))
+   (multiple-value-bind (shape type) (determine-array-spec contents type)
+     (cond
+       ((and (arrayp contents)
+             (equal (shape contents) shape))
+        (multiple-value-bind (a base) (%make-array shape :element-type type)
+          (dotimes (i (array-total-size contents))
+            (setf (aref base i) (%coerce (row-major-aref contents i) type)))
+          (values a base)))
+       ((typep contents 'sequence)
+        (multiple-value-bind (a base) (%make-array shape :element-type type)
+          (%nested-coerce-and-insert base contents type (length shape))
+          (values a base)))
+       (t
+        (multiple-value-bind (a base) (%make-array nil :element-type type)
+          (setf (aref base 0) (%coerce contents type))
+          (values a base)))))))
 
 (defun infer-type-from-contents (contents)
   (if (every #'numberp contents)
@@ -128,18 +127,24 @@ We don't allow it to be a multidimentional array [at the moment.]
       t))
 
 (defun determine-array-spec (contents type)
+  "Walk over the CONTENTS recursively and decides the output shape and the element type.
+When TYPE is non-nil, it overrides the type deduction."
   (cond
     ((and (arrayp contents)
           (> (rank contents) 1))
      
      (values (array-dimensions contents)
-             (array-element-type contents)))
+             (if type
+                 type
+                 (array-element-type contents))))
 
     ((and (subtypep type 'vector)
           (typep contents type)
           (notevery (of-type type) contents))
      (values nil
-             (strict-type-of contents)))
+             (if type
+                 type
+                 (strict-type-of contents))))
     
     ((typep contents 'sequence)
      (if (every (lambda (x) (typep x 'sequence)) contents)
@@ -149,7 +154,8 @@ We don't allow it to be a multidimentional array [at the moment.]
                (with inconsistent = nil)
                (with types        = nil)
                (for (values shape deduced-type) = (determine-array-spec x type))
-               (push deduced-type types)
+               (unless type
+                 (push deduced-type types))
                (setf shape*
                      (if (first-time-p)
                          shape
@@ -164,21 +170,27 @@ We don't allow it to be a multidimentional array [at the moment.]
                (finally
                 (return
                   (values (list* (length contents) shape*)
-                          (if inconsistent
-                              t
-                              (if (every #'number-subtype-p types)
-                                  (reduce #'bind-to-float-type types)
-                                  (if (every #'equal types (rest types)) ; compare adjacent
-                                      (first types)
-                                      t)))))))
+                          (if type
+                              type
+                              (if inconsistent
+                                  t
+                                  (if (every #'number-subtype-p types)
+                                      (reduce #'bind-to-float-type types)
+                                      (if (every #'equal types (rest types)) ; compare adjacent
+                                          (first types)
+                                          t))))))))
 
          (values (list (length contents))
-                 (if (= 1 (length contents))
-                     (infer-type-from-content (elt contents 0))
-                     (infer-type-from-contents contents)))))
+                 (if type
+                     type
+                     (if (= 1 (length contents))
+                         (infer-type-from-content (elt contents 0))
+                         (infer-type-from-contents contents))))))
     (t
      (values nil
-             (infer-type-from-content contents)))))
+             (if type
+                 type
+                 (infer-type-from-content contents))))))
 
 ;; (print (multiple-value-list (determine-array-spec 1)))
 ;; 

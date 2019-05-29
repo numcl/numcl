@@ -122,11 +122,7 @@ the second list contains the indices for the 2nd dimension, and so on."
 
 (declaim (inline take))
 (defun take (array indices)
-  "collect elements from the list of multidimentional indices"
+  "Collect the elements using a list of multidimentional indices (in a format returned by WHERE)."
   (declare (array array)
            (list indices))
-  (mapcar (lambda (indice)
-            (declare (list indice))
-            (apply #'aref array indice))
-          indices))
-
+  (apply #'mapcar (alexandria:curry #'aref array) indices))

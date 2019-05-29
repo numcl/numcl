@@ -123,7 +123,18 @@
 (let ((b (uniform 0 10 '(5 5))))
   (print b)
   (print (nonzero b))
-  (print (where b #'evenp))
+  (print (where b #'zerop))
+  (print (argwhere b #'zerop))
+  
+  (print (apply #'mapcar (alexandria:curry #'aref b) (where b #'zerop)))
+  (print (apply #'mapcar (alexandria:curry #'aref b) (where b #'plusp)))
+  (print (apply #'mapcar (alexandria:curry #'aref b) (where b #'evenp)))
+
   (print (take b (where b #'zerop)))
   (print (take b (where b #'plusp)))
-  (print (take b (where b #'evenp))))
+  (print (take b (where b #'evenp)))
+
+  ;; (print (mapcar (alexandria:curry #'aref b) (where b #'zerop)))
+  ;; (print (mapcar (alexandria:curry #'aref b) (where b #'plusp)))
+  ;; (print (mapcar (alexandria:curry #'aref b) (where b #'evenp)))
+  )

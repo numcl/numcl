@@ -32,7 +32,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (let* ((r (rank array))
          (s (asarray (shape array) :type 'fixnum))
          (result '()))
-    (declare (dynamic-extent result))
     (iter (for i in-vector s with-index j from (1- r) downto 0)
           (declare (iterate:declare-variables))
           (multiple-value-bind (quo rem) (floor row-major-index i)

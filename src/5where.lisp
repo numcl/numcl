@@ -63,7 +63,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline where))
 (defun where (array fn)
-  "collect multidimentional indices where the predicate FN is satisfied"
+  "Returns a list of the multidimentional indices of the elements which satisfies the predicate FN.
+Note that the list elements are the multidimentional indices, even for a single-dimensional array.
+The return value format is different from Numpy."
   (declare (array array)
            ((function (T) boolean) fn))
   (let ((base (array-displacement array)))

@@ -97,7 +97,7 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
 (defun normalize-subscripts (subscripts shape)
   "Normalizes the input for %aref.
 
-      - corresponds to numpy's elipses `...` .
+      - corresponds to numpy's elipses `...`, and it should appear only once.
       t corresponds to the unspecified end in numpy's `:` . "
   (mapcar #'%normalize-subscript
           ;; address ellipses and missing dims

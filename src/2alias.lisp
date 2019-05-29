@@ -85,9 +85,13 @@ Example of reshaping (3 8 5):
                      :displaced-to a)))))
 
 (defun numcl:flatten (a)
-  (%make-array (array-total-size a) 
-               :element-type (array-element-type a)
-               :displaced-to a))
+  (etypecase a
+    (array
+     (%make-array (array-total-size a) 
+                  :element-type (array-element-type a)
+                  :displaced-to a))
+    (cons
+     (the list (alexandria:flatten a)))))
 
 (defun squeeze (a)
   (%make-array (remove 1 (shape a)) 

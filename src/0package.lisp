@@ -156,6 +156,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
    ;; where
    #:array-index-from-row-major-index
+   #:argwhere
    #:where
    #:nonzero
    #:take

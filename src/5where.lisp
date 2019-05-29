@@ -61,11 +61,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; (let ((a (reshape (arange 27) '(3 3 3))))
 ;;   (apply #'aref a (coerce (array-index-from-row-major-index a 14) 'list)))
 
-(declaim (inline where))
-(defun where (array fn)
+(declaim (inline argwhere))
+(defun argwhere (array fn)
   "Returns a list of the multidimentional indices of the elements which satisfies the predicate FN.
-Note that the list elements are the multidimentional indices, even for a single-dimensional array.
-The return value format is different from Numpy."
+Note that the list elements are the multidimentional indices, even for a single-dimensional array."
   (declare (array array)
            ((function (T) boolean) fn))
   (let ((base (array-displacement array)))
@@ -74,6 +73,41 @@ The return value format is different from Numpy."
           (declare (declare-variables))
           (when (funcall fn (aref base i))
             (collect (array-index-from-row-major-index array i))))))
+
+(declaim (inline where))
+(defun where (array fn)
+  "Returns a list of list of indices of the elements which satisfies the predicate FN.
+The first list contains the indices for the 1st dimension,
+the second list contains the indices for the 2nd dimension, and so on."
+  (declare (array array)
+           ((function (T) boolean) fn))
+  (ematch array
+    ((array :displaced-to base
+            :rank r
+            :total-size s)
+     (declare ((simple-array * 1) base))
+     (let ((result (empty r :type 'cons))
+           (tails2 (empty r :type 'cons))
+           (tmp (empty r :type 'fixnum)))
+       (map-into result (lambda (x) (declare (ignore x)) (cons nil (cons nil nil))) result)
+       (replace tails2 result)
+       (iter (for i below (array-total-size array))
+             (declare (declare-variables))
+             (when (funcall fn (aref base i))
+               (%array-index-from-row-major-index/vector array i tmp)
+               (dotimes (j r)
+                 (let* ((tail2 (aref tails2 j))
+                        (tail  (cdr tail2))
+                        (newtail (cons nil nil)))
+                   (setf (car tail) (aref tmp j)
+                         (cdr tail) newtail
+                         (aref tails2 j) tail))))
+             (finally
+              (dotimes (j r)
+                (let ((tail2 (aref tails2 j)))
+                  (setf (cdr tail2) nil))
+                (pop (aref result j)))))
+       (coerce result 'list)))))
 
 (declaim (inline nonzero))
 (defun nonzero (array)

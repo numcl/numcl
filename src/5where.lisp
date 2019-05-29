@@ -39,6 +39,20 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
             (push rem result)))
     result))
 
+(declaim (inline %array-index-from-row-major-index/vector))
+(defun %array-index-from-row-major-index/vector (array row-major-index &optional result)
+  "Takes a multidimentional array and a row-major-index.
+ Returns a vector containing the normal index."
+  (let* ((r (rank array))
+         (s (asarray (shape array) :type 'fixnum))
+         (result (or result (empty r :type 'fixnum))))
+    (iter (for i in-vector s with-index j from (1- r) downto 0)
+          (declare (iterate:declare-variables))
+          (setf (values row-major-index
+                        (aref result j))
+                (floor row-major-index i)))
+    result))
+
 ;; (array-index-from-row-major-index (zeros '(3 3)) 8)
 ;; (array-index-from-row-major-index (zeros '(100 100)) 8)
 ;; 

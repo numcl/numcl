@@ -67,13 +67,17 @@ a new function is made in each call to einsum, resulting in a huge bottleneck.
 
 (defpackage "NUMCL.SPEC" (:use))
 
-(defun explode-spec (s)
+(defun explode-spec (s &aux (name (symbol-name s)))
   "string-designator -> a list of symbols, whose name is appended ? in the beginning.
 E.g. 'aaa -> '(?a ?a ?a).
 The symbols are interned in NUMCL.SPEC package.
 "
   ;; The reason for adding ?-mark is to make it recognized as a gtype parameter.
-  (iter (for c in-vector (symbol-name s))
+  (iter (for c in-vector name)
+        (assert (alpha-char-p c) nil
+                'simple-type-error
+                :format-control "The EINSUM subscript ~a contains a non-alpha char ~a"
+                :format-arguments (list name c))
         (for str = (make-string 2))
         (setf (aref str 0) #\?)
         (setf (aref str 1) c)
@@ -86,11 +90,12 @@ The symbols are interned in NUMCL.SPEC package.
 (defun einsum-lambda (subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (let* ((pos (position :-> subscripts :test #'string=))
-         (subscripts (mapcar #'explode-spec subscripts))
+         (subscripts (mapcar #'explode-spec
+                             (remove :-> subscripts :test #'string=)))
          (i-specs (subseq subscripts 0 pos))
          (i-flat (remove-duplicates (flatten i-specs)))
          (o-specs (if pos
-                      (or (subseq subscripts (1+ pos))
+                      (or (subseq subscripts pos)
                           '(nil))
                       (list
                        (sort i-flat #'string<))))

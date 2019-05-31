@@ -39,15 +39,50 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; The symbol - has a special meaning that allows broadcasting,
 ;;  and can be used only once in each SPEC, similar to Numpy's ellipses (...).
 
+(declaim (inline einsum))
 (defun einsum (subscripts &rest args)
   "Performs Einstein's summation.
-SUBSCRIPTS is a sequence of the form (<SPEC>+ [-> <SPEC>*]).
-The first set of specs specifies the input subscripts, and the last spec specifies the output subscripts.
+SUBSCRIPTS is a sequence of the form (<SPEC>+ [-> [<SPEC>*]]).
+The first set of specs before the `->` symbol specifies the input subscripts,
+and the second set of specs after `->` symbol specifies the output subscripts.
+Unlike Numpy, there can be multiple output subscripts, and it performs two operations in the single loop, then return multiple values.
 
-Each SPEC is an alphabetical string designator, such as a symbol IJK, where each alphabet is considered as an index.
-The shape of the input array should unify against the spec. For example,
+Each SPEC is an alphabetical string designator, such as a symbol IJK or a string \"IJK\",
+ where each alphabet is considered as an index. It signals a type-error when it contains any
+non-alpha char.
+
+The shape of each input array should unify against the corresponding input spec. For example,
 with a spec IJI, the input array should be of rank 3 as well as
 the 1st and the 3rd dimensions of the input array should be the same.
+
+The shape of each output array is determined by the corresponding output spec.
+For example, if SUBSCRIPTS is '(ij jk -> ik), the output is an array of rank 2,
+and the output shape has the same dimension as the first input in the first axis,
+and the same dimension as the second input in the second axis.
+
+The output value is calculated in the following rule.
++ First, the output array is initialized by 0.
++ Einsum nests one loop for each index in the input specs.
+  For example, '(ij jk -> ik) results in a triple loop.
++ When an index used in the input spec is missing in the output spec,
+  the axis is aggregated over the iteration by summation.
++ If the same index appears multiple times in a single spec,
+  they share the same value in each iteration.
+  For example, '(ii -> i) returns the diagonal element of the matrix.
++ If the same index appears across the different input specs,
+  the element values from the multiple input arrays are aggregated by multiplication.
+  For example, '(ij jk -> ik) will perform (setf (aref a2 i k) (* (aref a0 i j) (aref a1 j k)))
+  when a0, a1 are the input arrays and a2 is the output array.
+
+When the separator -> is omitted, a single output is assumed and its spec is
+an alphabetically sorted indices of the union of the input specs.
+For example, '(ij jk) is equivalent to '(ij jk -> ijk), therefore
+(einsum '(ij jk) a b) is equivalent to :
+
+ (dotimes (i <max> output)
+   (dotimes (j <max>)
+     (dotimes (k <max>)
+       (setf (aref output i j k) (* (aref a i j) (aref b j k))))))
 
 Performace tips: If SUBSCRIPTS is a constant, the compiler macro
 builds an iterator function and make them inlined. Otherwise,

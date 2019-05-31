@@ -367,6 +367,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (test (einsum :compile-at :run-time)
 
+  (signals type-error
+     (einsum '(i00) (ones 5)))
+      
   (is (equalp (ones 5)
               (einsum '(i) (ones 5))))
   (is (equalp (ones 5)

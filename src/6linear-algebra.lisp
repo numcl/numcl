@@ -41,7 +41,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (defun einsum (subscripts &rest args)
   "Performs Einstein's summation.
-SUBSCRIPTS is a sequence of the form (<SPEC>* [-> [<SPEC>]]).
+SUBSCRIPTS is a sequence of the form (<SPEC>+ [-> <SPEC>*]).
 The first set of specs specifies the input subscripts, and the last spec specifies the output subscripts.
 
 Each SPEC is an alphabetical string designator, such as a symbol IJK, where each alphabet is considered as an index.
@@ -84,7 +84,7 @@ The symbols are interned in NUMCL.SPEC package.
 (explode-spec 'aaa)
 
 (defun einsum-lambda (subscripts)
-  "Parses a list (<input spec>* [-> [<output spec>]]) and returns a form that iterates over it."
+  "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (let* ((pos (position :-> subscripts :test #'string=))
          (subscripts (mapcar #'explode-spec subscripts))
          (i-specs (subseq subscripts 0 pos))

@@ -127,9 +127,9 @@ The symbols are interned in NUMCL.SPEC package.
 
 (defun einsum-lambda (subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
-  (let* ((pos (position :-> subscripts :test #'string=))
+  (let* ((pos (position '-> subscripts :test #'string=))
          (subscripts (mapcar #'explode-spec
-                             (remove :-> subscripts :test #'string=)))
+                             (remove '-> subscripts :test #'string=)))
          (i-specs (subseq subscripts 0 pos))
          (i-flat (remove-duplicates (flatten i-specs)))
          (o-specs (if pos

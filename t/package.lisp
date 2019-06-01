@@ -392,6 +392,12 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                       #2A((0 1)
                           (2 3)) #2A((5 6)
                                      (7 8)))))
+
+  (is (equalp #2A((7 8) (31 36))
+              (einsum '((i k) (k j) -> (i j)) ; alternative notation
+                      #2A((0 1)
+                          (2 3)) #2A((5 6)
+                                     (7 8)))))
   
   (is (equalp #2A((0 2) (1 3))
               (einsum '(ij -> ji) #2A((0 1) (2 3)))))

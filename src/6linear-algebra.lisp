@@ -52,7 +52,8 @@ The symbol `->` can be a string and can belong to any package
 
 Each SPEC is an alphabetical string designator, such as a symbol IJK or a string \"IJK\",
  where each alphabet is considered as an index. It signals a type-error when it contains any
-non-alpha char.
+non-alpha char. Alternatively, each SPEC can be a list that contains a list of symbols.
+Note that a symbol NIL is interpreted as an empty list rather than N, I and L.
 
 The remaining arguments ARGS contains the input arrays and optionally the output arrays.
 The shape of each input array should unify against the corresponding input spec. For example,
@@ -127,24 +128,36 @@ EINSUM reorders the indices so that it maximizes the cache locality.
     (setf (aref str 1) character)
     (intern str :numcl.spec)))
 
-(defun explode-spec (s &aux (name (symbol-name s)))
+(defun explode-spec (s)
   "string-designator -> a list of symbols, whose name is appended ? in the beginning.
 E.g. 'aaa -> '(?a ?a ?a).
 The symbols are interned in NUMCL.SPEC package.
 "
   ;; The reason for adding ?-mark is to make it recognized as a gtype parameter.
-  (iter (for c in-vector name)
-        (collecting
-         (to-spec c))))
+  (typecase s
+    (list
+     (assert (every #'symbolp s))
+     (mapcar (curry #'symbolicate "?") s))
+    (symbol
+     (let ((name (symbol-name s)))
+       (iter (for c in-vector name)
+             (collecting
+              (to-spec c)))))))
 
 #+(or)
 (explode-spec 'aaa)
 
 (defun einsum-lambda (subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
-  (let* ((pos (position '-> subscripts :test #'string=))
+  (let* ((pos (position '-> subscripts :test
+                        (lambda (a b) (and (typep a 'string-designator)
+                                           (typep b 'string-designator)
+                                           (string= a b)))))
          (subscripts (mapcar #'explode-spec
-                             (remove '-> subscripts :test #'string=)))
+                             (remove '-> subscripts :test
+                                     (lambda (a b) (and (typep a 'string-designator)
+                                                        (typep b 'string-designator)
+                                                        (string= a b))))))
          (i-specs (subseq subscripts 0 pos))
          (i-flat (remove-duplicates (flatten i-specs)))
          (o-specs (if pos

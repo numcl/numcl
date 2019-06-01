@@ -203,7 +203,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
    ;; 6 linarg
    #:einsum
-
+   #:transpose
+   #:matmul
+   #:dot
+   #:inner
+   #:vdot
+   #:outer
+   #:kron
 
 
    ))

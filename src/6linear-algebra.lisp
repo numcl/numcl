@@ -179,35 +179,3 @@ The symbols are interned in NUMCL.SPEC package.
      `((dotimes (,?s ,?s)
          ,@(einsum-body-iter rest i-specs o-specs i-vars o-vars))))))
 
-
-#+(or)
-(einsum-lambda '(i i))
-;; = (einsum-lambda '(i i -> i))
-;; == inner
-
-#+(or)
-(einsum-lambda '(i))
-;; = (einsum-lambda '(i -> i))
-;; == identity
-
-#+(or)
-(einsum-lambda '(ij))
-;; = (einsum-lambda '(ij -> ij))
-;; == identity
-
-#+(or)
-(einsum-lambda '(ji))
-;; = (einsum-lambda '(ji -> ij))
-;; == transpose
-
-;; (einsum-lambda '(ij -> ))
-;; (einsum-lambda '(ij -> nil))
-
-#+(or)
-(einsum-lambda '(ik kj))
-#+(or)
-(einsum-lambda '(ik kj -> ))
-
-#+(or)    
-(einsum '(ik kj) a b)
-

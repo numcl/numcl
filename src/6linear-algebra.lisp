@@ -45,7 +45,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 SUBSCRIPTS is a sequence of the form (<SPEC>+ [-> [<SPEC>*]]).
 The first set of specs before the `->` symbol specifies the input subscripts,
 and the second set of specs after `->` symbol specifies the output subscripts.
-Unlike Numpy, there can be multiple output subscripts, and it performs two operations in the single loop, then return multiple values.
+Unlike Numpy, there can be multiple output subscripts
+and it performs two operations in the same loop, then return multiple values.
+The symbol `->` can be a string and can belong to any package
+ because it is compared by STRING=.
 
 Each SPEC is an alphabetical string designator, such as a symbol IJK or a string \"IJK\",
  where each alphabet is considered as an index. It signals a type-error when it contains any

@@ -391,7 +391,17 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
               (einsum '(ij jk -> ik)
                       #2A((0 1)
                           (2 3)) #2A((5 6)
-                                     (7 8))))))
+                                     (7 8)))))
+  
+  (is (equalp #2A((0 2) (1 3))
+              (einsum '(ij -> ji) #2A((0 1) (2 3)))))
+  (is (equalp #2A((0 2) (1 3))
+              (einsum '(ji) #2A((0 1) (2 3)))))
+  (is (equalp #(0 3)
+              (einsum '(ii) #2A((0 1) (2 3)))))
+  (is (equalp 6
+              (einsum '(ij ->) #2A((0 1) (2 3)))))
+  )
 
 
 

@@ -54,6 +54,7 @@ Each SPEC is an alphabetical string designator, such as a symbol IJK or a string
  where each alphabet is considered as an index. It signals a type-error when it contains any
 non-alpha char.
 
+The remaining arguments ARGS contains the input arrays and optionally the output arrays.
 The shape of each input array should unify against the corresponding input spec. For example,
 with a spec IJI, the input array should be of rank 3 as well as
 the 1st and the 3rd dimensions of the input array should be the same.
@@ -62,6 +63,10 @@ The shape of each output array is determined by the corresponding output spec.
 For example, if SUBSCRIPTS is '(ij jk -> ik), the output is an array of rank 2,
 and the output shape has the same dimension as the first input in the first axis,
 and the same dimension as the second input in the second axis.
+
+If provided, output array shapes and types are also checked against the
+corresponding output spec.  The types should match the result of the numerical
+operations on the elements of the input arrays.
 
 The output value is calculated in the following rule.
 + First, the output array is initialized by 0.
@@ -74,7 +79,8 @@ The output value is calculated in the following rule.
   For example, '(ii -> i) returns the diagonal element of the matrix.
 + If the same index appears across the different input specs,
   the element values from the multiple input arrays are aggregated by multiplication.
-  For example, '(ij jk -> ik) will perform (setf (aref a2 i k) (* (aref a0 i j) (aref a1 j k)))
+  For example, '(ij jk -> ik) will perform
+  (setf (aref a2 i k) (* (aref a0 i j) (aref a1 j k)))
   when a0, a1 are the input arrays and a2 is the output array.
 
 When the separator -> is omitted, a single output is assumed and its spec is
@@ -155,23 +161,28 @@ The symbols are interned in NUMCL.SPEC package.
             "The output spec contains ~a which are not used in the input specs"
             (set-difference o-flat i-flat))
     (with-gensyms (type)
-      `(lambda ,i-vars
+      `(lambda (,@i-vars &optional ,@o-vars)
          (resolving
            ,@(iter (for var in i-vars)
                    (for spec in i-specs)
                    (collecting
                     `(declare (gtype (array * ,spec) ,var))))
-           (let* ((,type (apply #'union-to-float-type
-                                (mapcar #'array-element-type
-                                        (list ,@i-vars))))
+           (let* ((,type (union-to-float-type
+                          ,@(mapcar (curry #'list 'array-element-type)
+                                    i-vars)))
                   ,@(iter (for o-var in o-vars)
                           (for o-spec in o-specs)
                           (collecting
-                           `(,o-var (zeros (list ,@o-spec)
-                                           :type ,type)))))
-             ,@(einsum-body-iter iter-specs i-specs o-specs i-vars o-vars)
-             (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
-                               o-vars))))))))
+                           `(,o-var (or ,o-var (zeros (list ,@o-spec)
+                                                      :type ,type))))))
+             (resolving
+               ,@(iter (for var in o-vars)
+                       (for spec in o-specs)
+                       (collecting
+                        `(declare (gtype (array * ,spec) ,var))))
+               ,@(einsum-body-iter iter-specs i-specs o-specs i-vars o-vars)
+               (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
+                                 o-vars)))))))))
 
 (defun einsum-body-iter (iter-specs i-specs o-specs i-vars o-vars)
   (match iter-specs

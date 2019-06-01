@@ -401,7 +401,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
               (einsum '(ii) #2A((0 1) (2 3)))))
   (is (equalp 6
               (einsum '(ij ->) #2A((0 1) (2 3)))))
-  )
+
+  (let ((result (zeros '(2 2) :type 'single-float)))
+    (einsum '(ij -> ji) #2A((0 1) (2 3)) result)
+    (is (equalp #2A((0 2) (1 3)) result))))
 
 
 

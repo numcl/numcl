@@ -91,6 +91,12 @@ Performace tips: If SUBSCRIPTS is a constant, the compiler macro
 builds an iterator function and make them inlined. Otherwise,
 a new function is made in each call to einsum, resulting in a huge bottleneck.
 
+The nesting order of the loops depends on the spec.
+The nesting order affects the memory access pattern and therefore the performance due to
+the access locality. For example, when writing a GEMM which accesses three matrices
+by (setf (aref output i j) (* (aref a i k) (aref b k j))),
+it is well known that ikj-loop is the fastest among other loops, e.g. ijk-loop.
+EINSUM reorders the indices so that it maximizes the cache locality.
 "
   (apply (compile nil (einsum-lambda subscripts))
          args))
@@ -143,7 +149,7 @@ The symbols are interned in NUMCL.SPEC package.
          (o-vars
           (make-gensym-list (length o-specs) "O"))
          (iter-specs
-          (union i-flat o-flat)))
+          (sort-locality (union i-flat o-flat) subscripts)))
     (assert (subsetp o-flat i-flat)
             nil
             "The output spec contains ~a which are not used in the input specs"
@@ -182,3 +188,25 @@ The symbols are interned in NUMCL.SPEC package.
      `((dotimes (,?s ,?s)
          ,@(einsum-body-iter rest i-specs o-specs i-vars o-vars))))))
 
+(defun sort-locality (indices subscripts)
+  (sort indices
+        (lambda (index1 index2)
+          (locality< index1 index2 subscripts))))
+
+(defun locality< (index1 index2 subscripts)
+  "Returns true when index1 is less local than index2; i.e. index2 is more local"
+  (assert (not (eq index1 index2)))
+  (flet ((score (index1 index2)
+           ;; the number of ordering violations
+           ;; for looping index1 first 
+           (iter (for spec in subscripts)
+                 (for pos1 = (position index1 spec))
+                 (for pos2 = (position index2 spec))
+                 (counting
+                  ;; count the violation
+                  (and pos1 pos2 (< pos2 pos1))))))
+    (< (score index1 index2)
+       (score index2 index1))))
+
+;; (einsum '(ij jk -> ik) a b)             ; -> becomes an ijk loop
+;; (einsum '(ik kj -> ij) a b)             ; -> becomes an ikj loop

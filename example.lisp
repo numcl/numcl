@@ -138,3 +138,33 @@
   ;; (print (mapcar (alexandria:curry #'aref b) (where b #'plusp)))
   ;; (print (mapcar (alexandria:curry #'aref b) (where b #'evenp)))
   )
+
+;; einsum
+
+;; gemm
+(einsum '(ij jk -> ik)
+        #2A((0 1) (2 3))
+        #2A((5 6) (7 8)))
+
+;; equivalent
+(einsum '((i j) (j k) -> (i k))
+        #2A((0 1) (2 3))
+        #2A((5 6) (7 8)))
+
+;; diagonal
+(einsum '(ii -> i) #2A((0 1) (2 3)))
+;; equivalent
+(einsum '(ii) #2A((0 1) (2 3)))
+
+;; sum of diagonal
+(einsum '(ii ->) #2A((0 1) (2 3)))
+
+;; provide an output array
+(let ((result (zeros '(2 2) :type 'single-float)))
+  (einsum '(ij -> ji)
+          #2A((0 1) (2 3))
+          result))
+
+;; return multiple arrays
+(einsum '(ijk -> ij ik jk)
+        #3A(((0 1) (2 3)) ((4 5) (6 7))))

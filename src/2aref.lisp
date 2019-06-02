@@ -163,6 +163,7 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
                (collecting
                 (%aref (%displace-at array i) rest)))))))))
 
+(declaim (inline ensure-singleton))
 (defun ensure-singleton (array-or-number)
   (if (zerop (array-rank array-or-number))
       ;; singleton array #0A<number>

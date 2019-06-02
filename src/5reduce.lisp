@@ -31,23 +31,12 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              (multiplying (array-dimension array axis)))
            (array-dimension array axes))))
 
-
-(defun reduce-array (fn array &key (axes (iota (rank array))) type (initial-element 0))
-  (ensure-singleton
-   (ematch axes
-     (nil
-      (%reduce-array fn array axes type initial-element))
-     ((fixnum)
-      (%reduce-array fn array (list axes) type initial-element))
-     ((type list)
-      (%reduce-array fn array (sort (copy-list axes) #'<) type initial-element)))))
-
 (defun %reduce-array-result-shape (array axes)
   (iter (for i from 0 below (array-rank array))
-    (for j = (first axes))
-    (if (and j (= i j))
-        (pop axes)
-        (collect (array-dimension array i)))))
+        (for j = (first axes))
+        (if (and j (= i j))
+            (pop axes)
+            (collect (array-dimension array i)))))
 
 #+(or)
 (assert (equal '(5 8) (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 2 3)))))
@@ -56,35 +45,57 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 #+(or)
 (assert (equal nil (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 1 2 3 4)))))
 
-(defun %reduce-array (fn array axes type initial-element)
-  (let ((shape (%reduce-array-result-shape array axes)))
-    (multiple-value-bind (result base-array) (full shape initial-element :type (float-substitution type :int-result 'fixnum))
-      ;; I know this is super slow due to the compilation overhead, but this is
-      ;; the most intuitive way to implement it
-      (funcall (compile nil (with-gensyms (r a)
-                              `(lambda (,r ,a)
-                                 ,(make-reducer-lambda r a fn 0 (shape array) axes nil nil))))
-               result
-               array)
-      (values result base-array))))
+(defun %reduce-array-result-type (array fn)
+  (float-substitution
+   (infer-type
+    fn
+    (array-element-type array)
+    (array-element-type array))
+   :int-result 'fixnum))
 
-(defun make-reducer-lambda (rvar avar fn current-axis dims sum-axes loop-index sum-index)
+(defun reduce-array (fn array &key
+                                axes
+                                (type
+                                 (%reduce-array-result-type array fn))
+                                (initial-element
+                                 (zero-value type)))
+  (let* ((axes
+          (etypecase axes
+            (null
+             (iota (rank array)))
+            (fixnum
+             (list axes))
+            (list
+             (sort (copy-list axes) #'<))))
+         (result-shape (%reduce-array-result-shape array axes))
+         (result (full result-shape initial-element :type type)))
+    
+    (funcall (compile nil (reduce-lambda (shape array) axes))
+             result
+             array
+             fn)
+    (ensure-singleton result)))
+
+(defun reduce-lambda (dims axes)
+  (with-gensyms (rvar avar fnvar)
+    `(lambda (,rvar ,avar ,fnvar)
+       ,(%reduce-lambda rvar avar fnvar 0 dims axes nil nil))))
+
+(defun %reduce-lambda (rvar avar fnvar current-axis dims sum-axes loop-index sum-index)
   (match dims
     (nil
      `(setf (aref ,rvar ,@(reverse sum-index))
-            (funcall ',fn
+            (funcall ,fnvar
                      (aref ,rvar ,@(reverse sum-index))
                      (aref ,avar ,@(reverse loop-index)))))
     ((list* dim  dims)
      (with-gensyms (i)
        `(dotimes (,i ,dim)
           ,(if (member current-axis sum-axes)
-               (make-reducer-lambda rvar avar fn (1+ current-axis) dims sum-axes (cons i loop-index) sum-index)
-               (make-reducer-lambda rvar avar fn (1+ current-axis) dims sum-axes (cons i loop-index) (cons i sum-index))))))))
+               (%reduce-lambda rvar avar fnvar (1+ current-axis) dims sum-axes (cons i loop-index) sum-index)
+               (%reduce-lambda rvar avar fnvar (1+ current-axis) dims sum-axes (cons i loop-index) (cons i sum-index))))))))
 
 #+(or)
-(print (make-reducer-lambda 'r 'a '+ 0 '(5 5 5 5 5) '(1 3) nil nil))
-
 (print (reduce-lambda '(5 5 5 5 5) '(1 3)))
 
 (declaim (inline numcl:sum
@@ -99,13 +110,29 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                  numcl:stdev))
 
 (defun numcl:sum  (array &rest args &key axes type)
-  (apply #'reduce-array '+ array :initial-element (zero-value type) args))
+  (declare (ignorable axes type))
+  (apply #'reduce-array '+ array args))
 (defun numcl:prod (array &rest args &key axes type)
-  (apply #'reduce-array '* array :initial-element (one-value type) args))
+  (declare (ignorable axes type))
+  (apply #'reduce-array '* array
+         :initial-element
+         (one-value
+          (%reduce-array-result-type array '*))
+         args))
 (defun numcl:amax (array &rest args &key axes type)
-  (apply #'reduce-array 'max array :initial-element (most-negative-value type) args))
+  (declare (ignorable axes type))
+  (apply #'reduce-array 'max array
+         :initial-element
+         (most-negative-value
+          (%reduce-array-result-type array 'max))
+         args))
 (defun numcl:amin (array &rest args &key axes type)
-  (apply #'reduce-array 'min array :initial-element (most-positive-value type) args))
+  (declare (ignorable axes type))
+  (apply #'reduce-array 'min array
+         :initial-element
+         (most-positive-value
+          (%reduce-array-result-type array 'min))
+         args))
 
 (defun numcl:mean (array &key axes)
   (if (typep array 'sequence)

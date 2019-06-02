@@ -327,6 +327,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    (aref (asarray '((1 2 "text") (1 2 "text"))) t '(0 2))))
 
 (test (reduce :compile-at :run-time)
+  (is (equalp 10 (reduce-array 'cl:+ (arange 5))))
   (is (cl:= 10 (sum (arange 5))))
   (finishes
     (sum (reshape (arange 125) '(5 5 5)))                ; sum all elements
@@ -344,7 +345,12 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
     (amin (reshape (arange 16) '(4 4)))
     (amin (reshape (arange 16) '(4 4)) :axes '(0))
-    (amin (reshape (arange 16) '(4 4)) :axes '(1)))) 
+    (amin (reshape (arange 16) '(4 4)) :axes '(1)))
+
+  ;; giving a local function
+  (is (equalp 10
+              (flet ((a (x y) (cl:+ x y)))
+                (reduce-array #'a (arange 5))))))
 
 (test (equality :compile-at :run-time)
   ;; it should return NIL (from cl:=), not 0

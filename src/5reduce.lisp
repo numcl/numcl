@@ -85,27 +85,68 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 #+(or)
 (print (make-reducer-lambda 'r 'a '+ 0 '(5 5 5 5 5) '(1 3) nil nil))
 
-(defun numcl:sum  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '+   array :axes axes :type type))
-(defun numcl:prod (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array '*   array :axes axes :type type :initial-element 1))
-(defun numcl:amax  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'max array :axes axes :type type :initial-element (%minimum-value type)))
-(defun numcl:amin  (array &key (axes (iota (rank array))) (type (array-element-type array))) (reduce-array 'min array :axes axes :type type :initial-element (%maximum-value type)))
+(print (reduce-lambda '(5 5 5 5 5) '(1 3)))
 
-(defun numcl:mean  (array &key (axes (iota (rank array))) (type (array-element-type array)))
+(declaim (inline numcl:sum
+                 numcl:prod
+                 numcl:amax
+                 numcl:amin
+                 numcl:mean
+                 numcl:variance
+                 numcl:standard-deviation
+                 numcl:avg
+                 numcl:var
+                 numcl:stdev))
+
+(defun numcl:sum  (array &rest args &key axes type)
+  (apply #'reduce-array '+ array :initial-element (zero-value type) args))
+(defun numcl:prod (array &rest args &key axes type)
+  (apply #'reduce-array '* array :initial-element (one-value type) args))
+(defun numcl:amax (array &rest args &key axes type)
+  (apply #'reduce-array 'max array :initial-element (most-negative-value type) args))
+(defun numcl:amin (array &rest args &key axes type)
+  (apply #'reduce-array 'min array :initial-element (most-positive-value type) args))
+
+(defun numcl:mean (array &key axes)
   (if (typep array 'sequence)
       (alexandria:mean array)
-      (numcl:/ (reduce-array '+ array :axes axes :type type)
-               (array-dimension* array axes))))
-(defun numcl:variance (array &key (axes (iota (rank array))) (type (array-element-type array)))
+      (let ((axes (or axes (iota (rank array)))))
+        (numcl:/ (numcl:sum array :axes axes)
+                 (array-dimension* array axes)))))
+(defun numcl:variance (array &key axes)
   (if (typep array 'sequence)
       (alexandria:variance array)
-      (numcl:/ (reduce-array '+ (square array) :axes axes :type type)
-               (array-dimension* array axes))))
-(defun numcl:standard-deviation (array &key (axes (iota (rank array))) (type (array-element-type array)))
+      (let ((axes (or axes (iota (rank array)))))
+        (numcl:/ (numcl:sum (square array) :axes axes)
+                 (array-dimension* array axes)))))
+(defun numcl:standard-deviation (array &key axes)
   (if (typep array 'sequence)
       (alexandria:standard-deviation array)
       (numcl:sqrt
-       (numcl:/ (reduce-array '+ (square array) :axes axes :type type)
-                (array-dimension* array axes)))))
+       (let ((axes (or axes (iota (rank array)))))
+         (numcl:/ (numcl:sum (square array) :axes axes)
+                  (array-dimension* array axes))))))
+
+;; aliases
+(defun numcl:avg (array &key axes)
+  (if (typep array 'sequence)
+      (alexandria:mean array)
+      (let ((axes (or axes (iota (rank array)))))
+        (numcl:/ (numcl:sum array :axes axes)
+                 (array-dimension* array axes)))))
+(defun numcl:var (array &key axes)
+  (if (typep array 'sequence)
+      (alexandria:variance array)
+      (let ((axes (or axes (iota (rank array)))))
+        (numcl:/ (numcl:sum (square array) :axes axes)
+                 (array-dimension* array axes)))))
+(defun numcl:stdev (array &key axes)
+  (if (typep array 'sequence)
+      (alexandria:standard-deviation array)
+      (numcl:sqrt
+       (let ((axes (or axes (iota (rank array)))))
+         (numcl:/ (numcl:sum (square array) :axes axes)
+                  (array-dimension* array axes))))))
 
 ;; unsure either CL idioms should supersede or numpy idioms should
 ;; (defun all (array &key axes type) (reduce-array '+ axes type))

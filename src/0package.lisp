@@ -148,6 +148,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:mean
    #:variance
    #:standard-deviation
+   #:var
+   #:stdev
+   #:avg
    #:onehot
    #:argmax
    #:argmin

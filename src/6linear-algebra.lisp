@@ -174,8 +174,8 @@ The symbols are interned in NUMCL.SPEC package.
           (sort-locality (union i-flat o-flat) subscripts)))
     (assert (subsetp o-flat i-flat)
             nil
-            "The output spec contains ~a which are not used in the input specs"
-            (set-difference o-flat i-flat))
+            "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
+            (set-difference o-flat i-flat) i-flat o-flat)
     (with-gensyms (type)
       `(lambda (,@i-vars &optional ,@o-vars)
          (resolving

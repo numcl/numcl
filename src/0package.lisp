@@ -68,7 +68,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:full-like
    #:zeros-like
    #:ones-like
-   #:eye
 
    ;; 4concatenate
    #:concatenate
@@ -210,6 +209,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:vdot
    #:outer
    #:kron
+   #:eye
+   #:diag
+   #:tri
+   #:tril
+   #:triu
 
 
    ))

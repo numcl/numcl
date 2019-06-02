@@ -70,3 +70,44 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;;   
 ;;   (einsum '(ij jk -> ik) a b))
 
+(declaim (inline diag))
+(defun diag (a)
+  "Return the diagonal element of a matrix as a vector"
+  (einsum '(ii -> i) a))
+
+(declaim (inline tri))
+(defun tri (n &key (m n) (k 0) (type 'bit))
+  "Returns a triangle matrix whose lower diagnonal (including the diagonal) filled with 1.
+ N,M specifies the shape of the return array. K will adjust the sub-diagonal -- positive K fills more 1s."
+  (let ((a (zeros (list n m) :type type))
+        (one (%coerce 1 type)))
+    (dotimes (i n a)
+      (dotimes (j m)
+        (when (>= i (- j k))            ; numpy documentation is wrong... it is not i <= j+k
+          (setf (aref a i j) one))))))
+
+(declaim (inline tril))
+(defun tril (matrix &optional (k 0))
+  "Returns the copy of matrix with elements above the k-th diagonal zeroed. Positive K fills less 0s."
+  (match matrix
+    ((array :dimensions (list n m)
+            :element-type type)
+     (let ((a (zeros (list n m) :type type)))
+       (dotimes (i n a)
+         (dotimes (j m)
+           (when (>= i (- j k))
+             (setf (aref a i j) (aref matrix i j)))))))))
+
+(declaim (inline triu))
+(defun triu (matrix &optional (k 0))
+  "Returns the copy of matrix with elements below the k-th diagonal zeroed. Positive K fills more 0s."
+  (match matrix
+    ((array :dimensions (list n m)
+            :element-type type)
+     (let ((a (zeros (list n m) :type type)))
+       (dotimes (i n a)
+         (dotimes (j m)
+           (when (<= i (- j k))
+             (setf (aref a i j) (aref matrix i j)))))))))
+
+

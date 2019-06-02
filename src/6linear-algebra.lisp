@@ -164,7 +164,7 @@ The symbols are interned in NUMCL.SPEC package.
                       (or (subseq subscripts pos)
                           '(nil))
                       (list
-                       (sort i-flat #'string<))))
+                       (sort (copy-list i-flat) #'string<))))
          (o-flat (remove-duplicates (flatten o-specs)))
          (i-vars
           (make-gensym-list (length i-specs) "I"))

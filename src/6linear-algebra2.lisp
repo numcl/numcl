@@ -121,3 +121,20 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
         ((or (= i n) (= j m))
          a)
       (setf (aref a i j) one))))
+
+(declaim (inline vander))
+(defun vander (v &key (n (length v)) increasing)
+  "Returns a matrix where M[i,j] == V[i]^(N-j) when increasing is false (default), and 
+ M[i,j] == V[i]^j when increasing is true."
+  (let* ((m (length v))
+         (a (zeros (list m n) :type (array-element-type v))))
+    (if increasing
+        (dotimes (i m)
+          (dotimes (j n)
+            (setf (aref a i j) (expt (aref v i) j))))
+        (dotimes (i m)
+          (do ((j 0 (1+ j))
+               (e (1- n) (1- e)))
+              ((= j n))
+            (setf (aref a i j) (expt (aref v i) e)))))
+    a))

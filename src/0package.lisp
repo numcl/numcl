@@ -214,7 +214,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:tri
    #:tril
    #:triu
-
+   #:vander
 
    ))
 

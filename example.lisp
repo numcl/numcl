@@ -209,3 +209,5 @@
 (eye 3 :m 5 :k 2)
 
 
+(vander #(1 2 3 5) :n 3)
+(vander #(1 2 3 5) :n 3 :increasing t)

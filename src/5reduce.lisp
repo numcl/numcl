@@ -31,20 +31,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              (multiplying (array-dimension array axis)))
            (array-dimension array axes))))
 
-(defun %reduce-array-result-shape (array axes)
-  (iter (for i from 0 below (array-rank array))
-        (for j = (first axes))
-        (if (and j (= i j))
-            (pop axes)
-            (collect (array-dimension array i)))))
-
-#+(or)
-(assert (equal '(5 8) (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 2 3)))))
-#+(or)
-(assert (equal '(5 6 8) (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 3)))))
-#+(or)
-(assert (equal nil (print (%reduce-array-result-shape (zeros '(4 5 6 7 8)) '(0 1 2 3 4)))))
-
 (defun %reduce-array-result-type (array fn)
   (float-substitution
    (infer-type
@@ -67,7 +53,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              (list axes))
             (list
              (sort (copy-list axes) #'<))))
-         (result-shape (%reduce-array-result-shape array axes))
+         (remaining-axes
+          (sort (set-difference (iota (rank array)) axes) #'<))
+         (result-shape (mapcar (lambda (d) (array-dimension array d)) remaining-axes))
          (result (full result-shape initial-element :type type)))
     
     (funcall (compile nil (reduce-lambda (rank array) axes))

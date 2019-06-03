@@ -70,16 +70,19 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
          (result-shape (%reduce-array-result-shape array axes))
          (result (full result-shape initial-element :type type)))
     
-    (funcall (compile nil (reduce-lambda (shape array) axes))
+    (funcall (compile nil (reduce-lambda (rank array) axes))
              result
              array
              fn)
     (ensure-singleton result)))
 
-(defun reduce-lambda (dims axes)
+(defun reduce-lambda (rank axes)
   (with-gensyms (rvar avar fnvar)
-    `(lambda (,rvar ,avar ,fnvar)
-       ,(%reduce-lambda rvar avar fnvar 0 dims axes nil nil))))
+    (let ((dims-vars (make-gensym-list rank "?")))
+      `(lambda (,rvar ,avar ,fnvar)
+         (resolving
+           (declare (gtype (array * ,dims-vars) ,avar))
+           ,(%reduce-lambda rvar avar fnvar 0 dims-vars axes nil nil))))))
 
 (defun %reduce-lambda (rvar avar fnvar current-axis dims sum-axes loop-index sum-index)
   (match dims
@@ -96,7 +99,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                (%reduce-lambda rvar avar fnvar (1+ current-axis) dims sum-axes (cons i loop-index) (cons i sum-index))))))))
 
 #+(or)
-(print (reduce-lambda '(5 5 5 5 5) '(1 3)))
+(print (reduce-lambda 5 '(1 3)))
 
 (declaim (inline numcl:sum
                  numcl:prod

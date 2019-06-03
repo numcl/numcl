@@ -18,6 +18,7 @@
               :constantfold
               :lisp-namespace
               :cl-randist
+              :float-features
               :gtype)
  :serial t
  :components ((:module "src"

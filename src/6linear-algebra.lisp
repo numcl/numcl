@@ -149,29 +149,14 @@ The symbols are interned in NUMCL.SPEC package.
 
 (defun einsum-lambda (subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
-  (let* ((pos (position '-> subscripts :test
-                        (lambda (a b) (and (typep a 'string-designator)
-                                           (typep b 'string-designator)
-                                           (string= a b)))))
-         (subscripts (mapcar #'explode-spec
-                             (remove '-> subscripts :test
-                                     (lambda (a b) (and (typep a 'string-designator)
-                                                        (typep b 'string-designator)
-                                                        (string= a b))))))
-         (i-specs (subseq subscripts 0 pos))
-         (i-flat (remove-duplicates (flatten i-specs)))
-         (o-specs (if pos
-                      (or (subseq subscripts pos)
-                          '(nil))
-                      (list
-                       (sort (copy-list i-flat) #'string<))))
-         (o-flat (remove-duplicates (flatten o-specs)))
-         (i-vars
-          (make-gensym-list (length i-specs) "I"))
-         (o-vars
-          (make-gensym-list (length o-specs) "O"))
-         (iter-specs
-          (sort-locality (union i-flat o-flat) subscripts)))
+  (multiple-value-bind (i-specs
+                        i-flat
+                        o-specs
+                        o-flat
+                        i-vars
+                        o-vars
+                        iter-specs)
+      (einsum-parse-subscripts subscripts)
     (assert (subsetp o-flat i-flat)
             nil
             "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
@@ -199,6 +184,39 @@ The symbols are interned in NUMCL.SPEC package.
                ,@(einsum-body-iter iter-specs i-specs o-specs i-vars o-vars)
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
+
+(defun einsum-parse-subscripts (subscripts)
+  (let* ((pos (position '-> subscripts :test
+                        (lambda (a b) (and (typep a 'string-designator)
+                                           (typep b 'string-designator)
+                                           (string= a b)))))
+         (subscripts (mapcar #'explode-spec
+                             (remove '-> subscripts :test
+                                     (lambda (a b) (and (typep a 'string-designator)
+                                                        (typep b 'string-designator)
+                                                        (string= a b))))))
+         (i-specs (subseq subscripts 0 pos))
+         (i-flat (remove-duplicates (flatten i-specs)))
+         (o-specs (if pos
+                      (or (subseq subscripts pos)
+                          '(nil))
+                      (list
+                       (sort (copy-list i-flat) #'string<))))
+         (o-flat (remove-duplicates (flatten o-specs)))
+         (i-vars
+          (make-gensym-list (length i-specs) "I"))
+         (o-vars
+          (make-gensym-list (length o-specs) "O"))
+         (iter-specs
+          (sort-locality (union i-flat o-flat) subscripts)))
+    (values
+     i-specs
+     i-flat
+     o-specs
+     o-flat
+     i-vars
+     o-vars
+     iter-specs)))
 
 (defun einsum-body-iter (iter-specs i-specs o-specs i-vars o-vars)
   (match iter-specs

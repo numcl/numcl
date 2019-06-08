@@ -19,6 +19,7 @@
               :lisp-namespace
               :cl-randist
               :float-features
+              :specialized-function
               :gtype)
  :serial t
  :components ((:module "src"

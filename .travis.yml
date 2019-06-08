@@ -37,6 +37,7 @@ install:
   - ( cd ~/lisp/ ; git clone https://github.com/guicho271828/trivia.git )
   - ( cd ~/lisp/ ; git clone https://github.com/numcl/constantfold.git )
   - ( cd ~/lisp/ ; git clone https://github.com/numcl/gtype.git )
+  - ( cd ~/lisp/ ; git clone https://github.com/numcl/specialized-function.git )
 
 cache:
   directories:

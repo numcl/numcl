@@ -49,12 +49,12 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline vdot))
 (defun vdot (a b)
-  "Dot product of two vectors."
-  (einsum '(i i -> ) a b))
+  "Dot product of two vectors. For complex values, the first value is conjugated."
+  (einsum '(i i -> ) (numcl:conjugate a) b))
 
 (declaim (inline inner))
 (defun inner (a b)
-  "Inner product of two vectors. (the detail could be different from numpy)"
+  "Inner product of two vectors."
   (einsum '(i i -> ) a b))
 
 (declaim (inline outer))

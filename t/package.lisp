@@ -418,5 +418,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (einsum '(ij -> ji) #2A((0 1) (2 3)) result)
     (is (equalp #2A((0 2) (1 3)) result))))
 
+(test (linarg :compile-at :run-time)
 
-
+  (is (equalp 
+       #2A((1 1 0 0)
+           (1 1 0 0)
+           (0 0 1 1)
+           (0 0 1 1))
+       (kron (eye 2) (ones '(2 2))))))

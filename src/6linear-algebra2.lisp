@@ -52,6 +52,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   "Dot product of two vectors."
   (einsum '(i i -> ) a b))
 
+(declaim (inline inner))
+(defun inner (a b)
+  "Inner product of two vectors. (the detail could be different from numpy)"
+  (einsum '(i i -> ) a b))
+
 (declaim (inline outer))
 (defun outer (a b)
   "Compute the outer product of two vectors."

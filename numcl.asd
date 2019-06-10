@@ -19,6 +19,7 @@
               :lisp-namespace
               :cl-randist
               :float-features
+              :function-cache
               :specialized-function
               :gtype)
  :serial t

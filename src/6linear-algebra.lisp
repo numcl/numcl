@@ -144,8 +144,11 @@ EINSUM reorders the indices so that it maximizes the cache locality.
 (declaim (inline einsum))
 (defun einsum (subscripts &rest args)
   #.*einsum-documentation*
-  (apply (compile nil (einsum-lambda (einsum-normalize-subscripts subscripts)))
+  (apply (memoized-einsum-function (einsum-normalize-subscripts subscripts))
          args))
+
+(function-cache:defcached memoized-einsum-function (normalized-subscripts)
+  (compile nil (einsum-lambda normalized-subscripts)))
 
 (define-compiler-macro einsum (&whole whole subscripts &rest args)
   (match subscripts

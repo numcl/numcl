@@ -147,6 +147,11 @@ The symbols are interned in NUMCL.SPEC package.
 #+(or)
 (explode-spec 'aaa)
 
+(defun safe-string= (a b)
+  (and (typep a 'string-designator)
+       (typep b 'string-designator)
+       (string= a b)))
+
 (defun einsum-lambda (subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (multiple-value-bind (i-specs
@@ -186,15 +191,9 @@ The symbols are interned in NUMCL.SPEC package.
                                  o-vars)))))))))
 
 (defun einsum-parse-subscripts (subscripts)
-  (let* ((pos (position '-> subscripts :test
-                        (lambda (a b) (and (typep a 'string-designator)
-                                           (typep b 'string-designator)
-                                           (string= a b)))))
+  (let* ((pos (position '-> subscripts :test #'safe-string=))
          (subscripts (mapcar #'explode-spec
-                             (remove '-> subscripts :test
-                                     (lambda (a b) (and (typep a 'string-designator)
-                                                        (typep b 'string-designator)
-                                                        (string= a b))))))
+                             (remove '-> subscripts :test #'safe-string=)))
          (i-specs (subseq subscripts 0 pos))
          (i-flat (remove-duplicates (flatten i-specs)))
          (o-specs (if pos

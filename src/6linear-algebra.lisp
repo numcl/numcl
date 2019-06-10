@@ -299,21 +299,22 @@ The value returned is a plist of :inputs, :transforms, :outputs.
             nil
             "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
             (set-difference o-flat i-flat) i-flat o-flat)
-    (with-gensyms (type)
+    (with-gensyms (o-types)
       `(lambda (,@i-vars &optional ,@o-vars)
          (resolving
            ,@(iter (for var in i-vars)
                    (for spec in i-specs)
                    (collecting
                     `(declare (gtype (array * ,spec) ,var))))
-           (let* ((,type (union-to-float-type
-                          ,@(mapcar (curry #'list 'array-element-type)
-                                    i-vars)))
-                  ,@(iter (for o-var in o-vars)
-                          (for o-spec in o-specs)
+           (let* ((,o-types (einsum-output-types
+                             ',transforms ',i-evars ',o-evars ,@i-vars))
+                  ,@(iter (for o-var     in o-vars)
+                          (for o-spec    in o-specs)
+                          (for o from 0)
                           (collecting
-                           `(,o-var (or ,o-var (zeros (list ,@o-spec)
-                                                      :type ,type))))))
+                           `(,o-var
+                             (or ,o-var
+                                 (zeros (list ,@o-spec) :type (nth ,o ,o-types)))))))
              (resolving
                ,@(iter (for var in o-vars)
                        (for spec in o-specs)
@@ -322,6 +323,32 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
+
+(defun einsum-output-types (transforms i-evars o-evars &rest arrays)
+  "Try to simulate the range for 10 iterations; Stop if it converges.
+Otherwise call float-substitution and simplify integers to fixnums."
+  (iter (with i-types = (mapcar #'array-element-type arrays))
+        (repeat 10)
+        (for o-types
+             initially (make-list (length o-evars)
+                                  :initial-element
+                                  '(integer 0 0))
+             then      (iter (with alist =
+                                   (mapcar #'cons
+                                           (append i-evars o-evars)
+                                           (append i-types o-types)))
+                             (for transform in transforms)
+                             (collecting
+                              (interpret-type (sublis alist transform)))))
+        ;; (print o-types)
+        (for o-types-prev previous o-types)
+        (until (equal o-types o-types-prev))
+        (finally
+         (if (equal o-types o-types-prev)
+             (return o-types)
+             (return (mapcar (lambda (type) (float-substitution type :int-result 'fixnum))
+                             o-types))))))
+
 
 
 (defun einsum-body-iter (iter-specs

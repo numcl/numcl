@@ -171,8 +171,8 @@ It then computes the transforms, if missing.
 
 The value returned is a plist of :inputs, :transforms, :outputs. 
 "
-  (flet (($ (i) (symbolicate '$ (princ-to-string i)))
-         (@ (i) (symbolicate '@ (princ-to-string i)))
+  (flet (($ (i) (in-current-package (symbolicate '$ (princ-to-string i))))
+         (@ (i) (in-current-package (symbolicate '@ (princ-to-string i))))
          (explode (s)
            (typecase s
              (list (assert (every #'symbolp s)) s)
@@ -248,9 +248,9 @@ The value returned is a plist of :inputs, :transforms, :outputs.
     ((plist :inputs     i-specs
             :transforms transforms
             :outputs    o-specs)
-     (flet ((? (i) (symbolicate '? (princ-to-string i)))
-            ($ (i) (symbolicate '$ (princ-to-string i)))
-            (@ (i) (symbolicate '@ (princ-to-string i)))
+     (flet ((? (i) (in-current-package (symbolicate '? (princ-to-string i))))
+            ($ (i) (in-current-package (symbolicate '$ (princ-to-string i))))
+            (@ (i) (in-current-package (symbolicate '@ (princ-to-string i))))
             (map-specs (fn specs)
               (iter (for spec in specs)
                     (collecting
@@ -441,7 +441,7 @@ longer depends on the iteration variables."
            (null o-specs))
       (iter (for transform in transforms)
             (for o from 1)
-            (for o-sym = (symbolicate '@ (princ-to-string o)))
+            (for o-sym = (in-current-package (symbolicate '@ (princ-to-string o))))
             (when (first-iteration-p)
               (collecting 'progn))
             (collecting

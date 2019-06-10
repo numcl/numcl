@@ -86,6 +86,8 @@ Example of reshaping (3 8 5):
 
 (defun numcl:flatten (a)
   (etypecase a
+    (null
+     a)
     (array
      (%make-array (array-total-size a) 
                   :element-type (array-element-type a)

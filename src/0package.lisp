@@ -227,7 +227,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           :alexandria                   ; but not want to use alexandria:flatten etc
           :iterate)                     ; same for iterate; for SUM
   ;;  :magicl
-  (:use :trivia :type-r :constantfold :gtype))
+  (:use :trivia :type-r :constantfold :gtype :specialized-function))
 
 (uiop:define-package :numcl
     (:mix :numcl.exported :cl)

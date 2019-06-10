@@ -326,7 +326,8 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                        (for spec in o-specs)
                        (collecting
                         `(declare (gtype (array * ,spec) ,var))))
-               ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
+               (specializing (,@i-vars ,@o-vars) ()
+                 ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms))
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
 

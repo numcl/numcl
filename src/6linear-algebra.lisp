@@ -116,8 +116,6 @@ EINSUM reorders the indices so that it maximizes the cache locality.
     (_
      whole)))
 
-(defpackage "NUMCL.SPEC" (:use))
-
 (defun to-spec (character)
   (assert (alpha-char-p character) nil
           'simple-type-error
@@ -126,12 +124,12 @@ EINSUM reorders the indices so that it maximizes the cache locality.
   (let ((str (make-string 2)))
     (setf (aref str 0) #\?)
     (setf (aref str 1) character)
-    (intern str :numcl.spec)))
+    (intern str)))
 
 (defun explode-spec (s)
   "string-designator -> a list of symbols, whose name is appended ? in the beginning.
 E.g. 'aaa -> '(?a ?a ?a).
-The symbols are interned in NUMCL.SPEC package.
+The symbols are interned in the current package.
 "
   ;; The reason for adding ?-mark is to make it recognized as a gtype parameter.
   (typecase s

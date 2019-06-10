@@ -209,7 +209,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (set-type-inferer
  'floor
- (defun floor-inferer (x y)
+ (defun floor-inferer (x &optional (y '(integer 1 1)))
    (ematch* (x y)
      (((real-subtype l1 h1) (real-subtype l2 h2))
       `(integer ,@(interval-floor l1 h1 l2 h2)))
@@ -222,7 +222,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (set-type-inferer
  'round
- (defun round-inferer (x y)
+ (defun round-inferer (x &optional (y '(integer 1 1)))
    (ematch* (x y)
      (((real-subtype l1 h1) (real-subtype l2 h2))
       `(integer ,@(interval-round l1 h1 l2 h2)))
@@ -235,7 +235,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (set-type-inferer
  'ceiling
- (defun ceiling-inferer (x y)
+ (defun ceiling-inferer (x &optional (y '(integer 1 1)))
    (ematch* (x y)
      (((real-subtype l1 h1) (real-subtype l2 h2))
       `(integer ,@(interval-ceiling l1 h1 l2 h2)))
@@ -248,7 +248,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (set-type-inferer
  'truncate
- (defun truncate-inferer (x y)
+ (defun truncate-inferer (x &optional (y '(integer 1 1)))
    (ematch* (x y)
      (((real-subtype l1 h1) (real-subtype l2 h2))
       `(integer ,@(interval-truncate l1 h1 l2 h2)))

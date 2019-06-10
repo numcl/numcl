@@ -141,52 +141,142 @@ by (setf (aref output i j) (* (aref a i k) (aref b k j))),
 it is well known that ikj-loop is the fastest among other loops, e.g. ijk-loop.
 EINSUM reorders the indices so that it maximizes the cache locality.
 "
-  (apply (compile nil (einsum-lambda subscripts))
+  (apply (compile nil (einsum-lambda (einsum-normalize-subscripts subscripts)))
          args))
 
 (define-compiler-macro einsum (&whole whole subscripts &rest args)
   (match subscripts
     ((list 'quote subscripts)
-     `(funcall ,(einsum-lambda subscripts)
+     `(funcall ,(einsum-lambda (einsum-normalize-subscripts subscripts))
                ,@args))
     (_
      whole)))
-
-(defun to-spec (character)
-  (assert (alpha-char-p character) nil
-          'simple-type-error
-          :format-control "Tried to make a spec from a non-alpha char ~a"
-          :format-arguments (list character))
-  (let ((str (make-string 2)))
-    (setf (aref str 0) #\?)
-    (setf (aref str 1) character)
-    (intern str)))
-
-(defun explode-spec (s)
-  "string-designator -> a list of symbols, whose name is appended ? in the beginning.
-E.g. 'aaa -> '(?a ?a ?a).
-The symbols are interned in the current package.
-"
-  ;; The reason for adding ?-mark is to make it recognized as a gtype parameter.
-  (typecase s
-    (list
-     (assert (every #'symbolp s))
-     (mapcar (curry #'symbolicate "?") s))
-    (symbol
-     (let ((name (symbol-name s)))
-       (iter (for c in-vector name)
-             (collecting
-              (to-spec c)))))))
-
-#+(or)
-(explode-spec 'aaa)
 
 (defun safe-string= (a b)
   (and (typep a 'string-designator)
        (typep b 'string-designator)
        (string= a b)))
 
-(defun einsum-lambda (subscripts)
+(defun einsum-normalize-subscripts (subscripts)
+  "Normalizes the subscripts.
+It first 'explodes' each spec into the list form.
+It then generates the default output form, if missing.
+
+It then translates the index symbols into a number
+based on the order of appearance; This should make
+the specs with the different symbols into the same form,
+e.g. (ij jk -> ik) and (ik kj -> ij) results in the same normalized form.
+
+It then computes the transforms, if missing.
+
+The value returned is a plist of :inputs, :transforms, :outputs. 
+"
+  (flet (($ (i) (symbolicate '$ (princ-to-string i)))
+         (@ (i) (symbolicate '@ (princ-to-string i)))
+         (explode (s)
+           (typecase s
+             (list (assert (every #'symbolp s)) s)
+             (symbol (iter (for c in-vector (symbol-name s))
+                           (assert (alpha-char-p c) nil
+                                   'simple-type-error
+                                   :format-control "Tried to make a spec from a non-alpha char ~a"
+                                   :format-arguments (list c))
+                           (collecting (intern (string c)))))))
+         (indices (specs)
+           (let (list)
+             (iter (for spec in specs)
+                   (iter (for index in spec)
+                         (pushnew index list)))
+             (nreverse list))))
+    (ecase (count '-> subscripts :test #'safe-string=)
+      (0
+       (let* ((i-specs (mapcar #'explode subscripts))
+              (indices  (indices i-specs))
+              (o-specs (list (sort (copy-list indices) #'string<)))
+
+              (alist (mapcar #'cons indices (iota (length indices))))
+              (i-specs-num (sublis alist i-specs))
+              (o-specs-num (sublis alist o-specs))
+              
+              (i-len (length i-specs))
+              (o-len (length o-specs))
+              (transforms
+               (iter (for o from 1 to o-len)
+                     (collect
+                         `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1))))))))
+         (list :inputs i-specs-num :transforms transforms :outputs o-specs-num)))
+      (1
+       (let* ((pos (position '-> subscripts :test #'safe-string=))
+              (i-specs (mapcar #'explode (subseq subscripts 0 pos)))
+              (o-specs (mapcar #'explode (or (subseq subscripts (1+ pos)) '(nil)))) ; default
+
+              (indices (indices (append i-specs o-specs)))
+              (alist (mapcar #'cons indices (iota (length indices))))
+              (i-specs-num (sublis alist i-specs))
+              (o-specs-num (sublis alist o-specs))
+
+              (i-len (length i-specs))
+              (o-len (length o-specs))
+              (transforms
+               (iter (for o from 1 to o-len)
+                     (collecting
+                      `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1))))))))
+         (list :inputs i-specs-num :transforms transforms :outputs o-specs-num)))
+      (2
+       (let* ((pos (position '-> subscripts :test #'safe-string=))
+              (i-specs (mapcar #'explode (subseq subscripts 0 pos)))
+              (pos2 (position '-> subscripts :test #'safe-string= :start (1+ pos)))
+              (transforms (subseq subscripts (1+ pos) pos2))
+              (o-specs (mapcar #'explode (or (subseq subscripts (1+ pos2)) '(nil)))) ; default
+
+              (indices (indices (append i-specs o-specs)))
+              (alist (mapcar #'cons indices (iota (length indices))))
+              (i-specs-num (sublis alist i-specs))
+              (o-specs-num (sublis alist o-specs))
+
+              (i-len (length i-specs))
+              (o-len (length o-specs))
+              (transforms
+               (iter (for o from 1 to o-len)
+                     (collecting
+                      (or (nth (1- o) transforms)
+                          `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1)))))))))
+         (list :inputs i-specs-num :transforms transforms :outputs o-specs-num))))))
+
+(defun einsum-parse-subscripts (normalized-subscripts)
+  (match normalized-subscripts
+    ((plist :inputs     i-specs
+            :transforms transforms
+            :outputs    o-specs)
+     (flet ((? (i) (symbolicate '? (princ-to-string i)))
+            (map-specs (fn specs)
+              (iter (for spec in specs)
+                    (collecting
+                     (iter (for index in spec)
+                           (collecting (funcall fn index)))))))
+       
+       (let* ((i-specs (map-specs #'? i-specs))
+              (o-specs (map-specs #'? o-specs))
+              (i-flat (remove-duplicates (flatten i-specs)))
+              (o-flat (remove-duplicates (flatten o-specs)))
+              
+              (i-vars
+               (make-gensym-list (length i-specs) "I"))
+              (o-vars
+               (make-gensym-list (length o-specs) "O"))
+              (iter-specs
+               (sort-locality (union i-flat o-flat) (append i-specs o-specs))))
+         (values
+          i-specs
+          i-flat
+          o-specs
+          o-flat
+          i-vars
+          o-vars
+          iter-specs
+          transforms))))))
+
+(defun einsum-lambda (normalized-subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (multiple-value-bind (i-specs
                         i-flat
@@ -195,7 +285,7 @@ The symbols are interned in the current package.
                         i-vars
                         o-vars
                         iter-specs)
-      (einsum-parse-subscripts subscripts)
+      (einsum-parse-subscripts normalized-subscripts)
     (assert (subsetp o-flat i-flat)
             nil
             "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
@@ -223,33 +313,6 @@ The symbols are interned in the current package.
                ,@(einsum-body-iter iter-specs i-specs o-specs i-vars o-vars)
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
-
-(defun einsum-parse-subscripts (subscripts)
-  (let* ((pos (position '-> subscripts :test #'safe-string=))
-         (subscripts (mapcar #'explode-spec
-                             (remove '-> subscripts :test #'safe-string=)))
-         (i-specs (subseq subscripts 0 pos))
-         (i-flat (remove-duplicates (flatten i-specs)))
-         (o-specs (if pos
-                      (or (subseq subscripts pos)
-                          '(nil))
-                      (list
-                       (sort (copy-list i-flat) #'string<))))
-         (o-flat (remove-duplicates (flatten o-specs)))
-         (i-vars
-          (make-gensym-list (length i-specs) "I"))
-         (o-vars
-          (make-gensym-list (length o-specs) "O"))
-         (iter-specs
-          (sort-locality (union i-flat o-flat) subscripts)))
-    (values
-     i-specs
-     i-flat
-     o-specs
-     o-flat
-     i-vars
-     o-vars
-     iter-specs)))
 
 (defun einsum-body-iter (iter-specs i-specs o-specs i-vars o-vars)
   (match iter-specs

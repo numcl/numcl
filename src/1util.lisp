@@ -44,3 +44,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+
+(defmacro in-current-package (&body body)
+  "Bind *package* to the load-time-value of *package*.
+Used frequently for controlling the default package for the reader."
+  `(let ((*package* (load-time-value *package*)))
+     ,@body))

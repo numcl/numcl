@@ -234,7 +234,7 @@ The symbols are interned in NUMCL.SPEC package.
          ,@(einsum-body-iter rest i-specs o-specs i-vars o-vars))))))
 
 (defun sort-locality (indices subscripts)
-  (sort indices
+  (sort (copy-list indices)
         (lambda (index1 index2)
           (locality< index1 index2 subscripts))))
 

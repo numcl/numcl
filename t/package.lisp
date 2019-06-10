@@ -374,7 +374,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (test (einsum :compile-at :run-time)
 
   (signals type-error
-    (numcl.impl::einsum-lambda '(i00)))
+    (numcl.impl::einsum-normalize-subscripts '(i00)))
       
   (is (equalp (ones 5)
               (einsum '(i) (ones 5))))

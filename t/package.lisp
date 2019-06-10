@@ -395,27 +395,30 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
   (is (equalp #2A((7 8) (31 36))
               (einsum '(ij jk -> ik)
-                      #2A((0 1)
-                          (2 3)) #2A((5 6)
-                                     (7 8)))))
+                      (asarray #2A((0 1)
+                                   (2 3)) :type 'fixnum)
+                      (asarray #2A((5 6)
+                                   (7 8)) :type 'fixnum))))
 
   (is (equalp #2A((7 8) (31 36))
               (einsum '((i k) (k j) -> (i j)) ; alternative notation
-                      #2A((0 1)
-                          (2 3)) #2A((5 6)
-                                     (7 8)))))
+                      (asarray #2A((0 1)
+                                   (2 3)) :type 'fixnum)
+                      (asarray #2A((5 6)
+                                   (7 8)) :type 'fixnum))))
   
   (is (equalp #2A((0 2) (1 3))
-              (einsum '(ij -> ji) #2A((0 1) (2 3)))))
+              (einsum '(ij -> ji) (asarray #2A((0 1)
+                                               (2 3)) :type 'fixnum))))
   (is (equalp #2A((0 2) (1 3))
-              (einsum '(ji) #2A((0 1) (2 3)))))
+              (einsum '(ji) (asarray #2A((0 1) (2 3)) :type 'fixnum))))
   (is (equalp #(0 3)
-              (einsum '(ii) #2A((0 1) (2 3)))))
+              (einsum '(ii) (asarray #2A((0 1) (2 3)) :type 'fixnum))))
   (is (equalp 6
-              (einsum '(ij ->) #2A((0 1) (2 3)))))
+              (einsum '(ij ->) (asarray #2A((0 1) (2 3)) :type 'fixnum))))
 
   (let ((result (zeros '(2 2) :type 'single-float)))
-    (einsum '(ij -> ji) #2A((0 1) (2 3)) result)
+    (einsum '(ij -> ji) (asarray #2A((0 1) (2 3)) :type 'fixnum) result)
     (is (equalp #2A((0 2) (1 3)) result))))
 
 (test (linarg :compile-at :run-time)

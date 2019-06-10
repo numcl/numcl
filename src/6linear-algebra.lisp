@@ -249,6 +249,8 @@ The value returned is a plist of :inputs, :transforms, :outputs.
             :transforms transforms
             :outputs    o-specs)
      (flet ((? (i) (symbolicate '? (princ-to-string i)))
+            ($ (i) (symbolicate '$ (princ-to-string i)))
+            (@ (i) (symbolicate '@ (princ-to-string i)))
             (map-specs (fn specs)
               (iter (for spec in specs)
                     (collecting
@@ -260,31 +262,38 @@ The value returned is a plist of :inputs, :transforms, :outputs.
               (i-flat (remove-duplicates (flatten i-specs)))
               (o-flat (remove-duplicates (flatten o-specs)))
               
-              (i-vars
-               (make-gensym-list (length i-specs) "I"))
-              (o-vars
-               (make-gensym-list (length o-specs) "O"))
+              (i-len (length i-specs))
+              (o-len (length o-specs))
+              (i-vars (make-gensym-list i-len "I"))
+              (o-vars (make-gensym-list o-len "O"))
+              (i-evars (mapcar #'$ (iota i-len :start 1)))
+              (o-evars (mapcar #'@ (iota i-len :start 1)))
               (iter-specs
                (sort-locality (union i-flat o-flat) (append i-specs o-specs))))
          (values
           i-specs
-          i-flat
           o-specs
+          i-flat
           o-flat
           i-vars
           o-vars
+          i-evars
+          o-evars
           iter-specs
           transforms))))))
 
 (defun einsum-lambda (normalized-subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (multiple-value-bind (i-specs
-                        i-flat
                         o-specs
+                        i-flat
                         o-flat
                         i-vars
                         o-vars
-                        iter-specs)
+                        i-evars
+                        o-evars
+                        iter-specs
+                        transforms)
       (einsum-parse-subscripts normalized-subscripts)
     (assert (subsetp o-flat i-flat)
             nil
@@ -310,24 +319,114 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                        (for spec in o-specs)
                        (collecting
                         `(declare (gtype (array * ,spec) ,var))))
-               ,@(einsum-body-iter iter-specs i-specs o-specs i-vars o-vars)
+               ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
 
-(defun einsum-body-iter (iter-specs i-specs o-specs i-vars o-vars)
+
+(defun einsum-body-iter (iter-specs
+                         i-specs o-specs
+                         i-vars  o-vars
+                         i-evars o-evars
+                         transforms)
+  "Consume one index in iter-specs and use it for dotimes."
   (match iter-specs
     (nil
-     (iter (for o-var in o-vars)
-           (for o-spec in o-specs)
-           (collecting
-            `(incf (aref ,o-var ,@o-spec)
-                   (* ,@(iter (for i-var in i-vars)
-                              (for i-spec in i-specs)
-                              (collecting
-                               `(aref ,i-var ,@i-spec))))))))
+     (einsum-body-bind-output iter-specs
+                              i-specs o-specs
+                              i-vars  o-vars
+                              i-evars o-evars
+                              transforms))
     ((list* ?s rest)
-     `((dotimes (,?s ,?s)
-         ,@(einsum-body-iter rest i-specs o-specs i-vars o-vars))))))
+     `(dotimes (,?s ,?s)
+        ,(einsum-body-bind-output rest
+                                  i-specs o-specs
+                                  i-vars  o-vars
+                                  i-evars o-evars
+                                  transforms)))))
+
+(defun einsum-body-bind-output (iter-specs
+                                i-specs o-specs
+                                i-vars  o-vars
+                                i-evars o-evars
+                                transforms)
+  "Eagarly bind the output element value to a temporary variable when it no
+longer depends on the iteration variables."
+
+  (iter (for o-spec in o-specs)
+        (for o-var  in o-vars)
+        (for o-evar in o-evars)
+        
+        (if (spec-depends-on o-spec iter-specs)
+            (progn (collect o-spec into new-o-specs)
+                   (collect o-var  into new-o-vars )
+                   (collect o-evar into new-o-evars))
+            (progn (collect `(,o-evar (aref ,o-var ,@o-spec)) into binding)
+                   (collect `(setf (aref ,o-var ,@o-spec) ,o-evar) into cleanup)))
+
+        (finally
+         (return
+           (let ((form (einsum-body-bind-input iter-specs
+                                               i-specs new-o-specs
+                                               i-vars  new-o-vars
+                                               i-evars new-o-evars
+                                               transforms)))
+             (if binding
+                 `(let ,binding ,form ,@cleanup)
+                 form))))))
+
+(defun einsum-body-bind-input (iter-specs
+                               i-specs o-specs
+                               i-vars  o-vars
+                               i-evars o-evars
+                               transforms)
+  "Eagarly bind the input element value to a temporary variable when it no
+longer depends on the iteration variables."
+
+  (iter (for i-spec in i-specs)
+        (for i-var  in i-vars)
+        (for i-evar in i-evars)
+        
+        (if (spec-depends-on i-spec iter-specs)
+            (progn (collect i-spec into new-i-specs)
+                   (collect i-var  into new-i-vars )
+                   (collect i-evar into new-i-evars))
+            (progn (collect `(,i-evar (aref ,i-var ,@i-spec)) into binding)))
+
+        (finally
+         (return
+           (let ((form (einsum-body-check-inner-loop iter-specs
+                                                     new-i-specs o-specs
+                                                     new-i-vars  o-vars
+                                                     new-i-evars o-evars
+                                                     transforms)))
+             (if binding
+                 `(let ,binding ,form)
+                 form))))))
+
+(defun einsum-body-check-inner-loop (iter-specs
+                                     i-specs o-specs
+                                     i-vars  o-vars
+                                     i-evars o-evars
+                                     transforms)
+  (if (and (null iter-specs)
+           (null i-specs)
+           (null o-specs))
+      (iter (for transform in transforms)
+            (for o from 1)
+            (for o-sym = (symbolicate '@ (princ-to-string o)))
+            (when (first-iteration-p)
+              (collecting 'progn))
+            (collecting
+             `(setf ,o-sym ,transform)))
+      (einsum-body-iter iter-specs
+                        i-specs o-specs
+                        i-vars  o-vars
+                        i-evars o-evars
+                        transforms)))
+
+(defun spec-depends-on (spec iter-specs)
+  (intersection iter-specs spec))
 
 (defun sort-locality (indices subscripts)
   (sort (copy-list indices)

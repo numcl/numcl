@@ -39,8 +39,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; The symbol - has a special meaning that allows broadcasting,
 ;;  and can be used only once in each SPEC, similar to Numpy's ellipses (...).
 
-(declaim (inline einsum))
-(defun einsum (subscripts &rest args)
+(eval-when (:compile-toplevel :load-toplevel :execute ) (define-symbol-macro *einsum-documentation*
   "Performs Einstein's summation.
 The SUBSCRIPT specification is significantly extended from that of Numpy
 and can be seens as a full-brown DSL for array operations.
@@ -132,7 +131,7 @@ For example, (einsum '(ij jk) a b) is equivalent to:
 If SUBSCRIPTS is a constant, the compiler macro
 builds an iterator function and make them inlined. Otherwise,
 a new function is made in each call to einsum, resulting in a large bottleneck.
-(It could be memoized in the future.)
+ (It could be memoized in the future.)
 
 The nesting order of the loops are automatically decided based on the specs.
 The order affects the memory access pattern and therefore the performance due to
@@ -140,7 +139,11 @@ the access locality. For example, when writing a GEMM which accesses three matri
 by (setf (aref output i j) (* (aref a i k) (aref b k j))),
 it is well known that ikj-loop is the fastest among other loops, e.g. ijk-loop.
 EINSUM reorders the indices so that it maximizes the cache locality.
-"
+"))
+
+(declaim (inline einsum))
+(defun einsum (subscripts &rest args)
+  #.*einsum-documentation*
   (apply (compile nil (einsum-lambda (einsum-normalize-subscripts subscripts)))
          args))
 

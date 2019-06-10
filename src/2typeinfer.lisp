@@ -33,7 +33,25 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
         (warn "Missing type inference function for ~a, defaults to T" name)
         t)))
 
+(defun interpret-type (form)
+  "Form is a cons tree in which:
+ form : (inferer args*)
+ arg  : type | form "
+  (ematch form
+    ((list* name types)
+     (if (inferer-boundp name)
+         (apply #'infer-type
+                name
+                (mapcar #'interpret-type types))
+         form))
+    (_
+     (if (constantp form)
+         (if (realp form)
+             `(real ,form ,form)
+             'complex)
+         form))))
 
+;; (interpret-type '(+ (integer 0 100) (integer -10 100))) -> (integer -10 200)
 
 (set-type-inferer
  '+

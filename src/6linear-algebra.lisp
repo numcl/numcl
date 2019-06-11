@@ -397,7 +397,9 @@ longer depends on the iteration variables."
             (progn (collect o-spec into new-o-specs)
                    (collect o-var  into new-o-vars )
                    (collect o-evar into new-o-evars))
-            (progn (collect `(,o-evar (aref ,o-var ,@o-spec)) into binding)
+            (progn (collect `(,o-evar (aref ,o-var ,@o-spec))      into binding)
+                   (collect o-evar                                 into derived-dst)
+                   (collect o-var                                  into derived-src)
                    (collect `(setf (aref ,o-var ,@o-spec) ,o-evar) into cleanup)))
 
         (finally
@@ -408,7 +410,15 @@ longer depends on the iteration variables."
                                                i-evars new-o-evars
                                                transforms)))
              (if binding
-                 `(let ,binding ,form ,@cleanup)
+                 `(let ,binding
+                    ;; this DERIVE type forces the values to be of the same type
+                    ;; as the element type. Integer overflow is detected
+                    ,@(mapcar (lambda (src dst)
+                                `(declare (derive ,src type (array-subtype-element-type type) ,dst)))
+                              derived-src
+                              derived-dst)
+                    ,form
+                    ,@cleanup)
                  form))))))
 
 (defun einsum-body-bind-input (iter-specs
@@ -427,7 +437,9 @@ longer depends on the iteration variables."
             (progn (collect i-spec into new-i-specs)
                    (collect i-var  into new-i-vars )
                    (collect i-evar into new-i-evars))
-            (progn (collect `(,i-evar (aref ,i-var ,@i-spec)) into binding)))
+            (progn (collect `(,i-evar (aref ,i-var ,@i-spec)) into binding)
+                   (collect i-evar                            into derived-dst)
+                   (collect i-var                             into derived-src)))
 
         (finally
          (return
@@ -437,7 +449,16 @@ longer depends on the iteration variables."
                                                      new-i-evars o-evars
                                                      transforms)))
              (if binding
-                 `(let ,binding ,form)
+                 `(let ,binding
+                    ;; this DERIVE type forces the values to be of the same type
+                    ;; as the element type. While this is not necessary on SBCL,
+                    ;; it helps optimize the CCL code since it fails to deduce
+                    ;; the type of the variable assigned from the specialized array.
+                    ,@(mapcar (lambda (src dst)
+                                `(declare (derive ,src type (array-subtype-element-type type) ,dst)))
+                              derived-src
+                              derived-dst)
+                    ,form)
                  form))))))
 
 (defun einsum-body-check-inner-loop (iter-specs

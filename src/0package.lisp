@@ -27,7 +27,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   ;; It is thus necessary to explicitly provide (:use) so that it creates an empty package.
   (:use )
   (:export
-
+ 
    ;; 2type
    #:fixnum-overflow
    #:fixnum-underflow
@@ -222,6 +222,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    ))
 
 (uiop:define-package :numcl.impl
+    (:shadow :let)
     (:mix :cl                           ; want to use cl:aref
           :numcl.exported
           :alexandria                   ; but not want to use alexandria:flatten etc

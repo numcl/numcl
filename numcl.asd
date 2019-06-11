@@ -25,6 +25,7 @@
  :serial t
  :components ((:module "src"
                :components ((:file "0package")
+                            (:file "0specialops")
                             (:file "1constantfolded")
                             (:file "1constants")
                             (:file "1instantiate")

@@ -347,20 +347,14 @@ Otherwise call float-substitution and simplify integers to fixnums."
                              o-types))))))
 
 
+(define-constant +iter-args+ '(iter-specs i-specs o-specs i-vars  o-vars i-evars o-evars transforms) :test 'equal)
+;; I just use this constant as a read-time literal so that I don't have to write the long arguments
 
-(defun einsum-body-iter (iter-specs
-                         i-specs o-specs
-                         i-vars  o-vars
-                         i-evars o-evars
-                         transforms)
+(defun einsum-body-iter #.+iter-args+
   "Consume one index in iter-specs and use it for dotimes."
   (match iter-specs
     (nil
-     (einsum-body-bind-output iter-specs
-                              i-specs o-specs
-                              i-vars  o-vars
-                              i-evars o-evars
-                              transforms))
+     (einsum-body-bind-output . #.+iter-args+))
     ((list* s rest)
      `(dotimes (,(& s) ,(? s))
         ,(einsum-body-bind-output rest . #.(cdr +iter-args+))))))
@@ -401,11 +395,7 @@ longer depends on the iteration variables."
                     ,@cleanup)
                  form))))))
 
-(defun einsum-body-bind-input (iter-specs
-                               i-specs o-specs
-                               i-vars  o-vars
-                               i-evars o-evars
-                               transforms)
+(defun einsum-body-bind-input #.+iter-args+
   "Eagarly bind the input element value to a temporary variable when it no
 longer depends on the iteration variables."
 
@@ -441,11 +431,7 @@ longer depends on the iteration variables."
                     ,form)
                  form))))))
 
-(defun einsum-body-check-inner-loop (iter-specs
-                                     i-specs o-specs
-                                     i-vars  o-vars
-                                     i-evars o-evars
-                                     transforms)
+(defun einsum-body-check-inner-loop #.+iter-args+
   (if (and (null iter-specs)
            (null i-specs)
            (null o-specs))
@@ -456,11 +442,7 @@ longer depends on the iteration variables."
               (collecting 'progn))
             (collecting
              `(setf ,o-sym ,transform)))
-      (einsum-body-iter iter-specs
-                        i-specs o-specs
-                        i-vars  o-vars
-                        i-evars o-evars
-                        transforms)))
+      (einsum-body-iter . #.+iter-args+)))
 
 (defun spec-depends-on (spec iter-specs)
   (intersection iter-specs spec))

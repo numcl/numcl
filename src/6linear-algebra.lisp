@@ -376,9 +376,13 @@ Otherwise call float-substitution and simplify integers to fixnums."
                (nil
                 0)
                ((list* s1 rest)
-                `(+ ,(& s1)
-                    (* ,(? s1)
-                       ,(rec rest)))))))
+                ;; most-positive-fixnum might also work, but I don't know
+                ;; I also tried ub function (1type.lisp) but it did not get a good result
+                `(logand #xffffffffffffffff
+                         (+ ,(& s1)
+                            (logand #xffffffffffffffff
+                                    (* ,(? s1)
+                                       ,(rec rest)))))))))
     `(the index ,(rec (reverse spec)))))
 
 ;; (print (row-major-index-form '(2 1 0)))

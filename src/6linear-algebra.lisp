@@ -254,26 +254,20 @@ The value returned is a plist of :inputs, :transforms, :outputs.
     ((plist :inputs     i-specs
             :transforms transforms
             :outputs    o-specs)
-     (flet ((? (i) (in-current-package (symbolicate '? (princ-to-string i))))
-            ($ (i) (in-current-package (symbolicate '$ (princ-to-string i))))
-            (@ (i) (in-current-package (symbolicate '@ (princ-to-string i))))
+     (flet ((? (i) (in-current-package (symbolicate '? (princ-to-string i)))) ; index var
+            ($ (i) (in-current-package (symbolicate '$ (princ-to-string i)))) ; input element var
+            (@ (i) (in-current-package (symbolicate '@ (princ-to-string i)))) ; output element var
             (map-specs (fn specs)
               (iter (for spec in specs)
                     (collecting
                      (iter (for index in spec)
                            (collecting (funcall fn index)))))))
        
-       (let* ((i-specs (map-specs #'? i-specs))
-              (o-specs (map-specs #'? o-specs))
-              (i-flat (remove-duplicates (flatten i-specs)))
+       (let* ((i-flat (remove-duplicates (flatten i-specs)))
               (o-flat (remove-duplicates (flatten o-specs)))
               
               (i-len (length i-specs))
               (o-len (length o-specs))
-              (i-vars (make-gensym-list i-len "I"))
-              (o-vars (make-gensym-list o-len "O"))
-              (i-evars (mapcar #'$ (iota i-len :start 1)))
-              (o-evars (mapcar #'@ (iota i-len :start 1)))
               (iter-specs
                (sort-locality (union i-flat o-flat) (append i-specs o-specs))))
          (assert (subsetp o-flat i-flat)
@@ -281,13 +275,13 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                  "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
                  (set-difference o-flat i-flat) i-flat o-flat)
          (values
-          i-specs
-          o-specs
-          i-vars
-          o-vars
-          i-evars
-          o-evars
-          iter-specs
+          (map-specs #'? i-specs)
+          (map-specs #'? o-specs)
+          (make-gensym-list i-len "I")
+          (make-gensym-list o-len "O")
+          (mapcar #'$ (iota i-len :start 1))
+          (mapcar #'@ (iota o-len :start 1))
+          (map-specs #'? iter-specs)
           transforms))))))
 
 (deftype index () `(integer 0 (,array-dimension-limit)))

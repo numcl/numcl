@@ -276,11 +276,13 @@ The value returned is a plist of :inputs, :transforms, :outputs.
               (o-evars (mapcar #'@ (iota i-len :start 1)))
               (iter-specs
                (sort-locality (union i-flat o-flat) (append i-specs o-specs))))
+         (assert (subsetp o-flat i-flat)
+                 nil
+                 "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
+                 (set-difference o-flat i-flat) i-flat o-flat)
          (values
           i-specs
           o-specs
-          i-flat
-          o-flat
           i-vars
           o-vars
           i-evars
@@ -294,8 +296,6 @@ The value returned is a plist of :inputs, :transforms, :outputs.
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (multiple-value-bind (i-specs
                         o-specs
-                        i-flat
-                        o-flat
                         i-vars
                         o-vars
                         i-evars
@@ -303,10 +303,6 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                         iter-specs
                         transforms)
       (einsum-parse-subscripts normalized-subscripts)
-    (assert (subsetp o-flat i-flat)
-            nil
-            "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
-            (set-difference o-flat i-flat) i-flat o-flat)
     (with-gensyms (o-types)
       `(lambda (,@i-vars &optional ,@o-vars)
          (resolving

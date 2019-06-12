@@ -288,6 +288,18 @@ The value returned is a plist of :inputs, :transforms, :outputs.
 
 (deftype index () `(integer 0 (,array-dimension-limit)))
 
+(defvar *ssa-cache* nil
+  "Alist for redundancy elimination, used during the compilation.
+ Each key is a form, each value is a cons of tmporary variable and a boolean
+ indicating whether it was bound.")
+
+
+(defun maybe-use-cache (form)
+  (or (car (cdr (assoc form *ssa-cache* :test 'equal)))
+      (with-gensyms (tmp)
+        (setf *ssa-cache* (acons form (cons tmp nil) *ssa-cache*))
+        tmp)))
+
 (defun einsum-lambda (normalized-subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (multiple-value-bind (i-specs i-vars i-evars
@@ -321,7 +333,8 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                  (specializing (,@i-vars ,@o-vars) ()
                    (declare (optimize (speed 2) (safety 0)))
                    (declare (type index ,@(mapcar #'? iter-specs)))
-                   ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)))
+                   ,(let ((*ssa-cache* nil))
+                      (einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms))))
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
 
@@ -375,14 +388,20 @@ Otherwise call float-substitution and simplify integers to fixnums."
              (ematch spec
                (nil
                 0)
+               ((list s1)
+                ;; it is ok to let the first clause handle this,
+                ;; but the expansion result is not esthetically pleasing
+                (& s1))
                ((list* s1 rest)
                 ;; most-positive-fixnum might also work, but I don't know
                 ;; I also tried ub function (1type.lisp) but it did not get a good result
-                `(logand #xffffffffffffffff
-                         (+ ,(& s1)
-                            (logand #xffffffffffffffff
-                                    (* ,(? s1)
-                                       ,(rec rest)))))))))
+                (maybe-use-cache
+                 `(logand #xffffffffffffffff
+                          (+ ,(& s1)
+                             ,(maybe-use-cache
+                               `(logand #xffffffffffffffff
+                                        (* ,(? s1)
+                                           ,(rec rest)))))))))))
     `(the index ,(rec (reverse spec)))))
 
 ;; (print (row-major-index-form '(2 1 0)))
@@ -407,6 +426,13 @@ longer depends on the iteration variables."
                      into cleanup)))
 
         (finally
+         (iter (for pair in *ssa-cache*)
+               (print pair)
+               (match pair
+                 ((cons form (cons tmpvar (place used)))
+                  (unless used
+                    (setf used t)
+                    (push (list tmpvar form) binding)))))
          (return
            (let ((form (einsum-body-bind-input iter-specs
                                                i-specs new-o-specs
@@ -414,7 +440,7 @@ longer depends on the iteration variables."
                                                i-evars new-o-evars
                                                transforms)))
              (if binding
-                 `(let ,binding
+                 `(let* ,binding
                     ;; this DERIVE type forces the values to be of the same type
                     ;; as the element type. Integer overflow is detected
                     ,@(mapcar (lambda (src dst)
@@ -443,6 +469,13 @@ longer depends on the iteration variables."
                      into binding)))
 
         (finally
+         (iter (for pair in *ssa-cache*)
+               (print pair)
+               (match pair
+                 ((cons form (cons tmpvar (place used)))
+                  (unless used
+                    (setf used t)
+                    (push (list tmpvar form) binding)))))
          (return
            (let ((form (einsum-body-check-inner-loop iter-specs
                                                      new-i-specs o-specs
@@ -450,7 +483,7 @@ longer depends on the iteration variables."
                                                      new-i-evars o-evars
                                                      transforms)))
              (if binding
-                 `(let ,binding
+                 `(let* ,binding
                     ;; this DERIVE type forces the values to be of the same type
                     ;; as the element type. While this is not necessary on SBCL,
                     ;; it helps optimize the CCL code since it fails to deduce

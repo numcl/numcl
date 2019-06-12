@@ -45,16 +45,14 @@ Note that this does not provide a runtime checking and unification of type varia
 
 (defun %%expand-decls (decl env)
   (match decl
-    ((list* 'derive variable pattern clause rest)
-     `(type ,(derive-type-expander variable pattern clause env) ,@rest))
+    ((list* 'derive variable type newform rest)
+     `(type ,(derive-type-expander variable type newform env) ,@rest))
     (_
      decl)))
 
-(defun derive-type-expander (variable pattern clause env)
-  (eval
-   `(ematch ',(nth-value 2 (cltl2:variable-information variable env))
-      ((assoc 'type ,pattern)
-       ,clause))))
+(defun derive-type-expander (variable type newform env)
+  (progv (list type) (list (cdr (assoc 'type (nth-value 2 (cltl2:variable-information variable env)))))
+    (eval newform)))
 
 ;; TODO: define this for all special ops
 

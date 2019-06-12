@@ -35,38 +35,38 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; misc functions. These are tentative, base implementations.
 ;; they will eventually be replaced by BLAS/LAPACK routines.
 
-(declaim (inline transpose))
-(defun transpose (matrix)
-  "Reverses the axes of an array."
-  (let ((indices (make-gensym-list (rank matrix))))
-    ;; needs some caching for functions here
-    (einsum `(,indices -> ,(reverse indices)) matrix)))
+(inline-except-toplevel ()
+  (defun transpose (matrix)
+    "Reverses the axes of an array."
+    (let ((indices (make-gensym-list (rank matrix))))
+      ;; needs some caching for functions here
+      (einsum `(,indices -> ,(reverse indices)) matrix))))
 
-(declaim (inline matmul))
-(defun matmul (a b)
-  "Matrix product of two arrays."
-  (einsum '(ij jk -> ik) a b))
+(inline-except-toplevel ()
+  (defun matmul (a b)
+    "Matrix product of two arrays."
+    (einsum '(ij jk -> ik) a b)))
 
-(declaim (inline vdot))
-(defun vdot (a b)
-  "Dot product of two vectors. For complex values, the first value is conjugated."
-  (einsum '(i i -> ) (numcl:conjugate a) b))
+(inline-except-toplevel ()
+  (defun vdot (a b)
+    "Dot product of two vectors. For complex values, the first value is conjugated."
+    (einsum '(i i -> ) (numcl:conjugate a) b)))
 
-(declaim (inline inner))
-(defun inner (a b)
-  "Inner product of two vectors."
-  (einsum '(i i -> ) a b))
+(inline-except-toplevel ()
+  (defun inner (a b)
+    "Inner product of two vectors."
+    (einsum '(i i -> ) a b)))
 
-(declaim (inline outer))
-(defun outer (a b)
-  "Compute the outer product of two vectors."
-  (einsum '(i j -> ij) a b))
+(inline-except-toplevel ()
+  (defun outer (a b)
+    "Compute the outer product of two vectors."
+    (einsum '(i j -> ij) a b)))
 
-(declaim (inline kron))
-(defun kron (a b)
-  "Compute the kronecker product of two vectors."
-  (reshape (einsum '(ij kl -> ikjl) a b)
-           (mapcar #'* (shape a) (shape b))))
+(inline-except-toplevel ()
+  (defun kron (a b)
+    "Compute the kronecker product of two vectors."
+    (reshape (einsum '(ij kl -> ikjl) a b)
+             (mapcar #'* (shape a) (shape b)))))
 
 ;; (declaim (inline dot))
 ;; (defun dot (a b)
@@ -75,71 +75,71 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;;   
 ;;   (einsum '(ij jk -> ik) a b))
 
-(declaim (inline diag))
-(defun diag (a)
-  "Return the diagonal element of a matrix as a vector"
-  (einsum '(ii -> i) a))
+(inline-except-toplevel ()
+  (defun diag (a)
+    "Return the diagonal element of a matrix as a vector"
+    (einsum '(ii -> i) a)))
 
-(declaim (inline tri))
-(defun tri (n &key (m n) (k 0) (type 'bit))
-  "Returns a triangle matrix whose lower diagnonal (including the diagonal) filled with 1.
+(inline-except-toplevel ()
+  (defun tri (n &key (m n) (k 0) (type 'bit))
+    "Returns a triangle matrix whose lower diagnonal (including the diagonal) filled with 1.
  N,M specifies the shape of the return array. K will adjust the sub-diagonal -- positive K fills more 1s."
-  (let ((a (zeros (list n m) :type type))
-        (one (%coerce 1 type)))
-    (dotimes (i n a)
-      (dotimes (j m)
-        (when (>= i (- j k))            ; numpy documentation is wrong... it is not i <= j+k
-          (setf (aref a i j) one))))))
+    (let ((a (zeros (list n m) :type type))
+          (one (%coerce 1 type)))
+      (dotimes (i n a)
+        (dotimes (j m)
+          (when (>= i (- j k))            ; numpy documentation is wrong... it is not i <= j+k
+            (setf (aref a i j) one)))))))
 
-(declaim (inline tril))
-(defun tril (matrix &optional (k 0))
-  "Returns the copy of matrix with elements above the k-th diagonal zeroed. Positive K fills less 0s."
-  (match matrix
-    ((array :dimensions (list n m)
-            :element-type type)
-     (let ((a (zeros (list n m) :type type)))
-       (dotimes (i n a)
-         (dotimes (j m)
-           (when (>= i (- j k))
-             (setf (aref a i j) (aref matrix i j)))))))))
+(inline-except-toplevel ()
+  (defun tril (matrix &optional (k 0))
+    "Returns the copy of matrix with elements above the k-th diagonal zeroed. Positive K fills less 0s."
+    (match matrix
+      ((array :dimensions (list n m)
+              :element-type type)
+       (let ((a (zeros (list n m) :type type)))
+         (dotimes (i n a)
+           (dotimes (j m)
+             (when (>= i (- j k))
+               (setf (aref a i j) (aref matrix i j))))))))))
 
-(declaim (inline triu))
-(defun triu (matrix &optional (k 0))
-  "Returns the copy of matrix with elements below the k-th diagonal zeroed. Positive K fills more 0s."
-  (match matrix
-    ((array :dimensions (list n m)
-            :element-type type)
-     (let ((a (zeros (list n m) :type type)))
-       (dotimes (i n a)
-         (dotimes (j m)
-           (when (<= i (- j k))
-             (setf (aref a i j) (aref matrix i j)))))))))
+(inline-except-toplevel ()
+  (defun triu (matrix &optional (k 0))
+    "Returns the copy of matrix with elements below the k-th diagonal zeroed. Positive K fills more 0s."
+    (match matrix
+      ((array :dimensions (list n m)
+              :element-type type)
+       (let ((a (zeros (list n m) :type type)))
+         (dotimes (i n a)
+           (dotimes (j m)
+             (when (<= i (- j k))
+               (setf (aref a i j) (aref matrix i j))))))))))
 
-(declaim (inline eye))
-(defun eye (n &key (m n) (k 0) (type 'bit))
-  "Returns a matrix whose k-th diagnonal filled with 1.
+(inline-except-toplevel ()
+  (defun eye (n &key (m n) (k 0) (type 'bit))
+    "Returns a matrix whose k-th diagnonal filled with 1.
  N,M specifies the shape of the return array. K will adjust the sub-diagonal -- positive K moves it upward."
-  (let ((a (zeros (list n m) :type type))
-        (one (%coerce 1 type)))
-    (do ((i (max 0 (- k)) (1+ i))
-         (j (max 0 k)     (1+ j)))
-        ((or (= i n) (= j m))
-         a)
-      (setf (aref a i j) one))))
+    (let ((a (zeros (list n m) :type type))
+          (one (%coerce 1 type)))
+      (do ((i (max 0 (- k)) (1+ i))
+           (j (max 0 k)     (1+ j)))
+          ((or (= i n) (= j m))
+           a)
+        (setf (aref a i j) one)))))
 
-(declaim (inline vander))
-(defun vander (v &key (n (length v)) increasing)
-  "Returns a matrix where M[i,j] == V[i]^(N-j) when increasing is false (default), and 
+(inline-except-toplevel ()
+  (defun vander (v &key (n (length v)) increasing)
+    "Returns a matrix where M[i,j] == V[i]^(N-j) when increasing is false (default), and 
  M[i,j] == V[i]^j when increasing is true."
-  (let* ((m (length v))
-         (a (zeros (list m n) :type (array-element-type v))))
-    (if increasing
-        (dotimes (i m)
-          (dotimes (j n)
-            (setf (aref a i j) (expt (aref v i) j))))
-        (dotimes (i m)
-          (do ((j 0 (1+ j))
-               (e (1- n) (1- e)))
-              ((= j n))
-            (setf (aref a i j) (expt (aref v i) e)))))
-    a))
+    (let* ((m (length v))
+           (a (zeros (list m n) :type (array-element-type v))))
+      (if increasing
+          (dotimes (i m)
+            (dotimes (j n)
+              (setf (aref a i j) (expt (aref v i) j))))
+          (dotimes (i m)
+            (do ((j 0 (1+ j))
+                 (e (1- n) (1- e)))
+                ((= j n))
+              (setf (aref a i j) (expt (aref v i) e)))))
+      a)))

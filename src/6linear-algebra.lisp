@@ -314,10 +314,14 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                        (for spec in o-specs)
                        (collecting
                         `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
-               (specializing (,@i-vars ,@o-vars) ()
-                 (declare (optimize (speed 2) (safety 0)))
-                 (declare (type index ,@(mapcar #'? iter-specs)))
-                 ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms))
+               (let ,(iter (for var in (append i-vars o-vars))
+                           (collecting
+                            ;; extract the base array
+                            `(,var (array-displacement ,var))))
+                 (specializing (,@i-vars ,@o-vars) ()
+                   (declare (optimize (speed 2) (safety 0)))
+                   (declare (type index ,@(mapcar #'? iter-specs)))
+                   ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)))
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
 

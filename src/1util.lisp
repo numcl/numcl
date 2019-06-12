@@ -50,3 +50,35 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 Used frequently for controlling the default package for the reader."
   `(let ((*package* (load-time-value *package*)))
      ,@body))
+
+
+(defmacro inline-except-toplevel ((&key) &body defun-form)
+  "Takes a DEFUN form, then return a PROGN containing two versions of the defun form:
+One is the original form, and another, which have the same definition (arguments and body)
+but has the name prefixed with `inlinable-`. This inlinable- version is declared inline.
+Furthermore, it defines the compiler-macro for the original function
+which expands to the inlinable version when `*compile-file-pathanme*` is set in the compile time.
+This way it prevents inlining in the REPL.
+
+This macro is important for certain functions (e.g. MATMUL) that contain delayed compilation
+using specialized-function, mainly EINSUM.
+We want those functions to be inline-expanded (to expose EINSUM) which is later fused with
+other EINSUMs. However, when the function is used on the toplevel form (e.g. REPL)
+without this macro, it always expands to EINSUM and thus always creates a new function table.
+"
+  (ematch (first defun-form)
+    ((list* 'defun name args body)
+     (let ((inlinable-name (symbolicate 'inlinable- name)))
+       `(progn
+          (declaim (inline ,inlinable-name))
+          (defun ,inlinable-name ,args ,@body)
+          ,(first defun-form)
+          (define-compiler-macro ,name (&whole whole &rest args)
+            (if *compile-file-pathname*
+                (progn
+                  (format t "~&; inlining ~a" whole)
+                  `(,',inlinable-name ,@args))
+                whole)))))))
+
+
+      

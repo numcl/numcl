@@ -364,6 +364,25 @@ Otherwise call float-substitution and simplify integers to fixnums."
      `(dotimes (,(& s) ,(? s))
         ,(einsum-body-bind-output rest . #.(cdr +iter-args+))))))
 
+
+;; access:     (aref a i j k)
+;; dimensions: (5 6 7)
+;; row-major:  i*6*7 + j*7 + k : 3 multiplications
+;;             ((i*6)+j)*7 + k : 2 multiplications
+
+(defun row-major-index-form (spec)
+  (labels ((rec (spec)
+             (ematch spec
+               (nil
+                0)
+               ((list* s1 rest)
+                `(+ ,(& s1)
+                    (* ,(? s1)
+                       ,(rec rest)))))))
+    `(the index ,(rec (reverse spec)))))
+
+;; (print (row-major-index-form '(2 1 0)))
+
 (defun einsum-body-bind-output #.+iter-args+
   "Eagarly bind the output element value to a temporary variable when it no
 longer depends on the iteration variables."
@@ -378,8 +397,10 @@ longer depends on the iteration variables."
                    (collect o-evar into new-o-evars))
             (progn (collect o-evar into derived-dst)
                    (collect o-var  into derived-src)
-                   (collect `(,o-evar (aref ,o-var ,@(mapcar #'& o-spec)))      into binding)
-                   (collect `(setf (aref ,o-var ,@(mapcar #'& o-spec)) ,o-evar) into cleanup)))
+                   (collect `(,o-evar (aref ,o-var ,(row-major-index-form o-spec)))
+                     into binding)
+                   (collect `(setf (aref ,o-var ,(row-major-index-form o-spec)) ,o-evar)
+                     into cleanup)))
 
         (finally
          (return
@@ -414,7 +435,8 @@ longer depends on the iteration variables."
                    (collect i-evar into new-i-evars))
             (progn (collect i-evar into derived-dst)
                    (collect i-var  into derived-src)
-                   (collect `(,i-evar (aref ,i-var ,@(mapcar #'& i-spec)))      into binding)))
+                   (collect `(,i-evar (aref ,i-var ,(row-major-index-form i-spec)))
+                     into binding)))
 
         (finally
          (return

@@ -249,42 +249,42 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                           `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1)))))))))
          (list :inputs i-specs-num :transforms transforms :outputs o-specs-num))))))
 
+(defun ? (i) (in-current-package (symbolicate '? (princ-to-string i)))) ; index limit var
+(defun $ (i) (in-current-package (symbolicate '$ (princ-to-string i)))) ; input element var
+(defun @ (i) (in-current-package (symbolicate '@ (princ-to-string i)))) ; output element var
+(defun & (i) (in-current-package (symbolicate '& (princ-to-string i)))) ; index iteration var
+(defun map-specs (fn specs)
+  (iter (for spec in specs)
+        (collecting
+         (iter (for index in spec)
+               (collecting (funcall fn index))))))
+
 (defun einsum-parse-subscripts (normalized-subscripts)
   (match normalized-subscripts
     ((plist :inputs     i-specs
             :transforms transforms
             :outputs    o-specs)
-     (flet ((? (i) (in-current-package (symbolicate '? (princ-to-string i)))) ; index var
-            ($ (i) (in-current-package (symbolicate '$ (princ-to-string i)))) ; input element var
-            (@ (i) (in-current-package (symbolicate '@ (princ-to-string i)))) ; output element var
-            (map-specs (fn specs)
-              (iter (for spec in specs)
-                    (collecting
-                     (iter (for index in spec)
-                           (collecting (funcall fn index)))))))
-       
-       (let* ((i-flat (remove-duplicates (flatten i-specs)))
-              (o-flat (remove-duplicates (flatten o-specs)))
-              
-              (i-len (length i-specs))
-              (o-len (length o-specs))
-              (iter-specs
-               (sort-locality (union i-flat o-flat) (append i-specs o-specs))))
-         (assert (subsetp o-flat i-flat)
-                 nil
-                 "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
-                 (set-difference o-flat i-flat) i-flat o-flat)
-         (values
-          (map-specs #'? i-specs)
-          (make-gensym-list i-len "I")
-          (mapcar #'$ (iota i-len :start 1))
+     (let* ((i-flat (remove-duplicates (flatten i-specs)))
+            (o-flat (remove-duplicates (flatten o-specs)))
+            (i-len (length i-specs))
+            (o-len (length o-specs))
+            (iter-specs
+             (sort-locality (union i-flat o-flat) (append i-specs o-specs))))
+       (assert (subsetp o-flat i-flat)
+               nil
+               "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
+               (set-difference o-flat i-flat) i-flat o-flat)
+       (values
+        i-specs
+        (make-gensym-list i-len "I")
+        (mapcar #'$ (iota i-len :start 1))
 
-          (map-specs #'? o-specs)
-          (make-gensym-list o-len "O")
-          (mapcar #'$ (iota o-len :start 1))
-          
-          (map-specs #'? iter-specs)
-          transforms))))))
+        o-specs
+        (make-gensym-list o-len "O")
+        (mapcar #'@ (iota o-len :start 1))
+
+        iter-specs
+        transforms)))))
 
 (deftype index () `(integer 0 (,array-dimension-limit)))
 
@@ -299,7 +299,7 @@ The value returned is a plist of :inputs, :transforms, :outputs.
            ,@(iter (for var in i-vars)
                    (for spec in i-specs)
                    (collecting
-                    `(declare (gtype (array * ,spec) ,var))))
+                    `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
            (let* ((,o-types (einsum-output-types
                              ',transforms ',i-evars ',o-evars ,@i-vars))
                   ,@(iter (for o-var     in o-vars)
@@ -308,15 +308,15 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                           (collecting
                            `(,o-var
                              (or ,o-var
-                                 (zeros (list ,@o-spec) :type (nth ,o ,o-types)))))))
+                                 (zeros (list ,@(mapcar #'? o-spec)) :type (nth ,o ,o-types)))))))
              (resolving
                ,@(iter (for var in o-vars)
                        (for spec in o-specs)
                        (collecting
-                        `(declare (gtype (array * ,spec) ,var))))
+                        `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
                (specializing (,@i-vars ,@o-vars) ()
                  (declare (optimize (speed 2) (safety 0)))
-                 (declare (type index ,@iter-specs))
+                 (declare (type index ,@(mapcar #'? iter-specs)))
                  ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms))
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
@@ -361,19 +361,11 @@ Otherwise call float-substitution and simplify integers to fixnums."
                               i-vars  o-vars
                               i-evars o-evars
                               transforms))
-    ((list* ?s rest)
-     `(dotimes (,?s ,?s)
-        ,(einsum-body-bind-output rest
-                                  i-specs o-specs
-                                  i-vars  o-vars
-                                  i-evars o-evars
-                                  transforms)))))
+    ((list* s rest)
+     `(dotimes (,(& s) ,(? s))
+        ,(einsum-body-bind-output rest . #.(cdr +iter-args+))))))
 
-(defun einsum-body-bind-output (iter-specs
-                                i-specs o-specs
-                                i-vars  o-vars
-                                i-evars o-evars
-                                transforms)
+(defun einsum-body-bind-output #.+iter-args+
   "Eagarly bind the output element value to a temporary variable when it no
 longer depends on the iteration variables."
 
@@ -385,10 +377,10 @@ longer depends on the iteration variables."
             (progn (collect o-spec into new-o-specs)
                    (collect o-var  into new-o-vars )
                    (collect o-evar into new-o-evars))
-            (progn (collect `(,o-evar (aref ,o-var ,@o-spec))      into binding)
-                   (collect o-evar                                 into derived-dst)
-                   (collect o-var                                  into derived-src)
-                   (collect `(setf (aref ,o-var ,@o-spec) ,o-evar) into cleanup)))
+            (progn (collect o-evar into derived-dst)
+                   (collect o-var  into derived-src)
+                   (collect `(,o-evar (aref ,o-var ,@(mapcar #'& o-spec)))      into binding)
+                   (collect `(setf (aref ,o-var ,@(mapcar #'& o-spec)) ,o-evar) into cleanup)))
 
         (finally
          (return
@@ -425,9 +417,9 @@ longer depends on the iteration variables."
             (progn (collect i-spec into new-i-specs)
                    (collect i-var  into new-i-vars )
                    (collect i-evar into new-i-evars))
-            (progn (collect `(,i-evar (aref ,i-var ,@i-spec)) into binding)
-                   (collect i-evar                            into derived-dst)
-                   (collect i-var                             into derived-src)))
+            (progn (collect i-evar into derived-dst)
+                   (collect i-var  into derived-src)
+                   (collect `(,i-evar (aref ,i-var ,@(mapcar #'& i-spec)))      into binding)))
 
         (finally
          (return

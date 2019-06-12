@@ -288,6 +288,8 @@ The value returned is a plist of :inputs, :transforms, :outputs.
           iter-specs
           transforms))))))
 
+(deftype index () `(integer 0 (,array-dimension-limit)))
+
 (defun einsum-lambda (normalized-subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (multiple-value-bind (i-specs
@@ -328,7 +330,7 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                         `(declare (gtype (array * ,spec) ,var))))
                (specializing (,@i-vars ,@o-vars) ()
                  (declare (optimize (speed 2) (safety 0)))
-                 (declare (type (integer 0 ,array-dimension-limit) ,@iter-specs))
+                 (declare (type index ,@iter-specs))
                  ,(einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms))
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))

@@ -36,36 +36,46 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; they will eventually be replaced by BLAS/LAPACK routines.
 
 (inline-except-toplevel ()
-  (defun transpose (matrix)
+  (defun transpose (matrix &optional result)
     "Reverses the axes of an array."
     (let ((indices (make-gensym-list (rank matrix))))
       ;; needs some caching for functions here
       (einsum `(,indices -> ,(reverse indices)) matrix))))
 
 (inline-except-toplevel ()
-  (defun matmul (a b)
+  (defun matmul (a b &optional result)
     "Matrix product of two arrays."
-    (einsum '(ij jk -> ik) a b)))
+    (if result
+        (einsum '(ij jk -> ik) a b result)
+        (einsum '(ij jk -> ik) a b))))
 
 (inline-except-toplevel ()
-  (defun vdot (a b)
+  (defun vdot (a b &optional result)
     "Dot product of two vectors. For complex values, the first value is conjugated."
-    (einsum '(i i -> ) (numcl:conjugate a) b)))
+    (if result
+        (einsum '(i i -> ) (numcl:conjugate a) b result)
+        (einsum '(i i -> ) (numcl:conjugate a) b))))
 
 (inline-except-toplevel ()
-  (defun inner (a b)
+  (defun inner (a b &optional result)
     "Inner product of two vectors."
-    (einsum '(i i -> ) a b)))
+    (if result
+        (einsum '(i i -> ) a b result)
+        (einsum '(i i -> ) a b))))
 
 (inline-except-toplevel ()
-  (defun outer (a b)
+  (defun outer (a b &optional result)
     "Compute the outer product of two vectors."
-    (einsum '(i j -> ij) a b)))
+    (if result
+        (einsum '(i j -> ij) a b result)
+        (einsum '(i j -> ij) a b))))
 
 (inline-except-toplevel ()
-  (defun kron (a b)
+  (defun kron (a b &optional result)
     "Compute the kronecker product of two vectors."
-    (reshape (einsum '(ij kl -> ikjl) a b)
+    (reshape (if result
+                 (einsum '(ij kl -> ikjl) a b result)
+                 (einsum '(ij kl -> ikjl) a b))
              (mapcar #'* (shape a) (shape b)))))
 
 ;; (declaim (inline dot))
@@ -76,9 +86,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;;   (einsum '(ij jk -> ik) a b))
 
 (inline-except-toplevel ()
-  (defun diag (a)
+  (defun diag (a &optional result)
     "Return the diagonal element of a matrix as a vector"
-    (einsum '(ii -> i) a)))
+    (if result
+        (einsum '(ii -> i) a result)
+        (einsum '(ii -> i) a))))
 
 (inline-except-toplevel ()
   (defun tri (n &key (m n) (k 0) (type 'bit))

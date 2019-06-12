@@ -276,11 +276,13 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                  (set-difference o-flat i-flat) i-flat o-flat)
          (values
           (map-specs #'? i-specs)
-          (map-specs #'? o-specs)
           (make-gensym-list i-len "I")
-          (make-gensym-list o-len "O")
           (mapcar #'$ (iota i-len :start 1))
-          (mapcar #'@ (iota o-len :start 1))
+
+          (map-specs #'? o-specs)
+          (make-gensym-list o-len "O")
+          (mapcar #'$ (iota o-len :start 1))
+          
           (map-specs #'? iter-specs)
           transforms))))))
 
@@ -288,14 +290,8 @@ The value returned is a plist of :inputs, :transforms, :outputs.
 
 (defun einsum-lambda (normalized-subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
-  (multiple-value-bind (i-specs
-                        o-specs
-                        i-vars
-                        o-vars
-                        i-evars
-                        o-evars
-                        iter-specs
-                        transforms)
+  (multiple-value-bind (i-specs i-vars i-evars
+                        o-specs o-vars o-evars iter-specs transforms)
       (einsum-parse-subscripts normalized-subscripts)
     (with-gensyms (o-types)
       `(lambda (,@i-vars &optional ,@o-vars)

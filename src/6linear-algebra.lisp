@@ -288,18 +288,6 @@ The value returned is a plist of :inputs, :transforms, :outputs.
 
 (deftype index () `(integer 0 (,array-dimension-limit)))
 
-(defvar *ssa-cache* nil
-  "Alist for redundancy elimination, used during the compilation.
- Each key is a form, each value is a cons of tmporary variable and a boolean
- indicating whether it was bound.")
-
-
-(defun maybe-use-cache (form)
-  (or (car (cdr (assoc form *ssa-cache* :test 'equal)))
-      (with-gensyms (tmp)
-        (setf *ssa-cache* (acons form (cons tmp nil) *ssa-cache*))
-        tmp)))
-
 (defun einsum-lambda (normalized-subscripts)
   "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
   (multiple-value-bind (i-specs i-vars i-evars
@@ -333,8 +321,7 @@ The value returned is a plist of :inputs, :transforms, :outputs.
                  (specializing (,@i-vars ,@o-vars) ()
                    (declare (optimize (speed 2) (safety 0)))
                    (declare (type index ,@(mapcar #'? iter-specs)))
-                   ,(let ((*ssa-cache* nil))
-                      (einsum-body-bind-output iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms))))
+                   ,(einsum-body iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)))
                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                  o-vars)))))))))
 
@@ -364,24 +351,33 @@ Otherwise call float-substitution and simplify integers to fixnums."
                              o-types))))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-(define-constant +iter-args+ '(iter-specs i-specs o-specs i-vars  o-vars i-evars o-evars transforms) :test 'equal)
-)
-;; I just use this constant as a read-time literal so that I don't have to write the long arguments
+  (defstruct node
+    (var (gensym "TMP"))
+    (form nil)
+    (ins nil)
+    (outs nil)
+    (used nil)
+    (cleanup nil) ;; when true, the VAR should be written back to FORM by setf
+    (declaration nil)
+    (binder nil)
+    (priority 0)))
 
-(defun einsum-body-iter #.+iter-args+
-  "Consume one index in iter-specs and use it for dotimes."
-  (match iter-specs
-    (nil
-     (einsum-body-bind-output . #.+iter-args+))
-    ((list* s rest)
-     `(dotimes (,(& s) ,(? s))
-        ,(einsum-body-bind-output rest . #.(cdr +iter-args+))))))
+(defvar *ssa-cache* (make-hash-table :test 'equal)
+  "Alist for redundancy elimination, used during the compilation.
+ Each key is a form, each value is a cons of tmporary variable and a boolean
+ indicating whether it was bound.")
 
+(defun cached-form (form)
+  (assert (every #'symbolp (cdr form)))
+  (node-var
+   (ensure-gethash form *ssa-cache*
+                   (make-node :form form
+                              :binder 'let
+                              :outs (remove-if-not #'symbolp (cdr form))))))
 
-;; access:     (aref a i j k)
-;; dimensions: (5 6 7)
-;; row-major:  i*6*7 + j*7 + k : 3 multiplications
-;;             ((i*6)+j)*7 + k : 2 multiplications
+(declaim (inline +/64 */64))
+(defun +/64 (a b) (logand #xffffffffffffffff (+ a b)))
+(defun */64 (a b) (logand #xffffffffffffffff (* a b)))
 
 (defun row-major-index-form (spec)
   (labels ((rec (spec)
@@ -395,118 +391,152 @@ Otherwise call float-substitution and simplify integers to fixnums."
                ((list* s1 rest)
                 ;; most-positive-fixnum might also work, but I don't know
                 ;; I also tried ub function (1type.lisp) but it did not get a good result
-                (maybe-use-cache
-                 `(logand #xffffffffffffffff
-                          (+ ,(& s1)
-                             ,(maybe-use-cache
-                               `(logand #xffffffffffffffff
-                                        (* ,(? s1)
-                                           ,(rec rest)))))))))))
-    `(the index ,(rec (reverse spec)))))
+                (cached-form
+                 `(+/64 ,(& s1)
+                        ,(cached-form
+                          `(*/64 ,(? s1)
+                                 ,(rec rest)))))))))
+    (rec (reverse spec))))
+
+;; access:     (aref a i j k)
+;; dimensions: (5 6 7)
+;; row-major:  i*6*7 + j*7 + k : 3 multiplications
+;;             ((i*6)+j)*7 + k : 2 multiplications
 
 ;; (print (row-major-index-form '(2 1 0)))
 
-(defun einsum-body-bind-output #.+iter-args+
-  "Eagarly bind the output element value to a temporary variable when it no
-longer depends on the iteration variables."
+(defun einsum-body (iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
+  (let ((*ssa-cache* (make-hash-table :test 'equal)))
+    (iter (for spec in i-specs)
+          (for var  in i-vars)
+          (for evar in i-evars)
+          (for index = (row-major-index-form spec))
+          (for form = `(aref ,var ,index))
+          (setf (gethash form *ssa-cache*)
+                (make-node :form form
+                           :var  evar
+                           :outs (list index)
+                           :binder 'let
+                           :declaration
+                           `(derive ,var
+                                    type
+                                    (array-subtype-element-type type)
+                                    ,evar))))
 
-  (iter (for o-spec in o-specs)
-        (for o-var  in o-vars)
-        (for o-evar in o-evars)
-        
-        (if (spec-depends-on o-spec iter-specs)
-            (progn (collect o-spec into new-o-specs)
-                   (collect o-var  into new-o-vars )
-                   (collect o-evar into new-o-evars))
-            (progn (collect o-evar into derived-dst)
-                   (collect o-var  into derived-src)
-                   (collect `(,o-evar (aref ,o-var ,(row-major-index-form o-spec)))
-                     into binding)
-                   (collect `(setf (aref ,o-var ,(row-major-index-form o-spec)) ,o-evar)
-                     into cleanup)))
+    (iter (for spec in o-specs)
+          (for var  in o-vars)
+          (for evar in o-evars)
+          (for index = (row-major-index-form spec))
+          (for form = `(aref ,var ,index))
+          (setf (gethash form *ssa-cache*)
+                (make-node :form form
+                           :var  evar
+                           :cleanup `((setf ,form ,evar))
+                           :outs (list index)
+                           :binder 'let
+                           :declaration
+                           `(derive ,var
+                                    type
+                                    (array-subtype-element-type type)
+                                    ,evar))))
 
-        (finally
-         (iter (for pair in *ssa-cache*)
-               (print pair)
-               (match pair
-                 ((cons form (cons tmpvar (place used)))
-                  (unless used
-                    (setf used t)
-                    (push (list tmpvar form) binding)))))
-         (return
-           (let ((form (einsum-body-bind-input iter-specs
-                                               i-specs new-o-specs
-                                               i-vars  new-o-vars
-                                               i-evars new-o-evars
-                                               transforms)))
-             (if binding
-                 `(let* ,binding
-                    ;; this DERIVE type forces the values to be of the same type
-                    ;; as the element type. Integer overflow is detected
-                    ,@(mapcar (lambda (src dst)
-                                `(declare (derive ,src type (array-subtype-element-type type) ,dst)))
-                              derived-src
-                              derived-dst)
-                    ,form
-                    ,@cleanup)
-                 form))))))
+    (let ((nodes (make-hash-table)))
+      ;; hashtable of var, node
+      (iter (for (_ node) in-hashtable *ssa-cache*)
+            (ematch node
+              ((node var)
+               (setf (gethash var nodes) node))))
+      (iter (for spec in iter-specs)
+            (for ? = (? spec))
+            (for & = (& spec))
+            (collect ? into ?s)
+            (setf (gethash ? nodes)
+                  (make-node :form ?
+                             :var  ?
+                             :priority 1))
+            (setf (gethash & nodes)
+                  (make-node :form ?
+                             :var  &
+                             :binder 'dotimes
+                             :priority -1
+                             ;; to respect the iter-specs ordering
+                             :outs ?s)))
+      
+      ;; setting up in-edges
+      (iter (for (var node) in-hashtable nodes)
+            (ematch node
+              ((node outs)
+               (iter (for outvar in outs)
+                     (ematch (gethash outvar nodes)
+                       ((node :ins (place ins))
+                        (pushnew var ins)))))))
+      
+      (einsum-body-iter (topological-sort nodes)
+                        transforms))))
 
-(defun einsum-body-bind-input #.+iter-args+
-  "Eagarly bind the input element value to a temporary variable when it no
-longer depends on the iteration variables."
+(defun topological-sort (nodes)
+  "Topological sort based on Kahn (1962)"
+  (let ((s     nil)
+        (l     nil))
 
-  (iter (for i-spec in i-specs)
-        (for i-var  in i-vars)
-        (for i-evar in i-evars)
-        
-        (if (spec-depends-on i-spec iter-specs)
-            (progn (collect i-spec into new-i-specs)
-                   (collect i-var  into new-i-vars )
-                   (collect i-evar into new-i-evars))
-            (progn (collect i-evar into derived-dst)
-                   (collect i-var  into derived-src)
-                   (collect `(,i-evar (aref ,i-var ,(row-major-index-form i-spec)))
-                     into binding)))
+    ;; 1. find a list of "start nodes" which have no incoming edges and insert
+    ;; them into a set S
+    (iter (for (var node) in-hashtable nodes)
+          (match node
+            ((node :outs nil)
+             (push node s))
+            ;; else, do nothing
+            ))
 
-        (finally
-         (iter (for pair in *ssa-cache*)
-               (print pair)
-               (match pair
-                 ((cons form (cons tmpvar (place used)))
-                  (unless used
-                    (setf used t)
-                    (push (list tmpvar form) binding)))))
-         (return
-           (let ((form (einsum-body-check-inner-loop iter-specs
-                                                     new-i-specs o-specs
-                                                     new-i-vars  o-vars
-                                                     new-i-evars o-evars
-                                                     transforms)))
-             (if binding
-                 `(let* ,binding
-                    ;; this DERIVE type forces the values to be of the same type
-                    ;; as the element type. While this is not necessary on SBCL,
-                    ;; it helps optimize the CCL code since it fails to deduce
-                    ;; the type of the variable assigned from the specialized array.
-                    ,@(mapcar (lambda (src dst)
-                                `(declare (derive ,src type (array-subtype-element-type type) ,dst)))
-                              derived-src
-                              derived-dst)
-                    ,form)
-                 form))))))
+    (assert s)
 
-(defun einsum-body-check-inner-loop #.+iter-args+
-  (if (and (null iter-specs)
-           (null i-specs)
-           (null o-specs))
-      (iter (for transform in transforms)
-            (for o from 1)
-            (for o-sym = (in-current-package (symbolicate '@ (princ-to-string o))))
-            (when (first-iteration-p)
-              (collecting 'progn))
-            (collecting
-             `(setf ,o-sym ,transform)))
-      (einsum-body-iter . #.+iter-args+)))
+    (iter (while s) 
+          ;; pop dotimes binding first
+          (setf s (sort s #'> :key #'node-priority))
+          (for n = (pop s))
+          (push n l)
+          (ematch n
+            ((node :var n-var ins)
+             (iter (for m-var in ins)
+                   (for m = (gethash m-var nodes))
+                   (removef (node-outs m) n-var)
+                   (when (null (node-outs m))
+                     (push m s))))))
+    
+    (assert (iter (for (var node) in-hashtable nodes)
+                  (match node
+                    ((node outs)
+                     (always (null outs)))))
+            nil
+            "graph has a cycle")
+    (nreverse l)))
+
+(defun einsum-body-iter (nodes transforms)
+  "Consume one index in iter-specs and use it for dotimes."
+
+  (labels ((rec (nodes)
+             (ematch nodes
+               ((list* (node var form :binder 'dotimes) rest)
+                `(dotimes (,var ,form)
+                   ,(rec rest)))
+               ((list* (node :binder nil) rest)
+                (rec rest))
+               ((list* (node var form :binder 'let declaration cleanup) rest)
+                `(let ((,var ,form))
+                   ,@(when declaration `((declare ,declaration)))
+                   ,(rec rest)
+                   ,@cleanup))
+               
+               (nil
+                
+                (iter (for transform in transforms)
+                      (for o from 1)
+                      (for o-sym = (@ o))
+                      (when (first-iteration-p)
+                        (collecting 'progn))
+                      (collecting
+                       `(setf ,o-sym ,transform)))))))
+    (rec nodes)))
 
 (defun spec-depends-on (spec iter-specs)
   (intersection iter-specs spec))

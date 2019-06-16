@@ -383,7 +383,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
   (labels ((rec (spec)
              (ematch spec
                (nil
-                0)
+                nil)
                ((list s1)
                 ;; it is ok to let the first clause handle this,
                 ;; but the expansion result is not esthetically pleasing
@@ -411,11 +411,12 @@ Otherwise call float-substitution and simplify integers to fixnums."
           (for var  in i-vars)
           (for evar in i-evars)
           (for index = (row-major-index-form spec))
-          (for form = `(aref ,var ,index))
+          ;; index could be nil for 0D array
+          (for form = (if index `(aref ,var ,index) `(aref ,var 0)))
           (setf (gethash form *ssa-cache*)
                 (make-node :form form
                            :var  evar
-                           :outs (list index)
+                           :outs (when index (list index))
                            :binder 'let
                            :declaration
                            `(derive ,var
@@ -427,12 +428,13 @@ Otherwise call float-substitution and simplify integers to fixnums."
           (for var  in o-vars)
           (for evar in o-evars)
           (for index = (row-major-index-form spec))
-          (for form = `(aref ,var ,index))
+          ;; index could be nil for 0D array
+          (for form = (if index `(aref ,var ,index) `(aref ,var 0)))
           (setf (gethash form *ssa-cache*)
                 (make-node :form form
                            :var  evar
                            :cleanup `((setf ,form ,evar))
-                           :outs (list index)
+                           :outs (when index (list index))
                            :binder 'let
                            :declaration
                            `(derive ,var

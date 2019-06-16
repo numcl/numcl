@@ -350,6 +350,50 @@ Otherwise call float-substitution and simplify integers to fixnums."
              (return (mapcar (lambda (type) (float-substitution type :int-result 'fixnum))
                              o-types))))))
 
+;; access:     (aref a i j) (aref b j k) (aref c i k)
+;; dimensions: (5 6) (6 7) (5 7)
+
+#+(or)
+(dotimes (i 5)
+  (dotimes (j 6)
+    (dotimes (k 7)
+      (incf (aref c i k)
+            (* (aref a i j)
+               (aref b j k))))))
+
+#+(or)
+(let ((a-offset 0)
+      (b-offset 0)
+      (c-offset 0))
+  
+  (do ((i 0 (1+ i))
+       (a-step (* 6))
+       (c-step (* 7))
+       (a-offset a-offset (+ a-offset a-step))
+       (c-offset c-offset (+ c-offset c-step)))
+      ((<= 5 i))
+
+    (do ((j 0 (1+ j))
+         (a-step (*))
+         (b-step (* 7))
+         (a-offset a-offset (+ a-offset a-step))
+         (b-offset b-offset (+ b-offset b-step))
+         ($1 (aref a a-offset) (aref a a-offset)))
+        ((<= 6 j))
+
+      (do ((k 0 (1+ k))
+           (b-step (*))
+           (c-step (*))
+           (b-offset b-offset (+ b-offset b-step))
+           (c-offset c-offset (+ c-offset c-step))
+           ($2 (aref b b-offset) (aref b b-offset))
+           (@1 (aref c c-offset) (aref c c-offset)))
+          ((<= 7 k)
+           (setf (aref c c-offset) @1))
+
+        (setf @1 (+ @1 (* $1 $2)))))))
+
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct node
     (var (gensym "TMP"))

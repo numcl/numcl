@@ -41,6 +41,22 @@ Note that this does not provide a runtime checking and unification of type varia
        ,@(%expand-decls declarations env)
        ,@body)))
 
+(defmacro do (&whole whole bindings (end-test-form &body result-form) &body body &environment env)
+  "A DO wrapper that recognizes DERIVE declaration."
+  (multiple-value-bind (body declarations) (parse-body body :documentation nil :whole whole)
+    `(cl:do ,bindings
+             (,end-test-form ,@result-form)
+       ,@(%expand-decls declarations env)
+       ,@body)))
+
+(defmacro do* (&whole whole bindings (end-test-form &body result-form) &body body &environment env)
+  "A DO* wrapper that recognizes DERIVE declaration."
+  (multiple-value-bind (body declarations) (parse-body body :documentation nil :whole whole)
+    `(cl:do* ,bindings
+             (,end-test-form ,@result-form)
+       ,@(%expand-decls declarations env)
+       ,@body)))
+
 
 (defun %expand-decls (decls env)
   (iter (for decl in decls)

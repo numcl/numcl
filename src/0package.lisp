@@ -225,7 +225,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (:documentation "External package for storing the exported symbols."))
 
 (uiop:define-package :numcl.impl
-    (:shadow :let :let*)
+    (:shadow :let :let* :do :do*)
     (:shadow :@)                        ; accidental import from trivia
     (:mix :cl                           ; want to use cl:aref
           :numcl.exported

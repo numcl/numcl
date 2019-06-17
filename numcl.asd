@@ -22,8 +22,8 @@
               :function-cache
               :specialized-function
               :gtype)
- :serial t
  :components ((:module "src"
+               :serial t
                :components ((:file "0package")
                             (:file "0specialops")
                             (:file "1constantfolded")

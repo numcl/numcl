@@ -401,14 +401,6 @@ Otherwise call float-substitution and simplify integers to fixnums."
     declaration))
 
 
-
-(declaim (inline +/64 */64))
-(defun +/64 (a b) (logand #xffffffffffffffff (+ a b)))
-(defun */64 (a b) (logand #xffffffffffffffff (* a b)))
-
-
-
-
 (defun einsum-body (iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
   (let* ((i-idx (make-gensym-list (length i-vars) "$IDX"))
          (o-idx (make-gensym-list (length o-vars) "@IDX"))
@@ -460,7 +452,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
          transforms))))
 
 
-           
+
 (defun einsum-body-iter (nodes transforms)
   "Consume one index in iter-specs and use it for dotimes."
 

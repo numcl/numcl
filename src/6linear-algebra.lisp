@@ -485,6 +485,38 @@ Otherwise call float-substitution and simplify integers to fixnums."
                    (collect s)))
            (rec (nodes)
              (ematch nodes
+               ;; unroll
+               ((list* (do-node base-var base-limit
+                                vars inits steps
+                                late-vars late-inits late-declaration
+                                declaration store)
+                       nil)
+                (let ((form `(let ,(mapcar #'list late-vars late-inits)
+                               ,@late-declaration
+                               ,(rec nil)
+                               ,@store))
+                      (step-form (step-form vars steps))
+                      (end-var (gensym "END")))
+                  `(do* ((,base-var 0 ,end-var)
+                         (,end-var  8 (+ ,end-var 8))
+                         ,@(mapcar #'list vars inits))
+                        ((<= ,base-limit ,end-var)
+                         (do* ((,base-var ,base-var (+ ,base-var 1))
+                               ,@(mapcar #'list vars inits))
+                              ((<= ,base-limit ,base-var))
+                           ,@declaration
+                           ,form
+                           ,step-form))
+                     (declare (type index ,end-var))
+                     ,@declaration
+                     ,form ,step-form
+                     ,form ,step-form
+                     ,form ,step-form
+                     ,form ,step-form
+                     ,form ,step-form
+                     ,form ,step-form
+                     ,form ,step-form
+                     ,form ,step-form)))
                ((list* (do-node base-var base-limit
                                 vars inits steps
                                 late-vars late-inits late-declaration

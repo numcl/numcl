@@ -395,11 +395,18 @@ Otherwise call float-substitution and simplify integers to fixnums."
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct do-node
+    base-var
+    base-limit
+    static-vars
+    static-inits
+    vars
+    inits
     steps
-    endform
+    late-vars
+    late-inits
+    late-declaration
     cleanup
     declaration))
-
 
 (defun einsum-body (iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
   (let* ((i-idx (make-gensym-list (length i-vars) "$IDX"))
@@ -422,19 +429,31 @@ Otherwise call float-substitution and simplify integers to fixnums."
                      (for evar  in (append o-evars i-evars))
                      (for i from 0)
                      (when-let ((it (member spec spec2)))
-                       (collecting `(,step (* ,@(mapcar #'? (cdr it))))
+                       (collecting step
+                                   into static-vars)
+                       (collecting `(* ,@(mapcar #'? (cdr it)))
+                                   into static-inits)
+                       (collecting `(declare (type index ,step))
+                                   into declaration)
+                       
+                       (collecting index
+                                   into vars)
+                       (collecting index
+                                   into inits)
+                       (collecting `(+ ,index ,step)
                                    into steps)
-                       (collecting `(,index ,index (+ ,index ,step))
-                                   into indices)
                        (collecting `(declare (type index ,index))
                                    into declaration))
                      (when (and (not (spec-depends-on spec2 rest))
                                 (not (member evar used)))
                        (push evar used)
-                       (collecting `(,evar (aref ,var ,index) (aref ,var ,index))
-                                   into access)
+                       
+                       (collecting evar
+                                   into late-vars)
+                       (collecting `(aref ,var ,index)
+                                   into late-inits)
                        (collecting `(declare (derive ,var type (array-subtype-element-type type) ,evar))
-                                   into declaration)
+                                   into late-declaration)
                        (when (< i (length o-specs))
                          (collecting `(setf (aref ,var ,index) ,evar)
                                      into cleanup)))
@@ -442,12 +461,17 @@ Otherwise call float-substitution and simplify integers to fixnums."
                       (in outer
                           (collecting
                            (make-do-node
-                            :endform `(<= ,? ,&)
-                            :steps (append
-                                    steps
-                                    (list `(,& 0 (1+ ,&)))
-                                    indices access)
-                            :declaration declaration
+                            :base-var   &
+                            :base-limit ?
+                            :static-vars static-vars
+                            :static-inits static-inits
+                            :vars vars
+                            :inits inits
+                            :steps steps
+                            :late-vars  late-vars
+                            :late-inits late-inits
+                            :late-declaration late-declaration
+                            :declaration `((declare (type index ,&)) ,@declaration)
                             :cleanup     cleanup))))))
          transforms))))
 
@@ -456,14 +480,31 @@ Otherwise call float-substitution and simplify integers to fixnums."
 (defun einsum-body-iter (nodes transforms)
   "Consume one index in iter-specs and use it for dotimes."
 
-  (labels ((rec (nodes)
+  (labels ((step-form (vars steps)
+             (iter (for v in vars)
+                   (for s in steps)
+                   (when (first-iteration-p)
+                     (collect 'setf))
+                   (collect v)
+                   (collect s)))
+           (rec (nodes)
              (ematch nodes
-               ((list* (do-node endform cleanup steps declaration) rest)
-                `(do* ,steps
-                      (,endform)
+               ((list* (do-node base-var base-limit
+                                static-vars static-inits
+                                vars inits steps
+                                late-vars late-inits late-declaration
+                                declaration cleanup)
+                       rest)
+                `(do* ((,base-var 0 (+ ,base-var 1))
+                       ,@(mapcar #'list static-vars static-inits)
+                       ,@(mapcar #'list vars inits))
+                      ((<= ,base-limit ,base-var))
                    ,@declaration
-                   ,(rec rest)
-                   ,@cleanup))
+                   (let ,(mapcar #'list late-vars late-inits)
+                     ,@late-declaration
+                     ,(rec rest)
+                     ,@cleanup)
+                   ,(step-form vars steps)))
                
                (nil
                 

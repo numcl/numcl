@@ -393,183 +393,83 @@ Otherwise call float-substitution and simplify integers to fixnums."
 
         (setf @1 (+ @1 (* $1 $2)))))))
 
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defstruct node
-    (var (gensym "TMP"))
-    (form nil)
-    (ins nil)
-    (outs nil)
-    (used nil)
-    (cleanup nil) ;; when true, the VAR should be written back to FORM by setf
-    (declaration nil)
-    (binder nil)
-    (priority 0)))
+  (defstruct do-node
+    steps
+    endform
+    cleanup
+    declaration))
 
-(defvar *ssa-cache* (make-hash-table :test 'equal)
-  "Alist for redundancy elimination, used during the compilation.
- Each key is a form, each value is a cons of tmporary variable and a boolean
- indicating whether it was bound.")
 
-(defun cached-form (form)
-  (assert (every #'symbolp (cdr form)))
-  (node-var
-   (ensure-gethash form *ssa-cache*
-                   (make-node :form form
-                              :binder 'let
-                              :outs (remove-if-not #'symbolp (cdr form))))))
 
 (declaim (inline +/64 */64))
 (defun +/64 (a b) (logand #xffffffffffffffff (+ a b)))
 (defun */64 (a b) (logand #xffffffffffffffff (* a b)))
 
-(defun row-major-index-form (spec)
-  (labels ((rec (spec)
-             (ematch spec
-               (nil
-                nil)
-               ((list s1)
-                ;; it is ok to let the first clause handle this,
-                ;; but the expansion result is not esthetically pleasing
-                (& s1))
-               ((list* s1 rest)
-                ;; most-positive-fixnum might also work, but I don't know
-                ;; I also tried ub function (1type.lisp) but it did not get a good result
-                (cached-form
-                 `(+/64 ,(& s1)
-                        ,(cached-form
-                          `(*/64 ,(? s1)
-                                 ,(rec rest)))))))))
-    (rec (reverse spec))))
 
-;; access:     (aref a i j k)
-;; dimensions: (5 6 7)
-;; row-major:  i*6*7 + j*7 + k : 3 multiplications
-;;             ((i*6)+j)*7 + k : 2 multiplications
 
-;; (print (row-major-index-form '(2 1 0)))
 
 (defun einsum-body (iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
-  (let ((*ssa-cache* (make-hash-table :test 'equal)))
-    (iter (for spec in i-specs)
-          (for var  in i-vars)
-          (for evar in i-evars)
-          (for index = (row-major-index-form spec))
-          ;; index could be nil for 0D array
-          (for form = (if index `(aref ,var ,index) `(aref ,var 0)))
-          (setf (gethash form *ssa-cache*)
-                (make-node :form form
-                           :var  evar
-                           :outs (when index (list index))
-                           :binder 'let
-                           :declaration
-                           `(derive ,var
-                                    type
-                                    (array-subtype-element-type type)
-                                    ,evar))))
+  (let* ((i-idx (make-gensym-list (length i-vars) "$IDX"))
+         (o-idx (make-gensym-list (length o-vars) "@IDX"))
+         (i-step (make-gensym-list (length i-vars) "$STEP"))
+         (o-step (make-gensym-list (length o-vars) "@STEP"))
+         used)
+    `(let* ,(mapcar (lambda (idx) `(,idx 0)) (append o-idx i-idx))
+       (declare (type index ,@(append o-idx i-idx)))
+       ,(einsum-body-iter
+         (iter outer
+               (for (spec . rest) on iter-specs)
+               (for ? = (? spec))
+               (for & = (& spec))
 
-    (iter (for spec in o-specs)
-          (for var  in o-vars)
-          (for evar in o-evars)
-          (for index = (row-major-index-form spec))
-          ;; index could be nil for 0D array
-          (for form = (if index `(aref ,var ,index) `(aref ,var 0)))
-          (setf (gethash form *ssa-cache*)
-                (make-node :form form
-                           :var  evar
-                           :cleanup `((setf ,form ,evar))
-                           :outs (when index (list index))
-                           :binder 'let
-                           :declaration
-                           `(derive ,var
-                                    type
-                                    (array-subtype-element-type type)
-                                    ,evar))))
+               (iter (for spec2 in (append o-specs i-specs))
+                     (for step  in (append o-step i-step))
+                     (for index in (append o-idx i-idx))
+                     (for var   in (append o-vars i-vars))
+                     (for evar  in (append o-evars i-evars))
+                     (for i from 0)
+                     (when-let ((it (member spec spec2)))
+                       (collecting `(,step (* ,@(mapcar #'? (cdr it))))
+                                   into steps)
+                       (collecting `(,index ,index (+ ,index ,step))
+                                   into indices)
+                       (collecting `(declare (type index ,index))
+                                   into declaration))
+                     (when (and (not (spec-depends-on spec2 rest))
+                                (not (member evar used)))
+                       (push evar used)
+                       (collecting `(,evar (aref ,var ,index) (aref ,var ,index))
+                                   into access)
+                       (collecting `(declare (derive ,var type (array-subtype-element-type type) ,evar))
+                                   into declaration)
+                       (when (< i (length o-specs))
+                         (collecting `(setf (aref ,var ,index) ,evar)
+                                     into cleanup)))
+                     (finally
+                      (in outer
+                          (collecting
+                           (make-do-node
+                            :endform `(<= ,? ,&)
+                            :steps (append
+                                    steps
+                                    (list `(,& 0 (1+ ,&)))
+                                    indices access)
+                            :declaration declaration
+                            :cleanup     cleanup))))))
+         transforms))))
 
-    (let ((nodes (make-hash-table)))
-      ;; hashtable of var, node
-      (iter (for (_ node) in-hashtable *ssa-cache*)
-            (ematch node
-              ((node var)
-               (setf (gethash var nodes) node))))
-      (iter (for spec in iter-specs)
-            (for ? = (? spec))
-            (for & = (& spec))
-            (collect ? into ?s)
-            (setf (gethash ? nodes)
-                  (make-node :form ?
-                             :var  ?
-                             :priority 1))
-            (setf (gethash & nodes)
-                  (make-node :form ?
-                             :var  &
-                             :binder 'dotimes
-                             :priority -1
-                             ;; to respect the iter-specs ordering
-                             :outs ?s)))
-      
-      ;; setting up in-edges
-      (iter (for (var node) in-hashtable nodes)
-            (ematch node
-              ((node outs)
-               (iter (for outvar in outs)
-                     (ematch (gethash outvar nodes)
-                       ((node :ins (place ins))
-                        (pushnew var ins)))))))
-      
-      (einsum-body-iter (topological-sort nodes)
-                        transforms))))
 
-(defun topological-sort (nodes)
-  "Topological sort based on Kahn (1962)"
-  (let ((s     nil)
-        (l     nil))
-
-    ;; 1. find a list of "start nodes" which have no incoming edges and insert
-    ;; them into a set S
-    (iter (for (var node) in-hashtable nodes)
-          (match node
-            ((node :outs nil)
-             (push node s))
-            ;; else, do nothing
-            ))
-
-    (assert s)
-
-    (iter (while s) 
-          ;; pop dotimes binding first
-          (setf s (sort s #'> :key #'node-priority))
-          (for n = (pop s))
-          (push n l)
-          (ematch n
-            ((node :var n-var ins)
-             (iter (for m-var in ins)
-                   (for m = (gethash m-var nodes))
-                   (removef (node-outs m) n-var)
-                   (when (null (node-outs m))
-                     (push m s))))))
-    
-    (assert (iter (for (var node) in-hashtable nodes)
-                  (match node
-                    ((node outs)
-                     (always (null outs)))))
-            nil
-            "graph has a cycle")
-    (nreverse l)))
-
+           
 (defun einsum-body-iter (nodes transforms)
   "Consume one index in iter-specs and use it for dotimes."
 
   (labels ((rec (nodes)
              (ematch nodes
-               ((list* (node var form :binder 'dotimes) rest)
-                `(dotimes (,var ,form)
-                   ,(rec rest)))
-               ((list* (node :binder nil) rest)
-                (rec rest))
-               ((list* (node var form :binder 'let declaration cleanup) rest)
-                `(let ((,var ,form))
-                   ,@(when declaration `((declare ,declaration)))
+               ((list* (do-node endform cleanup steps declaration) rest)
+                `(do* ,steps
+                      (,endform)
+                   ,@declaration
                    ,(rec rest)
                    ,@cleanup))
                

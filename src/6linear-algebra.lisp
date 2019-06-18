@@ -472,6 +472,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
                         :store     store)))))))))
 
 
+(defvar *unroll-width* 8)
 
 (defun einsum-body-iter (nodes transforms)
   "Consume one index in iter-specs and use it for dotimes."
@@ -498,7 +499,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
                       (step-form (step-form vars steps))
                       (end-var (gensym "END")))
                   `(do* ((,base-var 0 ,end-var)
-                         (,end-var  8 (+ ,end-var 8))
+                         (,end-var ,*unroll-width* (+ ,end-var ,*unroll-width*))
                          ,@(mapcar #'list vars inits))
                         ((<= ,base-limit ,end-var)
                          (do* ((,base-var ,base-var (+ ,base-var 1))
@@ -509,14 +510,9 @@ Otherwise call float-substitution and simplify integers to fixnums."
                            ,step-form))
                      (declare (type index ,end-var))
                      ,@declaration
-                     ,form ,step-form
-                     ,form ,step-form
-                     ,form ,step-form
-                     ,form ,step-form
-                     ,form ,step-form
-                     ,form ,step-form
-                     ,form ,step-form
-                     ,form ,step-form)))
+                     ,@(iter (repeat *unroll-width*)
+                             (collecting form)
+                             (collecting step-form)))))
                ((list* (do-node base-var base-limit
                                 vars inits steps
                                 late-vars late-inits late-declaration

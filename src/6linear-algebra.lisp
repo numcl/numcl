@@ -411,72 +411,72 @@ Otherwise call float-substitution and simplify integers to fixnums."
 (defun einsum-body (iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
   (let* ((i-idx (make-gensym-list (length i-vars) "$IDX"))
          (o-idx (make-gensym-list (length o-vars) "@IDX"))
-         (i-step (make-gensym-list (length i-vars) "$STEP"))
-         (o-step (make-gensym-list (length o-vars) "@STEP"))
+         (static-vars
+          (append o-idx i-idx))
+         (static-inits
+          (mapcar (constantly 0) static-vars))
          used-evars)
-    `(let* ,(mapcar (lambda (idx) `(,idx 0)) (append o-idx i-idx))
-       (declare (type index ,@(append o-idx i-idx)))
-       ,(einsum-body-iter
-         (iter outer
-               (for (spec . rest) on iter-specs)
-               (for ? = (? spec))
-               (for & = (& spec))
+    ((lambda (body)
+       `(let* ,(mapcar #'list static-vars static-inits)
+          (declare (type index ,@static-vars))
+          ,body))
+     (einsum-body-iter
+      (iter outer
+            (for (spec . rest) on iter-specs)
+            (for ? = (? spec))
+            (for & = (& spec))
 
-               (iter (for spec2 in (append o-specs i-specs))
-                     (for step  in (append o-step i-step))
-                     (for out-p = (< i (length o-specs)))
-                     (for index in (append o-idx i-idx))
-                     (for var   in (append o-vars i-vars))
-                     (for evar  in (append o-evars i-evars))
-                     (for i from 0)
-                     (when-let ((it (member spec spec2)))
-                       (collecting step
-                                   into static-vars)
-                       (collecting `(* ,@(mapcar #'? (cdr it)))
-                                   into static-inits)
-                       (collecting `(declare (type index ,step))
-                                   into declaration)
-                       
-                       (collecting index
-                                   into vars)
-                       (collecting index
-                                   into inits)
-                       (collecting `(+ ,index ,step)
-                                   into steps)
-                       (collecting `(declare (type index ,index))
-                                   into declaration))
-                     (when (and (not (spec-depends-on spec2 rest))
-                                (not (member evar used-evars)))
-                       ;; check if spec2 does not depend on any more iteration variables.
-                       ;; If so, then the array element can be bound to the element variable evar.
-                       (push evar used-evars)
-                       
-                       (collecting evar
-                                   into late-vars)
-                       (collecting `(aref ,var ,index)
-                                   into late-inits)
-                       (collecting `(declare (derive ,var type (array-subtype-element-type type) ,evar))
-                                   into late-declaration)
-                       (when out-p
-                         (collecting `(setf (aref ,var ,index) ,evar)
-                                     into cleanup)))
-                     (finally
-                      (in outer
-                          (collecting
-                           (make-do-node
-                            :base-var   &
-                            :base-limit ?
-                            :static-vars static-vars
-                            :static-inits static-inits
-                            :vars vars
-                            :inits inits
-                            :steps steps
-                            :late-vars  late-vars
-                            :late-inits late-inits
-                            :late-declaration late-declaration
-                            :declaration `((declare (type index ,&)) ,@declaration)
-                            :cleanup     cleanup))))))
-         transforms))))
+            (iter middle
+                  (for i from 0)
+                  (for spec2 in (append o-specs i-specs))
+                  (for out-p = (< i (length o-specs)))
+                  (for index in (append o-idx i-idx))
+                  (for var   in (append o-vars i-vars))
+                  (for evar  in (append o-evars i-evars))
+                  (iter (for (spec3 . rest2) on spec2)
+                        (for step  = (gensym (if out-p "@STEP" "$STEP")))
+                        (when (eql spec spec3)
+                          (push step static-vars)
+                          (push `(* ,@(mapcar #'? rest2)) static-inits)
+                          (in middle
+                              (collecting index
+                                          into vars)
+                              (collecting index
+                                          into inits)
+                              (collecting `(+ ,index ,step)
+                                          into steps)
+                              (collecting `(declare (type index ,index))
+                                          into declaration))))
+                  (when (and (not (spec-depends-on spec2 rest))
+                             (not (member evar used-evars)))
+                    ;; check if spec2 does not depend on any more iteration variables.
+                    ;; If so, then the array element can be bound to the element variable evar.
+                    (push evar used-evars)
+                    
+                    (collecting evar
+                                into late-vars)
+                    (collecting `(aref ,var ,index)
+                                into late-inits)
+                    (collecting `(declare (derive ,var type (array-subtype-element-type type) ,evar))
+                                into late-declaration)
+                    (when out-p
+                      (collecting `(setf (aref ,var ,index) ,evar)
+                                  into cleanup)))
+                  (finally
+                   (in outer
+                       (collecting
+                        (make-do-node
+                         :base-var   &
+                         :base-limit ?
+                         :vars vars
+                         :inits inits
+                         :steps steps
+                         :late-vars  late-vars
+                         :late-inits late-inits
+                         :late-declaration late-declaration
+                         :declaration `((declare (type index ,&)) ,@declaration)
+                         :cleanup     cleanup))))))
+      transforms))))
 
 
 

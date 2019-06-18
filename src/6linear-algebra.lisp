@@ -424,6 +424,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
 
                (iter (for spec2 in (append o-specs i-specs))
                      (for step  in (append o-step i-step))
+                     (for out-p = (< i (length o-specs)))
                      (for index in (append o-idx i-idx))
                      (for var   in (append o-vars i-vars))
                      (for evar  in (append o-evars i-evars))
@@ -456,7 +457,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
                                    into late-inits)
                        (collecting `(declare (derive ,var type (array-subtype-element-type type) ,evar))
                                    into late-declaration)
-                       (when (< i (length o-specs))
+                       (when out-p
                          (collecting `(setf (aref ,var ,index) ,evar)
                                      into cleanup)))
                      (finally

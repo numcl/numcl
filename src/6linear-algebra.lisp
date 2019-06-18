@@ -397,8 +397,6 @@ Otherwise call float-substitution and simplify integers to fixnums."
   (defstruct do-node
     base-var
     base-limit
-    static-vars
-    static-inits
     vars
     inits
     steps
@@ -497,13 +495,11 @@ Otherwise call float-substitution and simplify integers to fixnums."
            (rec (nodes)
              (ematch nodes
                ((list* (do-node base-var base-limit
-                                static-vars static-inits
                                 vars inits steps
                                 late-vars late-inits late-declaration
                                 declaration cleanup)
                        rest)
                 `(do* ((,base-var 0 (+ ,base-var 1))
-                       ,@(mapcar #'list static-vars static-inits)
                        ,@(mapcar #'list vars inits))
                       ((<= ,base-limit ,base-var))
                    ,@declaration

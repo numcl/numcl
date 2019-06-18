@@ -409,14 +409,14 @@ Otherwise call float-substitution and simplify integers to fixnums."
 (defun einsum-body (iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
   (let* ((i-idx (make-gensym-list (length i-vars) "$IDX"))
          (o-idx (make-gensym-list (length o-vars) "@IDX"))
-         (static-vars
+         (const-vars
           (append o-idx i-idx))
-         (static-inits
-          (mapcar (constantly 0) static-vars))
+         (const-inits
+          (mapcar (constantly 0) const-vars))
          used-evars)
     ((lambda (body)
-       `(let* ,(mapcar #'list static-vars static-inits)
-          (declare (type index ,@static-vars))
+       `(let* ,(mapcar #'list const-vars const-inits)
+          (declare (type index ,@const-vars))
           ,body))
      (einsum-body-iter
       (iter outer
@@ -434,8 +434,8 @@ Otherwise call float-substitution and simplify integers to fixnums."
                   (iter (for (spec3 . rest2) on spec2)
                         (for step  = (gensym (if out-p "@STEP" "$STEP")))
                         (when (eql spec spec3)
-                          (push step static-vars)
-                          (push `(* ,@(mapcar #'? rest2)) static-inits)
+                          (push step const-vars)
+                          (push `(* ,@(mapcar #'? rest2)) const-inits)
                           (in middle
                               (if-let ((pos (position index vars)))
                                 (setf (elt steps pos)

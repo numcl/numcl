@@ -439,14 +439,18 @@ Otherwise call float-substitution and simplify integers to fixnums."
                           (push step static-vars)
                           (push `(* ,@(mapcar #'? rest2)) static-inits)
                           (in middle
-                              (collecting index
-                                          into vars)
-                              (collecting index
-                                          into inits)
-                              (collecting `(+ ,index ,step)
-                                          into steps)
-                              (collecting `(declare (type index ,index))
-                                          into declaration))))
+                              (if-let ((pos (position index vars)))
+                                (setf (elt steps pos)
+                                      `(+ ,step ,(elt steps pos)))
+                                (progn
+                                  (collecting index
+                                              into vars)
+                                  (collecting index
+                                              into inits)
+                                  (collecting `(+ ,step ,index)
+                                              into steps)
+                                  (collecting `(declare (type index ,index))
+                                              into declaration))))))
                   (when (and (not (spec-depends-on spec2 rest))
                              (not (member evar used-evars)))
                     ;; check if spec2 does not depend on any more iteration variables.

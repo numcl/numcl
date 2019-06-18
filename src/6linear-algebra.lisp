@@ -346,8 +346,9 @@ Otherwise call float-substitution and simplify integers to fixnums."
              (return (mapcar (lambda (type) (float-substitution type :int-result 'fixnum))
                              o-types))))))
 
-
+(eval-when (:compile-toplevel :load-toplevel :execute)
 (define-constant +iter-args+ '(iter-specs i-specs o-specs i-vars  o-vars i-evars o-evars transforms) :test 'equal)
+)
 ;; I just use this constant as a read-time literal so that I don't have to write the long arguments
 
 (defun einsum-body-iter #.+iter-args+

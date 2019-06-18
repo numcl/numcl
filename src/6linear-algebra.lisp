@@ -413,7 +413,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
          (o-idx (make-gensym-list (length o-vars) "@IDX"))
          (i-step (make-gensym-list (length i-vars) "$STEP"))
          (o-step (make-gensym-list (length o-vars) "@STEP"))
-         used)
+         used-evars)
     `(let* ,(mapcar (lambda (idx) `(,idx 0)) (append o-idx i-idx))
        (declare (type index ,@(append o-idx i-idx)))
        ,(einsum-body-iter
@@ -445,8 +445,10 @@ Otherwise call float-substitution and simplify integers to fixnums."
                        (collecting `(declare (type index ,index))
                                    into declaration))
                      (when (and (not (spec-depends-on spec2 rest))
-                                (not (member evar used)))
-                       (push evar used)
+                                (not (member evar used-evars)))
+                       ;; check if spec2 does not depend on any more iteration variables.
+                       ;; If so, then the array element can be bound to the element variable evar.
+                       (push evar used-evars)
                        
                        (collecting evar
                                    into late-vars)

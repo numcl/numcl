@@ -226,7 +226,9 @@ This prevents us from having (ARRAY (COMPLEX FIXNUM)).
 
 |#
 
+#+(or)
 (define-condition fixnum-overflow (arithmetic-error) ())
+#+(or)
 (define-condition fixnum-underflow (arithmetic-error) ())
 
 ;; float-substitution and float-contagion do not handle intervals.

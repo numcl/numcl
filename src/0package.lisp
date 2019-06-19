@@ -29,7 +29,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (:export
  
    ;; 2type
+   #+(or)
    #:fixnum-overflow
+   #+(or)
    #:fixnum-underflow
    
    ;; 2alias

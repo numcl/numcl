@@ -1,0 +1,31 @@
+
+qbook : error
+#+begin_src 
+The slot IT.BESE.QBOOK::GENERATOR is unbound in the object
+#<PUBLISH-OP >.
+   [Condition of type UNBOUND-SLOT]
+#+end_src
+
+geneva : couldnt figure out how to use it, but I like the style (using trivial-documentation)
+
+atdoc : error
+#+begin_src 
+There is no applicable method for the generic function
+  #<STANDARD-GENERIC-FUNCTION SB-MOP:FINALIZE-INHERITANCE (4)>
+when called with arguments
+  (#<BUILT-IN-CLASS COMMON-LISP:VECTOR>).
+#+end_src
+
+ccldoc : not something I wanted
+
+gendoc : worked, but not satisfactory quality
+
+codex : kind of get it to work, but it does not insert documentation
+
+
+documentation-template : worked, classic Edi Weitz product.
+
+staple : worked, shinmera product.
+
+
+

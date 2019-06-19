@@ -62,3 +62,59 @@
     (declare (type (check f3) b))
     (print (list a b c d))
     a))
+
+
+
+
+;; didn't work
+
+(deftype derive (variable pattern clause &environment env)
+  "A type specifier that derives a new type from the type declaration of other types.
+This is handy for writing a macro which needs some type propagation:
+Since the type information is stored into the environment and is retrieved by this macro,
+you don't need to explicitly pass around the information during macro expansion.
+
+For example, suppose you have a macro M that expands to something like:
+ 
+ (let ((a ...))
+   (declare ((type (array fixnum (2 2)))))
+   (M 'fixnum b c d ...))
+
+which expands to
+
+ (let ((a ...))
+   (declare ((type (array fixnum (2 2)))))
+   (let ((b ...) (c ...) (d ...))
+     (declare (type fixnum b c d))
+     ...))
+
+If you want to make the type of b,c,d same as the element-type of a, you need to adjust the
+argument to M each time.
+
+With DERIVE type, you can write 
+
+ (let ((a ...))
+   (declare ((type (array fixnum (2 2)))))
+   (M a b c d ...))
+
+then
+
+ (let ((a ...))
+   (declare ((type (array fixnum (2 2)))))
+   (let ((b ...) (c ...) (d ...))
+     (declare (type (derive a (array-subtype element-type) element-type) b c d))
+     ...))
+
+You also need something similar when the macro is sufficiently complex
+and needs to be separated into multiple functions and / or multiple layers of macros.
+
+Note that this does not provide a runtime checking and unification of type variables.
+
+"
+  (derive-type-expander variable pattern clause env))
+
+(defun derive-type-expander (variable pattern clause env)
+  (eval
+   `(ematch ,(nth-value 2 (cltl2:variable-information variable env))
+      ((assoc (type . ,pattern))
+       ,clause))))

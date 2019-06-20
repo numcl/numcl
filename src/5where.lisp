@@ -83,11 +83,10 @@ the second list contains the indices for the 2nd dimension, and so on."
            ((function (T) boolean) fn))
   (ematch array
     ((array :displaced-to base
-            :rank r
-            :total-size s)
+            :rank r)
      (declare ((simple-array * 1) base))
-     (let ((result (empty r :type 'cons))
-           (tails2 (empty r :type 'cons))
+     (let ((result (full r (cons nil (cons nil nil)) :type 'cons))
+           (tails2 (full r (cons nil (cons nil nil)) :type 'cons))
            (tmp (empty r :type 'fixnum)))
        (map-into result (lambda (x) (declare (ignore x)) (cons nil (cons nil nil))) result)
        (replace tails2 result)

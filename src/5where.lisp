@@ -84,29 +84,54 @@ the second list contains the indices for the 2nd dimension, and so on."
   (ematch array
     ((array :displaced-to base
             :rank r)
-     (declare ((simple-array * 1) base))
-     (let ((result (full r (cons nil (cons nil nil)) :type 'cons))
-           (tails2 (full r (cons nil (cons nil nil)) :type 'cons))
-           (tmp (empty r :type 'fixnum)))
-       (map-into result (lambda (x) (declare (ignore x)) (cons nil (cons nil nil))) result)
-       (replace tails2 result)
-       (iter (for i below (array-total-size array))
-             (declare (declare-variables))
-             (when (funcall fn (aref base i))
-               (%array-index-from-row-major-index/vector array i tmp)
-               (dotimes (j r)
-                 (let* ((tail2 (aref tails2 j))
-                        (tail  (cdr tail2))
-                        (newtail (cons nil nil)))
-                   (setf (car tail) (aref tmp j)
-                         (cdr tail) newtail
-                         (aref tails2 j) tail))))
-             (finally
-              (dotimes (j r)
-                (let ((tail2 (aref tails2 j)))
-                  (setf (cdr tail2) nil))
-                (pop (aref result j)))))
-       (coerce result 'list)))))
+     (check-type base array)
+     (locally
+         (declare ((simple-array * 1) base))
+       (let ((result (full r (cons nil (cons nil nil)) :type 'cons))
+             (tails2 (full r (cons nil (cons nil nil)) :type 'cons))
+             (tmp (empty r :type 'fixnum)))
+         (map-into result (lambda (x) (declare (ignore x)) (cons nil (cons nil nil))) result)
+         (replace tails2 result)
+         (iter (for i below (array-total-size array))
+               (declare (declare-variables))
+               (when (funcall fn (aref base i))
+                 (%array-index-from-row-major-index/vector array i tmp)
+                 (dotimes (j r)
+                   (let* ((tail2 (aref tails2 j))
+                          (tail  (cdr tail2))
+                          (newtail (cons nil nil)))
+                     (setf (car tail) (aref tmp j)
+                           (cdr tail) newtail
+                           (aref tails2 j) tail))))
+               (finally
+                (dotimes (j r)
+                  (let ((tail2 (aref tails2 j)))
+                    (setf (cdr tail2) nil))
+                  (pop (aref result j)))))
+         (coerce result 'list))))))
+
+;; bug in sbcl -- to be reported.
+
+#+(or)
+(progn
+  ;; this is ng
+  (defun fn (array)
+    (let ((base (array-displacement array)))
+      (declare (type array base))
+      base))
+  
+  ;; this is ng
+  (defun fn (array)
+    (let ((base (array-displacement array)))
+      (declare (type null base))
+      base))
+  
+  ;; this is ok
+  (defun fn (array)
+    (let ((base (array-displacement array)))
+      (declare (type (or array null) base))
+      base)))
+
 
 (declaim (inline nonzero))
 (defun nonzero (array)

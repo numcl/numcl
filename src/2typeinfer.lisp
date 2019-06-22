@@ -406,21 +406,19 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'lognot
  (defun infer-lognot (x)
-   (labels ((fn (x)
-              (ematch (x)
+   (labels ((integer-length* (x)
+              (if (eq x '*) '* (integer-length x)))
+            (lognot* (x)
+              (if (eq x '*) '* (lognot x)))
+            (fn (x)
+              (ematch x
                 ((integer-subtype l1 h1)
-                 (flet ((integer-length* (x)
-                          (if (eq x '*) '* (integer-length x)))
-                        (lognot* (x)
-                          (if (eq x '*) '* (lognot x))))
-                   `(,(if (or (interval1-< (lognot* l1) 0)
-                              (interval1-< (lognot* h1) 0))
-                          'signed-byte
-                          'unsigned-byte)
-                      ,(interval2-max (interval2-max (integer-length* l1)
-                                                     (integer-length* h1))
-                                      (interval2-max (integer-length* l2)
-                                                     (integer-length* h2))))))
+                 `(,(if (or (interval1-< (lognot* l1) 0)
+                            (interval1-< (lognot* h1) 0))
+                        'signed-byte
+                        'unsigned-byte)
+                    ,(interval2-max (integer-length* l1)
+                                    (integer-length* h1))))
                 ((or-type types1)
                  (simplify-or-types
                   (mapcar #'fn types1))))))

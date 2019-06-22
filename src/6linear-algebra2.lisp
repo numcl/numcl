@@ -40,7 +40,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     "Reverses the axes of an array."
     (let ((indices (make-gensym-list (rank matrix))))
       ;; needs some caching for functions here
-      (einsum `(,indices -> ,(reverse indices)) matrix))))
+      (if result
+          (einsum `(,indices -> ,(reverse indices)) matrix result)
+          (einsum `(,indices -> ,(reverse indices)) matrix)))))
 
 (inline-except-toplevel ()
   (defun matmul (a b &optional result)

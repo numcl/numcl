@@ -88,6 +88,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'cos
  (defun cos-inferer (x)
+   (declare (trivia:optimizer :trivial))
    (ematch x
      ((or (real-subtype _ '*)
           (real-subtype '* _))
@@ -125,6 +126,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'sin
  (defun sin-inferer (x)
+   (declare (trivia:optimizer :trivial))
    (ematch x
      ((or (real-subtype _ '*)
           (real-subtype '* _))
@@ -154,6 +156,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'exp
  (defun exp-inferer (x)
+   (declare (trivia:optimizer :trivial))
    (flet ((fn* (x &optional (default '*))
             (if (numberp x)
                 (handler-case (exp x)
@@ -175,6 +178,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'log
  (defun log-inferer (x)
+   (declare (trivia:optimizer :trivial))
    (flet ((fn* (x &optional (default '*))
             (if (numberp x)
                 (handler-case (log x)
@@ -203,6 +207,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'abs
  (defun abs-inferer (x)
+   (declare (trivia:optimizer :trivial))
    (flet ((fn* (x &optional (default '*))
             (if (numberp x)
                 (abs x)
@@ -228,6 +233,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'floor
  (defun floor-inferer (x &optional (y '(integer 1 1)))
+   (declare (trivia:optimizer :trivial))
    (ematch* (x y)
      (((real-subtype l1 h1) (real-subtype l2 h2))
       `(integer ,@(interval-floor l1 h1 l2 h2)))
@@ -241,6 +247,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'round
  (defun round-inferer (x &optional (y '(integer 1 1)))
+   (declare (trivia:optimizer :trivial))
    (ematch* (x y)
      (((real-subtype l1 h1) (real-subtype l2 h2))
       `(integer ,@(interval-round l1 h1 l2 h2)))
@@ -254,6 +261,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'ceiling
  (defun ceiling-inferer (x &optional (y '(integer 1 1)))
+   (declare (trivia:optimizer :trivial))
    (ematch* (x y)
      (((real-subtype l1 h1) (real-subtype l2 h2))
       `(integer ,@(interval-ceiling l1 h1 l2 h2)))
@@ -267,6 +275,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'truncate
  (defun truncate-inferer (x &optional (y '(integer 1 1)))
+   (declare (trivia:optimizer :trivial))
    (ematch* (x y)
      (((real-subtype l1 h1) (real-subtype l2 h2))
       `(integer ,@(interval-truncate l1 h1 l2 h2)))
@@ -282,6 +291,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'rem
  (defun rem-inferer (x y)
+   (declare (trivia:optimizer :trivial))
    ;; floor documentation:
    ;;
    ;; The remainder is an integer if both x and y are integers, is a rational
@@ -335,6 +345,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'logior
  (defun infer-logior (x y)
+   (declare (trivia:optimizer :trivial))
    (labels ((fn (prev now)
               (ematch* (prev now)
                 (((integer-subtype l1 h1) (integer-subtype l2 h2))
@@ -359,6 +370,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'logand
  (defun infer-logand (x y)
+   (declare (trivia:optimizer :trivial))
    (labels ((fn (prev now)
               (ematch* (prev now)
                 (((integer-subtype l1 h1) (integer-subtype l2 h2))
@@ -383,6 +395,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'logeqv
  (defun infer-logeqv (x y)
+   (declare (trivia:optimizer :trivial))
    (labels ((fn (prev now)
               (ematch* (prev now)
                 (((integer-subtype l1 h1) (integer-subtype l2 h2))
@@ -406,6 +419,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer
  'lognot
  (defun infer-lognot (x)
+   (declare (trivia:optimizer :trivial))
    (labels ((integer-length* (x)
               (if (eq x '*) '* (integer-length x)))
             (lognot* (x)

@@ -221,7 +221,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:triu
    #:vander
 
-   ))
+   )
+  (:documentation "External package for storing the exported symbols."))
 
 (uiop:define-package :numcl.impl
     (:shadow :let)
@@ -231,9 +232,18 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           :alexandria                   ; but not want to use alexandria:flatten etc
           :iterate)                     ; same for iterate; for SUM
   ;;  :magicl
-  (:use :trivia :type-r :constantfold :gtype :specialized-function))
+    (:use :trivia :type-r :constantfold :gtype :specialized-function)
+    (:documentation "Internal package for implementing numcl."))
 
 (uiop:define-package :numcl
     (:mix :numcl.exported :cl)
   (:reexport :numcl.exported)
-  (:reexport :cl))
+  (:reexport :cl)
+  (:documentation "
+NUMCL defines several symbols which have the same name as the corresponding CL
+symbols. We call them *conflicting symbols*.  To avoid the confusion in the code
+base, we use 3 packages: NUMCL.EXPORTED, NUMCL.IMPL, NUMCL.
+
+This package replaces COMMON-LISP package by shadowing-import symbols from
+NUMCL.EXPORTED on top of COMMON-LISP package.
+"))

@@ -225,6 +225,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (uiop:define-package :numcl.impl
     (:shadow :let)
+    (:shadow :@)                        ; accidental import from trivia
     (:mix :cl                           ; want to use cl:aref
           :numcl.exported
           :alexandria                   ; but not want to use alexandria:flatten etc

@@ -177,9 +177,7 @@ It then computes the transforms, if missing.
 
 The value returned is a plist of :inputs, :transforms, :outputs. 
 "
-  (flet (($ (i) (in-current-package (symbolicate '$ (princ-to-string i))))
-         (@ (i) (in-current-package (symbolicate '@ (princ-to-string i))))
-         (explode (s)
+  (flet ((explode (s)
            (typecase s
              (list (assert (every #'symbolp s)) s)
              (symbol (iter (for c in-vector (symbol-name s))

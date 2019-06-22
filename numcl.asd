@@ -10,6 +10,7 @@
  :author "Masataro Asai"
  :mailto "guicho2.71828@gmail.com"
  :license "LGPL"
+ :homepage "https://github.com/numcl/numcl"
  :defsystem-depends-on ()
  :depends-on (:trivia
               :alexandria

@@ -1,0 +1,303 @@
+////////////////////////////////////////////////////////////////
+
+/* layout */
+
+html {
+    font-weight: medium;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    margin-top: 5em;
+    &:first-child {
+        margin-top: 0.3em;
+    }
+    margin-bottom: 0.3em;
+    word-break:break-all;
+    .source-link {
+        float: right;
+        font-size: small;
+    }
+}
+
+.doc-entry {
+    margin-top:    2em;
+    margin-bottom: 2em;
+}
+
+.title {
+    text-align: center;
+    h1 {
+        margin: 0em;
+    }
+}
+
+.table-of-contents {
+    word-break:break-all;
+    .source-link {
+        display: none;
+    }
+    ol {
+        padding-left: 1em;
+    }
+}
+
+.main {
+    img {
+        display: inline-block;
+        max-width: 100%;
+    }
+}
+
+.footer {
+    text-align: center;
+} 
+
+$width: 64.4em;
+
+/* zoom out */
+@media all and (min-width: $width) {
+    body {
+        .page-header {
+            position: fixed;
+            top: 0em;
+            left: 0em;
+            width: 17em;
+            height: 100%;
+            vertical-align: top;
+            .title {
+                padding: 0.5em;
+            }            
+            .table-of-contents {
+                padding: 0.5em;
+                height: 100%;
+            }
+        }
+        .main {
+            position: absolute;
+            left: 21em;
+            width: 50em;
+            margin: 0em 1em 0em 1em;
+            padding: 1em;
+        }
+        .footer {
+            position: fixed;
+            left: 0em;
+            bottom: 0em;
+            width: 17em;
+            padding: 0.5em 0em 0.5em 0em ;
+        }
+    }
+}
+
+/* zoom in */
+@media all and (max-width: $width) {
+    body {
+        text-align: center;
+        .title, .table-of-contents, .main, .footer {
+            margin: 0.5em 0.5em 0.5em 0.5em;
+            padding: 0.5em;
+            display: inline-block;
+            text-align: left;
+            float: center;
+            width: 40em;
+        }
+    }
+}
+
+
+////////////////////////////////////////////////////////////////
+
+/* markup */
+
+
+////////////////////////////////////////////////////////////////
+
+/* font, style */
+
+$text-font:   'Inconsolata';
+$title-font:  'Raleway';
+$mono-font:   'Ubuntu';
+
+
+$background : black;
+$background2: #202020;
+$text       : gray;
+$highlight  : orange;
+$highlight2 : palegreen;
+$suppressed : #404040;
+
+$code-bg    : #404040;
+$code-text  : darkmagenta;
+
+html {
+    background: $background;
+    color: $text;
+    font-family: $text-font;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    color: $highlight;
+    font-family: $title-font;
+}
+
+a {
+    text-decoration: none;
+    color: $highlight2;
+}
+
+.title {
+    background: $background2;
+}
+.main {
+    background: $background2;
+    .missing {
+        color: $suppressed;
+        font-style: italic;
+    }
+
+    .docstring {
+        margin-left: 1em;
+    }
+}
+
+.table-of-contents {
+    background: $background2;
+}
+
+.directory {
+    &:before {
+        content: "Directory";
+        color: $suppressed;
+        margin-right: 0.3em;
+    }
+    &:after {
+        content: "/";
+        color: $suppressed;
+        margin-left: 0.1em;
+    }
+}
+
+.file {
+    &:before {
+        content: "File";
+        color: $suppressed;
+        margin-right: 0.3em;
+    }
+}
+
+.extension {
+    &:before {
+        content: ".";
+    }
+    color: $suppressed;
+}
+
+
+.doctype {
+    color: $text;
+}
+
+.sep1 {
+    margin-right: 0.3em;
+    color: $text;
+}
+.sep2 {
+    margin-left : 0.1em;
+    margin-right: 0.1em;
+}
+
+
+.package {
+    &:before {
+        content: "Package:";
+        margin-right: 0.3em;
+        font-style: italic;
+        color: $text;
+    }
+    font-size: 0.7em;
+    color: $highlight2;
+    float : right;
+    margin-right: 1em;
+}
+
+.args {
+    &:before {
+        content: "Args:";
+        margin-right: 0.3em;
+        font-style: italic;
+        color: $text;
+    }
+    margin-top: 0em;
+    margin-left: 3em;
+    font-size: 0.7em;
+    color: $highlight;
+    display: block;
+    font-family: $mono-font;
+}
+
+pre {
+    margin: 2px;
+    background: #404040;
+    border-color: gray;
+    border-width: 1px;
+    border-style: dashed;
+    border-radius: 5px;
+    padding: 3px;
+    color: magenta;
+    code {
+        border: none;
+    }
+}
+
+code {
+	background: #404040;
+	border-color: gray;
+	border-width: 1px;
+	border-style: dashed;
+	border-radius: 5px;
+	padding: 3px;
+	color: magenta;
+}
+
+td {
+    vertical-align: top;
+}
+
+:not(.static-file) > .docstring {
+    h1,h2,h3,h4,h5,h6 {
+        margin-top: 1em;
+    }
+    h1 {
+        font-size: 120%;
+    }
+    h2 {
+        font-size: 110%;
+    }
+    h3 {
+        font-size: 100%;
+    }
+    h4 {
+        font-size: 90%;
+    }
+    h5 {
+        font-size: 80%;
+    }
+    h6 {
+        font-size: 70%;
+    }
+}
+
+
+.footer {
+    color: $highlight;
+    background: $suppressed;
+}
+

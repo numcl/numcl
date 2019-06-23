@@ -1,0 +1,208 @@
+/* layout */
+html {
+  font-weight: medium;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0; }
+
+body {
+  margin: 0;
+  padding: 0; }
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 5em;
+  margin-bottom: 0.3em;
+  word-break: break-all; }
+  h1:first-child, h2:first-child, h3:first-child, h4:first-child, h5:first-child, h6:first-child {
+    margin-top: 0.3em; }
+  h1 .source-link, h2 .source-link, h3 .source-link, h4 .source-link, h5 .source-link, h6 .source-link {
+    float: right;
+    font-size: small; }
+
+.doc-entry {
+  margin-top: 2em;
+  margin-bottom: 2em; }
+
+.title {
+  text-align: center; }
+  .title h1 {
+    margin: 0em; }
+
+.table-of-contents {
+  word-break: break-all; }
+  .table-of-contents .source-link {
+    display: none; }
+  .table-of-contents ol {
+    padding-left: 1em; }
+
+.main img {
+  display: inline-block;
+  max-width: 100%; }
+
+.footer {
+  text-align: center; }
+
+/* zoom out */
+@media all and (min-width: 64.4em) {
+  body .page-header {
+    position: fixed;
+    top: 0em;
+    left: 0em;
+    width: 17em;
+    height: 100%;
+    vertical-align: top; }
+    body .page-header .title {
+      padding: 0.5em; }
+    body .page-header .table-of-contents {
+      padding: 0.5em;
+      height: 100%; }
+  body .main {
+    position: absolute;
+    left: 21em;
+    width: 50em;
+    margin: 0em 1em 0em 1em;
+    padding: 1em; }
+  body .footer {
+    position: fixed;
+    left: 0em;
+    bottom: 0em;
+    width: 17em;
+    padding: 0.5em 0em 0.5em 0em; } }
+/* zoom in */
+@media all and (max-width: 64.4em) {
+  body {
+    text-align: center; }
+    body .title, body .table-of-contents, body .main, body .footer {
+      margin: 0.5em 0.5em 0.5em 0.5em;
+      padding: 0.5em;
+      display: inline-block;
+      text-align: left;
+      float: center;
+      width: 40em; } }
+/* markup */
+/* font, style */
+html {
+  background: black;
+  color: gray;
+  font-family: "Inconsolata"; }
+
+h1, h2, h3, h4, h5, h6 {
+  color: orange;
+  font-family: "Raleway"; }
+
+a {
+  text-decoration: none;
+  color: palegreen; }
+
+.title {
+  background: #202020; }
+
+.main {
+  background: #202020; }
+  .main .missing {
+    color: #404040;
+    font-style: italic; }
+  .main .docstring {
+    margin-left: 1em; }
+
+.table-of-contents {
+  background: #202020; }
+
+.directory:before {
+  content: "Directory";
+  color: #404040;
+  margin-right: 0.3em; }
+.directory:after {
+  content: "/";
+  color: #404040;
+  margin-left: 0.1em; }
+
+.file:before {
+  content: "File";
+  color: #404040;
+  margin-right: 0.3em; }
+
+.extension {
+  color: #404040; }
+  .extension:before {
+    content: "."; }
+
+.doctype {
+  color: gray; }
+
+.sep1 {
+  margin-right: 0.3em;
+  color: gray; }
+
+.sep2 {
+  margin-left: 0.1em;
+  margin-right: 0.1em; }
+
+.package {
+  font-size: 0.7em;
+  color: palegreen;
+  float: right;
+  margin-right: 1em; }
+  .package:before {
+    content: "Package:";
+    margin-right: 0.3em;
+    font-style: italic;
+    color: gray; }
+
+.args {
+  margin-top: 0em;
+  margin-left: 3em;
+  font-size: 0.7em;
+  color: orange;
+  display: block;
+  font-family: "Ubuntu"; }
+  .args:before {
+    content: "Args:";
+    margin-right: 0.3em;
+    font-style: italic;
+    color: gray; }
+
+pre {
+  margin: 2px;
+  background: #404040;
+  border-color: gray;
+  border-width: 1px;
+  border-style: dashed;
+  border-radius: 5px;
+  padding: 3px;
+  color: magenta; }
+  pre code {
+    border: none; }
+
+code {
+  background: #404040;
+  border-color: gray;
+  border-width: 1px;
+  border-style: dashed;
+  border-radius: 5px;
+  padding: 3px;
+  color: magenta; }
+
+td {
+  vertical-align: top; }
+
+:not(.static-file) > .docstring h1, :not(.static-file) > .docstring h2, :not(.static-file) > .docstring h3, :not(.static-file) > .docstring h4, :not(.static-file) > .docstring h5, :not(.static-file) > .docstring h6 {
+  margin-top: 1em; }
+:not(.static-file) > .docstring h1 {
+  font-size: 120%; }
+:not(.static-file) > .docstring h2 {
+  font-size: 110%; }
+:not(.static-file) > .docstring h3 {
+  font-size: 100%; }
+:not(.static-file) > .docstring h4 {
+  font-size: 90%; }
+:not(.static-file) > .docstring h5 {
+  font-size: 80%; }
+:not(.static-file) > .docstring h6 {
+  font-size: 70%; }
+
+.footer {
+  color: orange;
+  background: #404040; }
+
+/*# sourceMappingURL=default.css.map */

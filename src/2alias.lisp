@@ -53,11 +53,11 @@ T  implies that the axis size is preserved. It can be used as many times, but on
 
 Example of reshaping (3 8 5):
 
- valid:   (6 -1 10)   = (6 2 10)
- valid:   (t 2 2 2 t) = (3 2 2 2 5)
- valid:   (3 t t)       = (3 8 5)
- valid:   (2 -1 2 2 t) --- (2 3 2 2 5)
- invalid: (2 t 2 2 t)
+:    valid:   (6 -1 10)   = (6 2 10)
+:    valid:   (t 2 2 2 t) = (3 2 2 2 5)
+:    valid:   (3 t t)       = (3 8 5)
+:    valid:   (2 -1 2 2 t) --- (2 3 2 2 5)
+:    invalid: (2 t 2 2 t)
 "
   (assert (<= (count -1 shape) 1))
   (let ((shape (coerce shape 'vector)))

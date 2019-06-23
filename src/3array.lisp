@@ -30,32 +30,34 @@ It may return a 0-dimensional array with CONTENTS being the only element.
 
 For example:
 
- (asarray '((1) (1 2))) -> #((1) (1 2))                               ; a vector of two lists.
- (asarray '(((1) (1 2)) ((3) (3 4)))) -> #2A(((1) (1 2)) ((3) (3 4))) ; a 2D array of 4 lists.
+: ; a vector of two lists.
+: (asarray '((1) (1 2)))               -> #((1) (1 2))
+: ; a 2D array of 4 lists.
+: (asarray '(((1) (1 2)) ((3) (3 4)))) -> #2A(((1) (1 2)) ((3) (3 4)))
 
- (asarray '((1 2) (3 4)))    -> #2A((1 2) (3 4))
- (asarray #(#(1 2) #(3 4)))  -> #2A((1 2) (3 4))
- (asarray #((1 2) (3 4)))    -> #2A((1 2) (3 4))
+: (asarray '((1 2) (3 4)))    -> #2A((1 2) (3 4))
+: (asarray #(#(1 2) #(3 4)))  -> #2A((1 2) (3 4))
+: (asarray #((1 2) (3 4)))    -> #2A((1 2) (3 4))
 
 However, this behavior may not be ideal because the resulting shape could be affected by the lengths of the strings.
 
- (asarray #(#(1 2) #(3 4)))   -> #2A((1 2) (3 4))
- (asarray #(#(1 2) #(3 4 5))) -> #(#(1 2) #(3 4 5))
+: (asarray #(#(1 2) #(3 4)))   -> #2A((1 2) (3 4))
+: (asarray #(#(1 2) #(3 4 5))) -> #(#(1 2) #(3 4 5))
 
- (asarray #(\"aa\" \"aa\"))   -> #2A((#\a #\a) (#\a #\a))
- (asarray #(\"aa\" \"aaa\"))  -> #(\"aa\" \"aaa\")
+: (asarray #(\"aa\" \"aa\"))   -> #2A((#\a #\a) (#\a #\a))
+: (asarray #(\"aa\" \"aaa\"))  -> #(\"aa\" \"aaa\")
 
 As a remedy to this problem, we allow TYPE to be a specifier for vector subtypes. Providing such a type specifier
 will keep the leaf objects (e.g. strings) from split into individual elements.
 We don't allow it to be a multidimentional array [at the moment.]
 
- (asarray #(#(1 2) #(3 4))   :type '(array fixnum (*))) -> #(#(1 2) #(3 4))
- (asarray #(#(1 2) #(3 4 5)) :type '(array fixnum (*))) -> #(#(1 2) #(3 4 5))
+: (asarray #(#(1 2) #(3 4))   :type '(array fixnum (*))) -> #(#(1 2) #(3 4))
+: (asarray #(#(1 2) #(3 4 5)) :type '(array fixnum (*))) -> #(#(1 2) #(3 4 5))
 
- (asarray #(\"aa\" \"aa\")  :type 'string)    -> #(\"aa\" \"aa\")
- (asarray #(\"aa\" \"aaa\") :type 'string)    -> #(\"aa\" \"aaa\")
+: (asarray #(\"aa\" \"aa\")  :type 'string)    -> #(\"aa\" \"aa\")
+: (asarray #(\"aa\" \"aaa\") :type 'string)    -> #(\"aa\" \"aaa\")
 
- (asarray '((1 2) (3 4))   :type '(array fixnum (* *)))  -> error
+: (asarray '((1 2) (3 4))   :type '(array fixnum (* *)))  -> error
 
 "
   (when (subtypep 'array type)

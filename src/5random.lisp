@@ -27,15 +27,16 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun shuffle (array-or-sequence &key (start 0) end)
   "
 This code extends alexandria:shuffle.
+It additionally accepts arrays and shuffles the elements according to the first axis,
+viewing the remaining axes as one \"element\".
 
-> Returns a random permutation of SEQUENCE bounded by START and END.
-> Original sequence may be destructively modified, and (if it contains
-> CONS or lists themselv) share storage with the original one.
-> Signals an error if SEQUENCE is not a proper sequence.
+Original documentation:
 
-
-
- "
+Returns a random permutation of SEQUENCE bounded by START and END.
+Original sequence may be destructively modified, and (if it contains
+CONS or lists themselv) share storage with the original one.
+Signals an error if SEQUENCE is not a proper sequence.
+"
   (declare (type fixnum start)
            (type (or fixnum null) end))
   (etypecase array-or-sequence

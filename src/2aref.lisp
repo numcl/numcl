@@ -20,31 +20,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :numcl.impl)
 
-;; for a 3D array a,
-
-;; range
-;; a[1:5,2,3]   = (aref a '(1 5) 2 3)
-;; a[2,1:5,3]   = (aref a 2 '(1 5) 3)
-;; a[2,1:2:5,3] = (aref a 2 '(1 2 5) 3)
-;; a[2,1:,3]    = (aref a 2 '(1 t) 3)
-;; a[2,:1,3]    = (aref a 2 '(t 1) 3)
-;; a[2,:,3]     = (aref a 2 '(t t) 3)
-;; a[2,:,3]     = (aref a 2    t   3)
-
-
-
-;; insufficient axis
-;; (aref a '(1 5)) == (aref a '(1 5) t t)
-;; (aref a 2 '(1 5)) == (aref a 2 '(1 5) t)
-
-;; newaxis
-;; (aref a '(1 2 5) nil 2 3)
-
-;; ellipsis
-;; (aref a '- 2) = (aref a t t 2) = a[...,2]
-;; (aref a 2 '-) = (aref a 2 t t) = a[2,...]
-;; (aref a 2 '- 3) = (aref a 2 t 3) = a[2,...,3]
-;; (aref a 2 3 '-) = (aref a 2 3 t) = a[2,3,...]
 
 ;; defstruct
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -137,6 +112,44 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
 
 
 (defun numcl:aref (array &rest subscripts)
+  "An extended =aref= that accepts ranges as lists, similar to numpy's array access.
+For a 3D array x,
+
+* range
+
+#+begin_src
+x[1:5,2,3]   = (aref x '(1 5) 2 3)
+x[2,1:5,3]   = (aref x 2 '(1 5) 3)
+x[2,1:2:5,3] = (aref x 2 '(1 2 5) 3)
+x[2,1:,3]    = (aref x 2 '(1 t) 3)
+x[2,:1,3]    = (aref x 2 '(t 1) 3)
+x[2,:,3]     = (aref x 2 '(t t) 3)
+x[2,:,3]     = (aref x 2    t   3)
+#+end_src
+
+* insufficient axis
+
+#+begin_src lisp
+(aref x '(1 5)) == (aref x '(1 5) t t)
+(aref x 2 '(1 5)) == (aref x 2 '(1 5) t)
+#+end_src
+
+* newaxis
+
+#+begin_src lisp
+(aref x '(1 2 5) nil 2 3)
+#+end_src
+
+* ellipsis
+
+#+begin_src lisp
+(aref x '- 2) = (aref x t t 2) = x[...,2]
+(aref x 2 '-) = (aref x 2 t t) = x[2,...]
+(aref x 2 '- 3) = (aref x 2 t 3) = x[2,...,3]
+(aref x 2 3 '-) = (aref x 2 3 t) = x[2,3,...]
+#+end_src
+
+"
   (ensure-singleton
    (let* ((shape (shape array))
           (subscripts (normalize-subscripts subscripts shape)))

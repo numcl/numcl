@@ -68,17 +68,25 @@ without this macro, it always expands to EINSUM and thus always creates a new fu
 "
   (ematch (first defun-form)
     ((list* 'defun name args body)
-     (let ((inlinable-name (symbolicate 'inlinable- name)))
-       `(progn
-          (declaim (inline ,inlinable-name))
-          (defun ,inlinable-name ,args ,@body)
-          ,(first defun-form)
-          (define-compiler-macro ,name (&whole whole &rest args)
-            (if *compile-file-pathname*
-                (progn
-                  (format t "~&; inlining ~a" whole)
-                  `(,',inlinable-name ,@args))
-                whole)))))))
-
-
-      
+     (multiple-value-bind (body2 decl2 doc) (parse-body body :documentation t)
+       (declare (ignore body2 decl2))
+       (let ((inlinable-name (symbolicate 'inlinable- name)))
+         (with-gensyms (wholevar args-var)
+           `(progn
+              (declaim (inline ,inlinable-name))
+              (defun ,inlinable-name ,args ,@body)
+              ,(first defun-form)
+              (define-compiler-macro ,name (&whole ,wholevar ,@args)
+                ,doc
+                (declare (ignore ,@(set-difference
+                                    (mapcar (compose #'first #'ensure-list) args)
+                                    lambda-list-keywords)))
+                (if *compile-file-pathname*
+                    (match ,wholevar
+                      ((or (list* 'funcall (list 'function (eq ',name)) ,args-var)
+                           (list* (eq ',name) ,args-var))
+                       (format t "~&; inlining ~a" ,wholevar)
+                       `(,',inlinable-name ,@,args-var))
+                      (_
+                       (error "what the heck?")))
+                    ,wholevar)))))))))

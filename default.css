@@ -86,7 +86,7 @@ html {
   color: gray;
   font-family: "Inconsolata"; }
 
-h1, h2, h3, h4, h5, h6, b, emph {
+h1, h2, h3, h4, h5, h6, b, emph, strong {
   color: orange;
   font-family: "Raleway"; }
 

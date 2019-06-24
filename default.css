@@ -82,7 +82,7 @@ h1, h2, h3, h4, h5, h6 {
 /* markup */
 /* font, style */
 html {
-  background: black;
+  background: #0d0d0d;
   color: gray;
   font-family: "Inconsolata"; }
 
@@ -95,35 +95,35 @@ a {
   color: palegreen; }
 
 .title {
-  background: #202020; }
+  background: #1a1a1a; }
 
 .main {
-  background: #202020; }
+  background: #1a1a1a; }
   .main .missing {
-    color: #404040;
+    color: #333333;
     font-style: italic; }
   .main .docstring {
     margin-left: 1em; }
 
 .table-of-contents {
-  background: #202020; }
+  background: #1a1a1a; }
 
 .directory:before {
   content: "Directory";
-  color: #404040;
+  color: #333333;
   margin-right: 0.3em; }
 .directory:after {
   content: "/";
-  color: #404040;
+  color: #333333;
   margin-left: 0.1em; }
 
 .file:before {
   content: "File";
-  color: #404040;
+  color: #333333;
   margin-right: 0.3em; }
 
 .extension {
-  color: #404040; }
+  color: #333333; }
   .extension:before {
     content: "."; }
 
@@ -162,26 +162,29 @@ a {
     font-style: italic;
     color: gray; }
 
-pre {
-  margin: 2px;
-  background: #404040;
-  border-color: gray;
-  border-width: 1px;
-  border-style: dashed;
-  border-radius: 5px;
-  padding: 3px;
-  color: magenta; }
-  pre code {
-    border: none; }
-
 code {
-  background: #404040;
+  color: magenta;
+  background: #333333;
   border-color: gray;
   border-width: 1px;
   border-style: dashed;
   border-radius: 5px;
-  padding: 3px;
-  color: magenta; }
+  padding: 3px; }
+  code a {
+    color: inherit; }
+
+pre {
+  color: magenta;
+  background: #333333;
+  border-color: gray;
+  margin: 2px;
+  border-width: 1px;
+  border-style: dashed;
+  border-radius: 5px;
+  padding: 1em; }
+  pre code {
+    border: none;
+    padding: 0; }
 
 td {
   vertical-align: top; }
@@ -202,7 +205,7 @@ td {
   font-size: 70%; }
 
 .footer {
-  background: #404040; }
+  background: #333333; }
   .footer:after {
     color: orange;
     font-family: "Raleway";
@@ -231,107 +234,88 @@ td.lineNumbers {
 td.sourceCode {
   padding-left: 5px; }
 
-code > span.kw {
-  font-weight: bold; }
-
-/* Keyword */
-code > span.dt {
-  color: #800000; }
-
-/* DataType */
-code > span.dv {
-  color: #0000ff; }
-
-/* DecVal */
-code > span.bn {
-  color: #0000ff; }
-
-/* BaseN */
-code > span.fl {
-  color: #800080; }
-
-/* Float */
-code > span.ch {
-  color: #ff00ff; }
-
-/* Char */
-code > span.st {
-  color: #dd0000; }
-
-/* String */
-code > span.co {
-  color: #808080;
-  font-style: italic; }
-
-/* Comment */
-code > span.al {
-  color: #00ff00;
-  font-weight: bold; }
-
-/* Alert */
-code > span.fu {
-  color: #000080; }
-
-/* Function */
-code > span.er {
-  color: #ff0000;
-  font-weight: bold; }
-
-/* Error */
-code > span.wa {
-  color: #ff0000;
-  font-weight: bold; }
-
-/* Warning */
-code > span.cn {
-  color: #000000; }
-
-/* Constant */
-code > span.sc {
-  color: #ff00ff; }
-
-/* SpecialChar */
-code > span.vs {
-  color: #dd0000; }
-
-/* VerbatimString */
-code > span.ss {
-  color: #dd0000; }
-
-/* SpecialString */
-/* Import */
-/* Variable */
-/* ControlFlow */
-/* Operator */
-/* BuiltIn */
-/* Extension */
-code > span.pp {
-  font-weight: bold; }
-
-/* Preprocessor */
-/* Attribute */
-code > span.do {
-  color: #808080;
-  font-style: italic; }
-
-/* Documentation */
-code > span.an {
-  color: #808080;
-  font-weight: bold;
-  font-style: italic; }
-
-/* Annotation */
-code > span.cv {
-  color: #808080;
-  font-weight: bold;
-  font-style: italic; }
-
-/* CommentVar */
-code > span.in {
-  color: #808080;
-  font-weight: bold;
-  font-style: italic; }
-
-/* Information */
+.sourceCode {
+  color: #a0a0a0;
+  /* Keyword */
+  /* DataType */
+  /* DecVal */
+  /* BaseN */
+  /* Float */
+  /* Char */
+  /* String */
+  /* Comment */
+  /* Alert */
+  /* Function */
+  /* Error */
+  /* Warning */
+  /* Constant */
+  /* SpecialChar */
+  /* VerbatimString */
+  /* SpecialString */
+  /* Import */
+  /* Variable */
+  /* ControlFlow */
+  /* Operator */
+  /* BuiltIn */
+  /* Extension */
+  /* Preprocessor */
+  /* Attribute */
+  /* Documentation */
+  /* Annotation */
+  /* CommentVar */
+  /* Information */ }
+  .sourceCode span.kw {
+    color: palegreen; }
+  .sourceCode span.dt {
+    color: orange; }
+  .sourceCode span.dv {
+    color: orange; }
+  .sourceCode span.bn {
+    color: orange; }
+  .sourceCode span.fl {
+    color: orange; }
+  .sourceCode span.ch {
+    color: orange; }
+  .sourceCode span.st {
+    color: #ffc966; }
+  .sourceCode span.co {
+    color: #6d6d6d;
+    font-style: italic; }
+  .sourceCode span.al {
+    color: #f50000;
+    font-weight: bold; }
+  .sourceCode span.fu {
+    color: aqua; }
+  .sourceCode span.er {
+    color: red;
+    font-weight: bold; }
+  .sourceCode span.wa {
+    color: #fa0000;
+    font-weight: bold; }
+  .sourceCode span.cn {
+    color: white; }
+  .sourceCode span.sc {
+    color: #ff00ff; }
+  .sourceCode span.vs {
+    color: #ffc966; }
+  .sourceCode span.ss {
+    color: #ffc966; }
+  .sourceCode span.pp {
+    font-weight: bold; }
+  .sourceCode span.do {
+    color: #808080;
+    font-style: italic; }
+  .sourceCode span.an {
+    color: #808080;
+    font-weight: bold;
+    font-style: italic; }
+  .sourceCode span.cv {
+    color: #808080;
+    font-weight: bold;
+    font-style: italic; }
+  .sourceCode span.in {
+    color: #808080;
+    font-weight: bold;
+    font-style: italic; }
 
 /*# sourceMappingURL=default.css.map */

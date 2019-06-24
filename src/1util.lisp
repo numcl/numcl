@@ -78,9 +78,9 @@ without this macro, it always expands to EINSUM and thus always creates a new fu
               ,(first defun-form)
               (define-compiler-macro ,name (&whole ,wholevar ,@args)
                 ,doc
-                (declare (ignore ,@(set-difference
-                                    (mapcar (compose #'first #'ensure-list) args)
-                                    lambda-list-keywords)))
+                (declare (ignorable ,@(set-difference
+                                       (mapcar (compose #'first #'ensure-list) args)
+                                       lambda-list-keywords)))
                 (if *compile-file-pathname*
                     (match ,wholevar
                       ((or (list* 'funcall (list 'function (eq ',name)) ,args-var)

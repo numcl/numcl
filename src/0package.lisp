@@ -241,7 +241,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (:reexport :cl)
   (:documentation "
 NUMCL defines several symbols which have the same name as the corresponding CL
-symbols. We call them *conflicting symbols*.  To avoid the confusion in the code
+symbols. We call them **conflicting symbols**.  To avoid the confusion in the code
 base, we use 3 packages: NUMCL.EXPORTED, NUMCL.IMPL, NUMCL.
 
 This package replaces COMMON-LISP package by shadowing-import symbols from

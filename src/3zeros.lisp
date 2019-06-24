@@ -22,14 +22,14 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter +zeros-doc+
-    "Equivalent of the same function in numpy. Note the default =type= difference.
+    "Equivalent of the same function in numpy. Note the default `type` difference.
 
-+ =empty= : does not explicitly fill the array. In an unsafe compiler setting,
++ `empty` : does not explicitly fill the array. In an unsafe compiler setting,
   junk value may appear.
-+ =full=  : fill the array with a certain value.
-+ =zeros=, =ones= : fill the array with zeros / ones. =type= affects the actual
++ `full`  : fill the array with a certain value.
++ `zeros`, `ones` : fill the array with zeros / ones. `type` affects the actual
   value being filled.
-+ =X-like= : similar to above functions, but takes another array and returns the
++ `X-like` : similar to above functions, but takes another array and returns the
   array of the same shape.
 "))
 

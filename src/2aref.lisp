@@ -112,12 +112,12 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
 
 
 (defun numcl:aref (array &rest subscripts)
-  "An extended =aref= that accepts ranges as lists, similar to numpy's array access.
+  "An extended `aref` that accepts ranges as lists, similar to numpy's array access.
 For a 3D array x,
 
 * range
 
-#+begin_src
+```
 x[1:5,2,3]   = (aref x '(1 5) 2 3)
 x[2,1:5,3]   = (aref x 2 '(1 5) 3)
 x[2,1:2:5,3] = (aref x 2 '(1 2 5) 3)
@@ -125,29 +125,29 @@ x[2,1:,3]    = (aref x 2 '(1 t) 3)
 x[2,:1,3]    = (aref x 2 '(t 1) 3)
 x[2,:,3]     = (aref x 2 '(t t) 3)
 x[2,:,3]     = (aref x 2    t   3)
-#+end_src
+```
 
 * insufficient axis
 
-#+begin_src lisp
+```lisp
 (aref x '(1 5)) == (aref x '(1 5) t t)
 (aref x 2 '(1 5)) == (aref x 2 '(1 5) t)
-#+end_src
+```
 
 * newaxis
 
-#+begin_src lisp
+```lisp
 (aref x '(1 2 5) nil 2 3)
-#+end_src
+```
 
 * ellipsis
 
-#+begin_src lisp
+```lisp
 (aref x '- 2) = (aref x t t 2) = x[...,2]
 (aref x 2 '-) = (aref x 2 t t) = x[2,...]
 (aref x 2 '- 3) = (aref x 2 t 3) = x[2,...,3]
 (aref x 2 3 '-) = (aref x 2 3 t) = x[2,3,...]
-#+end_src
+```
 
 "
   (ensure-singleton

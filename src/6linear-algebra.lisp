@@ -47,7 +47,7 @@ and can be seens as a full-brown DSL for array operations.
 SUBSCRIPTS is a sequence of the form `(<SPEC>+ [-> <TRANSFORM>*] [-> [<SPEC>*])`.
 The remaining arguments ARGS contain the input arrays and optionally the output arrays.
 
-* SPEC
+# SPEC
 
 The first set of SPECs specifies the input subscripts,
 and the second set of SPECs specifies the output subscripts.
@@ -69,7 +69,7 @@ For example, `(ij jk)` is equivalent to `(ij jk -> ijk)`.
 Note that `(ij jk)` and `(ij jk ->)` have the different meanings:
 The latter sums up all elements.
 
-* TRANSFORM
+# TRANSFORM
 
 TRANSFORM is a list of element-wise operations.
 The number of TRANSFORM should correspond to the number of outputs.
@@ -80,7 +80,7 @@ For example, `(ij ik -> (+ @1 (* $1 $2)) -> ik)` is equivalent to `(ij ik -> ik)
 
 By default, TRANSFORM is `(+ @1 (* $1 ... $N))` for N inputs, which is equivalent to Einstein's summation.
 
-* ARGS
+# ARGS
 
 The shape of each input array should unify against the corresponding input spec. For example,
 with a spec IJI, the input array should be of rank 3 as well as
@@ -128,7 +128,7 @@ For example, (einsum '(ij jk) a b) is equivalent to:
        (setf (aref <output> i j k) (* (aref a i j) (aref b j k))))))
 ```
 
-* Performance
+# Performance
 
 If SUBSCRIPTS is a constant, the compiler macro
 builds an iterator function and make them inlined. Otherwise,

@@ -121,7 +121,7 @@ When TRANSFORMs are missing, it follows naturally from the default TRANSFORM val
 
 For example, (einsum '(ij jk) a b) is equivalent to:
 
-```lisp
+```commonlisp
  (dotimes (i <max> <output>)
    (dotimes (j <max>)
      (dotimes (k <max>)

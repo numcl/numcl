@@ -129,20 +129,20 @@ x[2,:,3]     = (aref x 2    t   3)
 
 * insufficient axis
 
-```lisp
+```commonlisp
 (aref x '(1 5)) == (aref x '(1 5) t t)
 (aref x 2 '(1 5)) == (aref x 2 '(1 5) t)
 ```
 
 * newaxis
 
-```lisp
+```commonlisp
 (aref x '(1 2 5) nil 2 3)
 ```
 
 * ellipsis
 
-```lisp
+```commonlisp
 (aref x '- 2) = (aref x t t 2) = x[...,2]
 (aref x 2 '-) = (aref x 2 t t) = x[2,...]
 (aref x 2 '- 3) = (aref x 2 t 3) = x[2,...,3]

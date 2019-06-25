@@ -403,7 +403,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
     late-vars
     late-inits
     late-declaration
-    cleanup
+    store                               ; array store operations
     declaration))
 
 (defun einsum-body (iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
@@ -455,7 +455,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
                    (collecting `(declare (derive ,var type (array-subtype-element-type type) ,evar))
                                into late-declaration)
                    (when out-p
-                     (collecting `(setf (aref ,var ,index) ,evar) into cleanup)))
+                     (collecting `(setf (aref ,var ,index) ,evar) into store)))
                  (finally
                   (in outer
                       (collecting
@@ -469,7 +469,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
                         :late-inits late-inits
                         :late-declaration late-declaration
                         :declaration `((declare (type index ,&)) ,@declaration)
-                        :cleanup     cleanup)))))))))
+                        :store     store)))))))))
 
 
 
@@ -488,7 +488,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
                ((list* (do-node base-var base-limit
                                 vars inits steps
                                 late-vars late-inits late-declaration
-                                declaration cleanup)
+                                declaration store)
                        rest)
                 `(do* ((,base-var 0 (+ ,base-var 1))
                        ,@(mapcar #'list vars inits))
@@ -497,7 +497,7 @@ Otherwise call float-substitution and simplify integers to fixnums."
                    (let ,(mapcar #'list late-vars late-inits)
                      ,@late-declaration
                      ,(rec rest)
-                     ,@cleanup)
+                     ,@store)
                    ,(step-form vars steps)))
                
                (nil

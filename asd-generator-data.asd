@@ -24,5 +24,5 @@ $ update-asdf
 |#
 
 ((:dir :src
-       (:rest :recursive nil)))
+       (:rest)))
 

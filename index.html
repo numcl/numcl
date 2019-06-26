@@ -98,7 +98,9 @@
 (3 t t)       = (3 8 5)
 (2 -1 2 2 t)  = (2 3 2 2 5)
 </code></pre>
-<p>invalid: (2 t 2 2 t)</p>
+<p>invalid:</p>
+<pre><code>(2 t 2 2 t)
+</code></pre>
 </div></div></div><div class="doc-entry"><div class="entry"><h3 id="defun---flatten-,-squeeze-numcl.exported-a"><span class="doctype">defun</span><span class="sep1">:</span><span class="name defun" id="NUMCL.EXPORTED:FLATTEN">flatten</span><span class="sep2">,</span><span class="name defun" id="NUMCL.EXPORTED:SQUEEZE">squeeze</span><span class="package">numcl.exported</span><span class="args lisp">a</span></h3><div class="docstring missing">(documentation missing)</div></div></div><div class="doc-entry"><div class="entry"><h3 id="defun---expand-dims-numcl.exported-a-axes"><span class="doctype">defun</span><span class="sep1">:</span><span class="name" id="NUMCL.EXPORTED:EXPAND-DIMS">expand-dims</span><span class="package">numcl.exported</span><span class="args lisp">a axes</span></h3><div class="docstring"><p>axes: an int or a list of ints</p>
 </div></div></div><h2 id="src/2aref.lisp"><span class="file">2aref</span><span class="extension">lisp</span><a class="source-link" href="https://github.com/numcl/numcl/blob/master/src/2aref.lisp">[edit on web]</a></h2><div class="doc-entry"><div class="entry"><h3 id="defun---aref-numcl.exported-array-&rest-subscripts"><span class="doctype">defun</span><span class="sep1">:</span><span class="name" id="NUMCL.EXPORTED:AREF">aref</span><span class="package">numcl.exported</span><span class="args lisp">array &amp;rest subscripts</span></h3><div class="docstring"><p>An extended <code>aref</code> that accepts ranges as lists, similar to numpy's array access. For a 3D array x,</p>
 <ul>

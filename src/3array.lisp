@@ -21,50 +21,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (in-package :numcl.impl)
 
 (defun asarray (contents &key type)
-  "Copy CONTENTS to a new array.
-When CONTENTS is a multidimentional array, its elements are copied to a new array that guarantees the NUMCL assumption.
-When CONTENTS is a nested sequence, it is traversed up to the depth that guarantees the sane shape for an array.
-When elements are copied, it is coerced to TYPE.
-When TYPE is not given, it is replaced with the float-contagion type deduced from the elements of CONTENTS.
-It may return a 0-dimensional array with CONTENTS being the only element.
-
-For example:
-
-```lisp
-;; a vector of two lists.
-(asarray '((1) (1 2)))               -> #((1) (1 2))
-;; a 2D array of 4 lists.
-(asarray '(((1) (1 2)) ((3) (3 4)))) -> #2A(((1) (1 2)) ((3) (3 4)))
-
-(asarray '((1 2) (3 4)))    -> #2A((1 2) (3 4))
-(asarray #(#(1 2) #(3 4)))  -> #2A((1 2) (3 4))
-(asarray #((1 2) (3 4)))    -> #2A((1 2) (3 4))
-```
-
-However, this behavior may not be ideal because the resulting shape could be affected by the lengths of the strings.
-
-```lisp
-(asarray #(#(1 2) #(3 4)))   -> #2A((1 2) (3 4))
-(asarray #(#(1 2) #(3 4 5))) -> #(#(1 2) #(3 4 5))
-
-(asarray #(\"aa\" \"aa\"))   -> #2A((#\a #\a) (#\a #\a))
-(asarray #(\"aa\" \"aaa\"))  -> #(\"aa\" \"aaa\")
-```
-
-As a remedy to this problem, we allow TYPE to be a specifier for vector subtypes. Providing such a type specifier
-will keep the leaf objects (e.g. strings) from split into individual elements.
-We don't allow it to be a multidimentional array [at the moment.]
-
-```lisp
-(asarray #(#(1 2) #(3 4))   :type '(array fixnum (*))) -> #(#(1 2) #(3 4))
-(asarray #(#(1 2) #(3 4 5)) :type '(array fixnum (*))) -> #(#(1 2) #(3 4 5))
-
-(asarray #(\"aa\" \"aa\")  :type 'string)    -> #(\"aa\" \"aa\")
-(asarray #(\"aa\" \"aaa\") :type 'string)    -> #(\"aa\" \"aaa\")
-
-(asarray '((1 2) (3 4))   :type '(array fixnum (* *)))  -> error
-```
-"
+  #.*asarray-documentation*
   (when (subtypep 'array type)
     (assert (subtypep 'vector type)))
   (identity

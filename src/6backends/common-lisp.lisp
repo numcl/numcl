@@ -63,8 +63,16 @@
     store                               ; array store operations
     declaration))
 
-(defmethod einsum-body ((*compiler* (eql :common-lisp)) iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)
-  (let* ((i-idx (make-gensym-list (length i-vars) "$IDX"))
+(defmethod einsum-body ((*compiler* (eql :common-lisp)) (ev einsum-vars))
+  (let* ((iter-specs (einsum-vars-iter-specs ev))
+         (i-specs (einsum-vars-i-specs ev))
+         (o-specs (einsum-vars-o-specs ev))
+         (i-vars  (einsum-vars-i-vars ev))
+         (o-vars  (einsum-vars-o-vars ev))
+         (i-evars (einsum-vars-i-evars ev))
+         (o-evars (einsum-vars-o-evars ev))
+         (transforms (einsum-vars-transforms ev))
+         (i-idx (make-gensym-list (length i-vars) "$IDX"))
          (o-idx (make-gensym-list (length o-vars) "@IDX"))
          (const-vars  (append o-idx i-idx))
          (const-inits (mapcar (constantly 0) const-vars))

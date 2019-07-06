@@ -56,7 +56,7 @@ e.g. `(ij jk -> ik)` and `(ik kj -> ij)` both results in something equivalent to
 
 It then inserts the default transforms, if missing.
 
-The value returned is a plist of :inputs, :transforms, :outputs. 
+The value returned is a plist of :inputs, :transforms, :outputs.
 For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
 
 ```lisp
@@ -146,7 +146,33 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
          (iter (for index in spec)
                (collecting (funcall fn index))))))
 
-(defun einsum-parse-subscripts (normalized-subscripts)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defstruct einsum-vars
+    "A temporary structure holding the information for the einsum compiler.
+* `iter-specs`         : A list of integers that defines the nested loops.
+
+* `i-specs`, `o-specs` : A list of lists of integers that specifies the indices
+                         for each input/output array. Each list should be a
+                         subset of iter-specs.
+                         
+* `i-vars`, `o-vars`   : A list of symbols for binding the array.
+
+* `i-evars`, `o-evars` : A list of symbols for binding the array element.
+                         These are always named $N and @N (for the
+                         input/output, resp.)
+
+* `transforms`         : A list of forms. One form is for each output array.
+                         Each form is evaluated in each loop and the value is
+                         assigned to the array element.
+"
+    iter-specs
+    i-specs i-vars i-evars
+    o-specs o-vars o-evars
+    transforms))
+
+(defun einsum-vars (normalized-subscripts)
+  "Takes a list of normalized subscripts and returns a temporary
+structure (einsum-vars)."
   (match normalized-subscripts
     ((plist :inputs     i-specs
             :transforms transforms
@@ -161,56 +187,54 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
                nil
                "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
                (set-difference o-flat i-flat) i-flat o-flat)
-       (values
-        i-specs
-        (make-gensym-list i-len "I")
-        (mapcar #'$ (iota i-len :start 1))
-
-        o-specs
-        (make-gensym-list o-len "O")
-        (mapcar #'@ (iota o-len :start 1))
-
-        iter-specs
-        transforms)))))
+       (make-einsum-vars
+        :iter-specs iter-specs
+        :i-specs i-specs
+        :i-vars  (make-gensym-list i-len "I")
+        :i-evars (mapcar #'$ (iota i-len :start 1))
+        :o-specs o-specs
+        :o-vars  (make-gensym-list o-len "O")
+        :o-evars (mapcar #'@ (iota o-len :start 1))
+        :transforms transforms)))))
 
 (deftype index () `(integer 0 (,array-dimension-limit)))
 
 (defun einsum-lambda (normalized-subscripts)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
-  (multiple-value-bind (i-specs i-vars i-evars
-                        o-specs o-vars o-evars iter-specs transforms)
-      (einsum-parse-subscripts normalized-subscripts)
-    (with-gensyms (o-types)
-      `(lambda (,@i-vars &optional ,@o-vars)
-         (resolving
-           ,@(iter (for var in i-vars)
-                   (for spec in i-specs)
-                   (collecting
-                    `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
-           (let* ((,o-types (einsum-output-types
-                             ',transforms ',i-evars ',o-evars ,@i-vars))
-                  ,@(iter (for o-var     in o-vars)
-                          (for o-spec    in o-specs)
-                          (for o from 0)
-                          (collecting
-                           `(,o-var
-                             (or ,o-var
-                                 (zeros (list ,@(mapcar #'? o-spec)) :type (nth ,o ,o-types)))))))
-             (resolving
-               ,@(iter (for var in o-vars)
-                       (for spec in o-specs)
-                       (collecting
-                        `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
-               (let ,(iter (for var in (append i-vars o-vars))
+  (ematch (einsum-vars normalized-subscripts)
+    ((and ev (einsum-vars i-specs i-vars i-evars
+                          o-specs o-vars o-evars iter-specs transforms))
+     (with-gensyms (o-types)
+       `(lambda (,@i-vars &optional ,@o-vars)
+          (resolving
+            ,@(iter (for var in i-vars)
+                    (for spec in i-specs)
+                    (collecting
+                      `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
+            (let* ((,o-types (einsum-output-types
+                              ',transforms ',i-evars ',o-evars ,@i-vars))
+                   ,@(iter (for o-var     in o-vars)
+                           (for o-spec    in o-specs)
+                           (for o from 0)
                            (collecting
-                            ;; extract the base array
-                            `(,var (array-displacement ,var))))
-                 (specializing (,@i-vars ,@o-vars) ()
-                   (declare (optimize (speed 2) (safety 0)))
-                   (declare (type index ,@(mapcar #'? iter-specs)))
-                   ,(einsum-body *compiler* iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms)))
-               (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
-                                 o-vars)))))))))
+                             `(,o-var
+                               (or ,o-var
+                                   (zeros (list ,@(mapcar #'? o-spec)) :type (nth ,o ,o-types)))))))
+              (resolving
+                ,@(iter (for var in o-vars)
+                        (for spec in o-specs)
+                        (collecting
+                          `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
+                (let ,(iter (for var in (append i-vars o-vars))
+                            (collecting
+                              ;; extract the base array
+                              `(,var (array-displacement ,var))))
+                  (specializing (,@i-vars ,@o-vars) ()
+                    (declare (optimize (speed 2) (safety 0)))
+                    (declare (type index ,@(mapcar #'? iter-specs)))
+                    ,(einsum-body *compiler* ev)))
+                (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
+                                  o-vars))))))))))
 
 (defun einsum-output-types (transforms i-evars o-evars &rest arrays)
   "Try to simulate the range for 10 iterations; Stop if it converges.

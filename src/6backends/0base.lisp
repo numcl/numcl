@@ -4,4 +4,12 @@
 
 (defvar *compiler* :common-lisp)
 
-(defgeneric einsum-body (*compiler* iter-specs i-specs o-specs i-vars o-vars i-evars o-evars transforms))
+(defgeneric einsum-body (*compiler* einsum-vars)
+  (:documentation
+   " 
+* `*compiler*` : Special variable (supposed to be a keyword) used for
+  dispatching the compilation scheme.
+
+* `einsum-vars` : einsum-vars structure.
+
+"))

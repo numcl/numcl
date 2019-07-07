@@ -44,18 +44,27 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
        (string= a b)))
 
 (defun einsum-normalize-subscripts (subscripts)
-  "Normalizes the subscripts.
+  "Normalizes the input to the einsum.
 It first 'explodes' each spec into the list form.
 It then generates the default output form, if missing.
 
 It then translates the index symbols into a number
 based on the order of appearance; This should make
-the specs with the different symbols into the same form,
-e.g. (ij jk -> ik) and (ik kj -> ij) results in the same normalized form.
+the specs with the different symbols into the canonical form,
+e.g. `(ij jk -> ik)` and `(ik kj -> ij)` both results in something equivalent to
+ `((0 1) (1 2) -> (0 2))`.
 
-It then computes the transforms, if missing.
+It then inserts the default transforms, if missing.
 
 The value returned is a plist of :inputs, :transforms, :outputs. 
+For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
+
+```lisp
+  (:inputs     ((0 1) (1 2))
+   :transforms ((+ @1 (* $1 $2)))
+   :outputs    ((0 2)))
+```
+
 "
   (flet ((explode (s)
            (typecase s

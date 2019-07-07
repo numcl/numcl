@@ -63,7 +63,7 @@
     store                               ; array store operations
     declaration))
 
-(defmethod einsum-body ((*compiler* (eql :common-lisp)) (ev einsum-vars))
+(defmethod einsum-body ((*compiler* (eql :common-lisp)) ev)
   (let* ((iter-specs (einsum-vars-iter-specs ev))
          (i-specs (einsum-vars-i-specs ev))
          (o-specs (einsum-vars-o-specs ev))

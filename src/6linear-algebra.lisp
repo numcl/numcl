@@ -199,6 +199,16 @@ structure (einsum-vars)."
 
 (deftype index () `(integer 0 (,array-dimension-limit)))
 
+(defvar *compiler* :common-lisp)
+
+(defgeneric einsum-body (*compiler* einsum-vars)
+  (:documentation
+   " 
+* `*compiler*` : Special variable (supposed to be a keyword) used for
+  dispatching the compilation scheme.
+
+* `einsum-vars` : einsum-vars structure. "))
+
 (defun einsum-lambda (normalized-subscripts)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
   (ematch (einsum-vars normalized-subscripts)

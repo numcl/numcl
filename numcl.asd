@@ -45,9 +45,8 @@
                             (:file "5random")
                             (:file "5reduce")
                             (:file "5where")
-                            (:file "6backends/0base")
-                            (:file "6backends/common-lisp")
                             (:file "6linear-algebra")
-                            (:file "6linear-algebra2"))))
+                            (:file "7backends/common-lisp")
+                            (:file "8linear-algebra2"))))
  :description "Numpy clone in Common Lisp, using MAGICL/LLA/MGL-MAT as the backend (in the future)"
  :in-order-to ((test-op (test-op :numcl.test))))

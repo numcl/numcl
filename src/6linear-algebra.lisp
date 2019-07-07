@@ -176,7 +176,7 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
 (deftype index () `(integer 0 (,array-dimension-limit)))
 
 (defun einsum-lambda (normalized-subscripts)
-  "Parses SUBSCRIPTS (<SPEC>+ [-> <SPEC>*]) and returns a lambda form that iterates over it."
+  "Takes a normalized-subscripts and returns a lambda form that iterates over it."
   (multiple-value-bind (i-specs i-vars i-evars
                         o-specs o-vars o-evars iter-specs transforms)
       (einsum-parse-subscripts normalized-subscripts)

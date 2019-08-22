@@ -111,7 +111,17 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (let ((a (zeros 4 :type 'bit)))
     (setf (aref a '(0 4 2)) 1)
     (is (equalp a #(1 0 1 0))))
-  )
+
+  (let ((a (arange 4)))
+
+    (signals invalid-array-index-error (aref a 5))
+    (signals invalid-array-index-error (aref a 4))
+    (iter (for i from 0 to 3)
+          (is (= i (aref a i))))
+    (iter (for i from -4 to -1)
+          (for j from 0 to 3)
+          (is (= j (aref a i))))
+    (signals invalid-array-index-error (aref a -5))))
 
 (test (aset-fill :compile-at :run-time)
   (let ((a (zeros '(2 2) :type 'fixnum)))

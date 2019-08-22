@@ -49,6 +49,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
    ;; 3aref
    #:aref
+   #:invalid-array-index-error
+   #:invalid-array-index-error-axis
+   #:invalid-array-index-error-shape
+   #:invalid-array-index-error-subscripts
 
    ;; 3arange
    #:arange

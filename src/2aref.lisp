@@ -37,6 +37,20 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
     (contiguous nil :type boolean :read-only t)
     (singleton nil :type boolean :read-only t)))
 
+(define-condition invalid-array-index-error (type-error)
+  ((shape      :initarg :shape      :accessor invalid-array-index-error-shape)
+   (axis       :initarg :axis       :accessor invalid-array-index-error-axis)
+   (subscripts :initarg :subscripts :accessor invalid-array-index-error-subscripts))
+  (:report
+   (lambda (o s)
+     (with-slots (shape axis subscripts) o
+       (format s "Invalid index ~a in ~a for a shape ~a: requires [~a, ~a)."
+               (elt subscripts axis)
+               subscripts
+               shape
+               (- (elt shape axis))
+               (elt shape axis))))))
+
 (defun %normalize-subscript (subscript dim)
   "Returns a subscript object."
   (ematch subscript
@@ -45,6 +59,11 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
     (nil
      (sub 0 dim 1 dim t t nil))
     ((number)
+     ;; analogous to SBCL's SB-INT:INVALID-ARRAY-INDEX-ERROR
+     (assert (and (< subscript dim)
+                  (<= (- dim) subscript))
+             nil
+             'invalid-array-index-error)
      (let ((subscript (mod subscript dim)))
        (sub subscript (1+ subscript) 1 1 (= dim 1) t t)))
     ;; aliasing
@@ -74,22 +93,35 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
 
       - corresponds to numpy's elipses `...`, and it should appear only once.
       t corresponds to the unspecified end in numpy's `:` . "
-  (mapcar #'%normalize-subscript
-          ;; address ellipses and missing dims
-          (if-let ((pos (position 'numcl:- subscripts)))
-              (progn
-                (assert (= (count 'numcl:- subscripts) 1))
-                (append (subseq subscripts 0 pos)
-                        (make-list (- (length shape)
-                                      (- (length subscripts) 1)) :initial-element t)
-                        (subseq subscripts (1+ pos))))
-            (if (< (length subscripts) (length shape))
-                (append subscripts
-                        (make-list (- (length shape)
-                                      (length subscripts))
-                                   :initial-element t))
-                subscripts))
-          shape))
+  (let ((complete-subscripts
+         ;; address ellipses and missing dims
+         (if-let ((pos (position 'numcl:- subscripts)))
+           (progn
+             (assert (= (count 'numcl:- subscripts) 1))
+             (append (subseq subscripts 0 pos)
+                     (make-list (- (length shape)
+                                   (- (length subscripts) 1)) :initial-element t)
+                     (subseq subscripts (1+ pos))))
+           (if (< (length subscripts) (length shape))
+               (append subscripts
+                       (make-list (- (length shape)
+                                     (length subscripts))
+                                  :initial-element t))
+               subscripts))))
+    (let ((i 0))
+      (handler-bind
+          ((invalid-array-index-error
+            (lambda (c)
+              (setf (invalid-array-index-error-axis c) i
+                    (invalid-array-index-error-subscripts c) subscripts
+                    (invalid-array-index-error-shape c) shape))))
+        
+        (iter (for sub in complete-subscripts)
+              (for dim in shape)
+              (collecting
+               (%normalize-subscript sub dim)))))))
+
+
 
 (defun result-shape (subscripts)
   (mapcar #'sub-width (remove-if #'sub-singleton subscripts)))

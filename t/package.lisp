@@ -121,7 +121,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (iter (for i from -4 to -1)
           (for j from 0 to 3)
           (is (= j (aref a i))))
-    (signals invalid-array-index-error (aref a -5)))
+    (signals invalid-array-index-error (aref a -5))
+
+    (signals invalid-array-index-error (aref (arange 5) '(-6 -1))))
 
   (is (equalp (aref (arange 5) '(-3 -1)) #(3 4))))
 

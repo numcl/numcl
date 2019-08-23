@@ -79,6 +79,16 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
      (%normalize-subscript `(,start ,stop 1) dim))
     
     ((list start stop step)
+     (assert (and (< start dim)
+                  (<= (- dim) start))
+             nil
+             'invalid-array-index-error)
+     ;; unclear due to STEP
+     #+(or)
+     (assert (and (< stop dim)
+                  (<= (- dim) stop))
+             nil
+             'invalid-array-index-error)
      (let* ((start (if (minusp start) (1+ (mod start dim)) (min start dim)))
             (stop  (if (minusp stop)  (1+ (mod stop dim))  (min stop  dim)))
             (width  (ceiling (- stop start) step)))

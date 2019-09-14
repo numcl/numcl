@@ -445,4 +445,17 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (set-type-inferer 'lognand (defun infer-lognand (x y) (infer-lognot (infer-logand x y))))
 (set-type-inferer 'lognor  (defun infer-lognor  (x y) (infer-lognot (infer-logior x y))))
   
+(set-type-inferer
+ 'conjugate
+ (defun conjugate-inferer (x)
+   (declare (trivia:optimizer :trivial))
+   (ematch x
+     ((real-subtype)
+      x)
+     ((complex-type)
+      x)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'conjugate-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'conjugate-inferer)))))
 

@@ -44,7 +44,17 @@ See [[DETAILS.org]] for the types available in numcl, and object representation.
 
 ** Dependencies
 
-NUMCL depends on https://github.com/numcl/constantfold .
+NUMCL depends on the following libraries that must be installed manually and
+other libraries that are automatically loaded by quicklisp.
+
++ https://github.com/numcl/constantfold
++ https://github.com/numcl/gtype
++ https://github.com/numcl/specialized-function .
+
+With Roswell, installation can be done by
+
+: ros install numcl/constantfold numcl/specialized-function numcl/gtype numcl/numcl
+
 This library is at least tested on implementation listed below:
 
 + SBCL 1.4.12 on X86-64 Linux 4.4.0-141-generic (author's environment)
@@ -54,6 +64,33 @@ This library is at least tested on implementation listed below:
 Dependency graph:
 
 [[./numcl.png]]
+
+
+** Quick tutorial
+
+In order to guarantee the speed and to simplify the implementation, the arrays
+given to numcl functions must satisfy the following two conditions:
+
++ It is a specialized array. Things of type =(array single-float)=, =(array (unsigned-byte 16))= etc.
++ It is an array displaced to a simple 1D specialized array.
+  "[[http://www.lispworks.com/documentation/HyperSpec/Body/t_smp_ar.htm][Simple array]]" means a non-displaced, non-adjustable array without fill pointer.
+
+This means you cannot directly feed the arrays such as =#2A((0.0 1.0) (2.0 3.0))=,
+which is an array of type =(simple-array T)=.
+
+There are two ways to create an array similar to what you have and is compatible to numcl:
+
++ =(reshape (arange 4.0) '(2 2))=
++ =(asarray #2A((0.0 1.0) (2.0 3.0)))=
+  + or =(asarray '((0.0 1.0) (2.0 3.0)))=
+  + or =(asarray '(#(0.0 1.0) #(2.0 3.0)))=.
++ =(let ((a (zeros '(2 2) :type 'single-float))) (dotimes (i 2) (dotimes (j 2) (setf (aref a i j) ...))))=.
+
+The names and the parameters of numcl functions mostly (rather strictly) follows
+the numpy counterpart. There are even numpy names, such as =dtype=, which are
+just aliases for =array-element-type=.
+
+See the complete list of functions in https://numcl.github.io/numcl/.
 
 ** Author, License, Copyright
 

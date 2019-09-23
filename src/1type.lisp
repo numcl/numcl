@@ -570,3 +570,9 @@ to the least specific FLOAT type when any one of them are not fixnums."
 ;;            (optimize (speed 3)))
 ;;   (sb 32 (1+ x)))
 
+
+(defmacro compile-time-type-of (variable &environment e)
+  (list 'quote
+        (cdr
+         (assoc 'type
+                (nth-value 2 (cltl2:variable-information variable e))))))

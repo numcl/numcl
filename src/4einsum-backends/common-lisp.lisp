@@ -71,7 +71,6 @@
          (o-vars  (einsum-vars-o-vars ev))
          (i-evars (einsum-vars-i-evars ev))
          (o-evars (einsum-vars-o-evars ev))
-         (transforms (einsum-vars-transforms ev))
          (i-idx (make-gensym-list (length i-vars) "$IDX"))
          (o-idx (make-gensym-list (length o-vars) "@IDX"))
          (const-vars  (append o-idx i-idx))
@@ -81,7 +80,7 @@
        ;; note: const-vars and const-inits are updated in the loop
        `(let* ,(mapcar #'list const-vars const-inits)
           (declare (type index ,@const-vars))
-          ,(einsum-body-iter nodes transforms)))
+          ,(einsum-body-iter nodes ev)))
      (iter outer
            (for (spec . rest) on iter-specs)
            (for ? = (? spec))
@@ -139,7 +138,7 @@
 
 (defvar *unroll-width* 8)
 
-(defun einsum-body-iter (nodes transforms)
+(defun einsum-body-iter (nodes ev)
   "Consume one index in iter-specs and use it for dotimes."
 
   (labels ((step-form (vars steps)
@@ -167,6 +166,7 @@
                          (,end-var ,*unroll-width* (+ ,end-var ,*unroll-width*))
                          ,@(mapcar #'list vars inits))
                         ((<= ,base-limit ,end-var)
+                         ;; unroll remainder
                          (do* ((,base-var ,base-var (+ ,base-var 1))
                                ,@(mapcar #'list vars inits))
                               ((<= ,base-limit ,base-var))
@@ -195,11 +195,14 @@
                
                (nil
                 
-                (iter (for transform in transforms)
-                      (for o from 1)
-                      (for o-sym = (@ o))
+                (iter (for transform in (einsum-vars-transforms ev))
+                      (for o-var     in (einsum-vars-o-vars ev))
+                      (for o-evar    in (einsum-vars-o-evars ev))
                       (when (first-iteration-p)
                         (collecting 'progn))
                       (collecting
-                       `(setf ,o-sym ,transform)))))))
+                       `(setf ,o-evar
+                              ;; coerce the result to the array element type
+                              (%coerce ,transform
+                                       (compile-time-type-of ,o-evar)))))))))
     (rec nodes)))

@@ -189,6 +189,75 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
      ((and-type types)
       (reduce #'intersection-to-float-type types :key #'log-inferer)))))
 
+(set-type-inferer 'cosh (defun cosh-inferer (x) (interpret-type `(/ (+ (exp ,x) (exp (- ,x))) 2))))
+
+(set-type-inferer 'sinh (defun sinh-inferer (x) (interpret-type `(/ (- (exp ,x) (exp (- ,x))) 2))))
+
+(set-type-inferer 'tanh (defun tanh-inferer (x) (interpret-type `(/ (sinh ,x) (cosh ,x)))))
+
+;; (set-type-inferer 'coth (defun coth-inferer (x) (interpret-type `(/ (cosh ,x) (sinh ,x)))))
+;; 
+;; (set-type-inferer 'sech (defun cosh-inferer (x) (interpret-type `(/ 2 (+ (exp ,x) (exp (- ,x)))))))
+;; 
+;; (set-type-inferer 'cosech (defun sinh-inferer (x) (interpret-type `(/ 2 (- (exp ,x) (exp (- ,x)))))))
+
+(set-type-inferer
+ 'acos
+ (defun acos-inferer (x)
+   (declare (trivia:optimizer :trivial))
+   (ematch x
+     ((real-subtype low high)
+      (if (and (interval2-< -1 low)
+               (interval1-< high 1))
+          `(,(float-substitution x :int-result *numcl-default-float-format*)
+             ,(funcall* 'acos high)
+             ,(funcall* 'acos low))
+          `(complex ,(float-substitution x :int-result *numcl-default-float-format*))))
+     ((complex-type)
+      ;; TBD
+      'complex)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'acos-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'acos-inferer)))))
+
+(set-type-inferer
+ 'asin
+ (defun asin-inferer (x)
+   (declare (trivia:optimizer :trivial))
+   (ematch x
+     ((real-subtype low high)
+      (if (and (interval2-< -1 low)
+               (interval1-< high 1))
+          `(,(float-substitution x :int-result *numcl-default-float-format*)
+             ,(funcall* 'asin low)
+             ,(funcall* 'asin high))
+          `(complex ,(float-substitution x :int-result *numcl-default-float-format*))))
+     ((complex-type)
+      ;; TBD
+      'complex)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'asin-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'asin-inferer)))))
+
+(set-type-inferer
+ 'atan
+ (defun atan-inferer (x)
+   (ematch x
+     ((real-subtype low high)
+      (let ((type (float-substitution x :int-result *numcl-default-float-format*)))
+        `(,type
+          ,(funcall* 'atan low (%coerce -1 type))
+          ,(funcall* 'atan high (%coerce -1 type)))))
+     ((complex-type)
+      ;; TBD
+      'complex)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'atan-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'atan-inferer)))))
+
 (set-type-inferer
  'abs
  (defun abs-inferer (x)
@@ -295,12 +364,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #|
-(defun asin           (x) )
-(defun acos           (x) )
-(defun atan           (x) )
-(defun sinh           (x) )
-(defun cosh           (x) )
-(defun tanh           (x) )
 (defun signum         (x) )
 (defun cis            (x) )
 (defun complex        (x) (map-array #'complex x))

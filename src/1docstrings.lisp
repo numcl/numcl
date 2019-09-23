@@ -134,7 +134,7 @@ EINSUM reorders the indices so that it maximizes the cache locality.
 ")
 
 (define-symbol-macro *asarray-documentation*
-    "Copy CONTENTS to a new array.
+    "Copy CONTENTS to a new array. NOTE: ASARRAY is *SLOW* as it recurses into the substructures.
 When CONTENTS is a multidimentional array, its elements are copied to a new array that guarantees the NUMCL assumption.
 When CONTENTS is a nested sequence, it is traversed up to the depth that guarantees the sane shape for an array.
 When elements are copied, it is coerced to TYPE.

@@ -69,8 +69,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (set-type-inferer
  '-
- (defun sub-to-float-type (&rest typespecs)
-   (infer-rational-arithmetic-result #'interval-sub typespecs 'integer)))
+ (defun sub-to-float-type (first &rest typespecs)
+   (if typespecs
+       (infer-rational-arithmetic-result #'interval-sub (cons first typespecs) 'integer)
+       (infer-rational-arithmetic-result #'interval-mul (list first '(integer -1 -1)) 'integer))))
+
+;; (sub-to-float-type '(integer 3 5))
+;; --> (integer -5 -3)
 
 (set-type-inferer
  '*
@@ -81,8 +86,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (set-type-inferer
  '/
- (defun div-to-float-type (&rest typespecs)
-   (infer-rational-arithmetic-result #'interval-div typespecs *numcl-default-float-format*)))
+ (defun div-to-float-type (first &rest typespecs)
+   (if typespecs
+       (infer-rational-arithmetic-result #'interval-div (cons first typespecs) *numcl-default-float-format*)
+       (infer-rational-arithmetic-result #'interval-div (list '(integer 1 1) first) *numcl-default-float-format*))))
 
 (set-type-inferer
  'max

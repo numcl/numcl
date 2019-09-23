@@ -136,7 +136,7 @@
                         :store     store)))))))))
 
 
-(defvar *unroll-width* 8)
+(defparameter *unroll-width* 8)
 
 (defun einsum-body-iter (nodes ev)
   "Consume one index in iter-specs and use it for dotimes."

@@ -45,7 +45,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                 (mapcar #'interpret-type types))
          form))
     (_
-     (if (constantp form)
+     (if (numberp form)
          (if (realp form)
              `(,(first (ensure-list (type-of form))) ,form ,form)
              'complex)

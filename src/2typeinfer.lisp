@@ -18,6 +18,17 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 |#
 
+
+
+#|
+
+While most functions require the custom code for handling the corner cases,
+some functions can be implimented with INTERPRET-TYPE, a function that
+interprets a form consisting of functions and type specifiers (at the leafs).
+
+|#
+
+
 (in-package :numcl.impl)
 
 (lisp-namespace:define-namespace inferer (or symbol function) nil "namespace for type inference")

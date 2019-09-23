@@ -58,6 +58,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           '*))
       default))
 
+(defconstant +quater+ (/ pi 2))
+
 ;; (interpret-type '(+ (integer 0 100) (integer -10 100))) -> (integer -10 200)
 
 (set-type-inferer
@@ -92,6 +94,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
  (defun min-to-float-type (&rest typespecs)
    (infer-rational-arithmetic-result #'interval-min typespecs 'integer)))
 
+;; transcendental functions
+
 (set-type-inferer
  'cos
  (defun cos-inferer (x)
@@ -103,25 +107,30 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
         ,(coerce -1 %float%)
         ,(coerce 1 %float%)))
      ((real-subtype low high)
-      (if (< (* 2 pi) (- high low))
+      (assert (< low high))
+      (let* ((low-next-quater-n (ceiling low +quater+))
+             ;; 0+4n->0+4n ; 1+4n->0+4(n+1); 2+4n->0+4(n+1); 3+4n->0+4(n+1)
+             (low-next-r (* +quater+ (+ (* 4 (ceiling (- low-next-quater-n 0) 4)) 0)))
+             ;; 0+4n->1+4n ; 1+4n->1+4n; 2+4n->1+4(n+1); 3+4n->1+4(n+1)
+             ;; (low-next-t (* +quater+ (+ (* 4 (ceiling (- low-next-quater-n 1) 4)) 1)))
+             ;; 0+4n->2+4n ; 1+4n->2+4n; 2+4n->2+4n; 3+4n->2+4(n+1)
+             (low-next-l (* +quater+ (+ (* 4 (ceiling (- low-next-quater-n 2) 4)) 2)))
+             ;; 0+4n->3+4n ; 1+4n->3+4n; 2+4n->3+4n; 3+4n->3+4n
+             ;; (low-next-b (* +quater+ (+ (* 4 (ceiling (- low-next-quater-n 3) 4)) 3)))
+             (high-previous-quater-n (floor high +quater+))
+             ;; 0+4n->0+4n ; 1+4n->0+4n; 2+4n->0+4n; 3+4n->0+4n
+             (high-previous-r (* +quater+ (+ (* 4 (floor (- high-previous-quater-n 0) 4)) 0)))
+             ;; 0+4n->1+4(n-1) ; 1+4n->1+4n; 2+4n->1+4n; 3+4n->1+4n
+             ;; (high-previous-t (* +quater+ (+ (* 4 (floor (- high-previous-quater-n 1) 4)) 1)))
+             ;; 0+4n->2+4(n-1) ; 1+4n->2+4(n-1); 2+4n->2+4n; 3+4n->2+4n
+             (high-previous-l (* +quater+ (+ (* 4 (floor (- high-previous-quater-n 2) 4)) 2)))
+             ;; 0+4n->3+4(n-1) ; 1+4n->3+4(n-1); 2+4n->3+4(n-1); 3+4n->3+4n
+             ;; (high-previous-b (* +quater+ (+ (* 4 (floor (- high-previous-quater-n 3) 4)) 3)))
+             )
+        (flet ((in-range (x) (<= low x high)))
           `(,%float%
-            ,(coerce -1 %float%)
-            ,(coerce 1 %float%))
-          (let* ((high (mod high (* 2 pi)))
-                 (low  (mod low  (* 2 pi)))
-                 (low  (if (< high low) (- low (* 2 pi)) low)))
-              
-            `(,%float%
-              ,(coerce
-                (if (<= low pi high)
-                    -1
-                    (min (cos low) (cos high)))
-                %float%)
-              ,(coerce
-                (if (<= low 0 high)
-                    1
-                    (max (cos low) (cos high)))
-                %float%)))))
+            ,(coerce (reduce #'min (remove-if-not #'in-range (list low low-next-r high-previous-r high)) :key #'cos) %float%)
+            ,(coerce (reduce #'max (remove-if-not #'in-range (list low low-next-l high-previous-l high)) :key #'cos) %float%)))))
      ((complex-type)
       ;; TBD
       'complex)
@@ -141,12 +150,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
         ,(coerce -1 %float%)
         ,(coerce 1 %float%)))
      ((real-subtype)
+      ;; sin(x) = cos(x-pi/2)
       (cos-inferer
        (sub-to-float-type
         x
         ;; http://clhs.lisp.se/Body/v_pi.htm
         ;; The best long float approximation to the mathematical constant <PI>.
-        `(long-float ,(/ pi 2) ,(/ pi 2)))))
+        `(,(type-of pi) ,+quater+ ,+quater+))))
      ((complex-type)
       ;; TBD
       'complex)

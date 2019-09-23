@@ -241,18 +241,17 @@ This prevents us from having (ARRAY (COMPLEX FIXNUM)).
 For the original float substitution rule, check out:
 12.1.3.3 Rule of Float Substitutability http://clhs.lisp.se/Body/12_acc.htm
 
-Returns 'integer, 'short-float, ... 'long-float, '(complex integer),
+It returns a type specifier that can be combined with intervals.
+For example, when the contagion result is FIXNUM, it returns 'INTEGER instead.
+Specifically, it returns one of 'integer, 'short-float, ... 'long-float, '(complex integer),
 '(complex short-float) ... '(complex long-float) or nil (i.e. empty type).
 
-It returns the type specifier without intervals.  For example, even if the
-expected contagion result is FIXNUM, it returns 'INTEGER so that it can be
-combined with intervals.
+The optional key argument :int-result can alter the behavior when the input is an integer.
+This is useful for specifying the appropriate default behavior for rational functions
+(e.g. mod: integer -> integer) and irrational functions (e.g. exp: integer -> float).
 
-The optional key argument int-result can alter the behavior when the input is an integer.
-This is useful for implementing some irrational function. (e.g. exp: integer -> float.)
-
-If the argument is a float type specifier (without precision), it returns *numcl-default-float-format*.
-If the argument is a type specifier for a float subtype, it returns its primary type (e.g. 'single-float).
+If the argument is FLOAT (without precision), it returns *numcl-default-float-format*.
+If the argument is a type specifier for a concrete float subtype, it returns its primary type (e.g. 'single-float).
 If the argument is a type specifier for an integer subtype, it returns the value of an optional key argument int-result, defaulted to 'integer.
 If the argument is a type specifier for a real subtype, it returns *numcl-default-float-format*.
 If the argument is a complex type, it applies itself to the complex element type.
@@ -261,7 +260,7 @@ If the argument is a compound type (OR/AND), it applies itself to each type.
 For OR, it returns the OR of each result.
 For AND, all result should be eq to each other, otherwise NIL.
 
-If the argument is a nil type (empty type), it is returned.
+If the argument is a NIL type (empty type), NIL is returned.
 
 For an unsupported type, it signals an error.
 "
@@ -297,9 +296,11 @@ For an unsupported type, it signals an error.
 
 (defun float-contagion (t1 t2 &key (int-int-result 'integer))
   "Performs a float contagion.
-Returns the type specifier without intervals.
-For example, even if the expected contagion result is FIXNUM, it returns 'INTEGER
-so that it can be combined with intervals.
+
+It returns a type specifier that can be combined with intervals.
+For example, when the contagion result is FIXNUM, it returns 'INTEGER instead.
+Specifically, it returns one of 'integer, 'short-float, ... 'long-float, '(complex integer),
+'(complex short-float) ... '(complex long-float) or nil (i.e. empty type).
 
 The rule applied here is stricter than in CL.
 All ratios are converted to *numcl-default-float-format*.
@@ -309,7 +310,9 @@ When the result of numerical computation causes an overflow/underflow, it signal
 For the original float contagion rule, check out:
 12.1.4 Floating-point Computations http://clhs.lisp.se/Body/12_ad.htm
 
-Keyword INT-INT-RESULT alters the result of binary operations over integers (default: 'INTEGER).
+The optional key argument :int-int-result can alter the behavior when the both inputs are integers.
+This is useful for specifying the appropriate default behavior for rational functions
+(e.g. +: integer, integer -> integer) and irrational functions (e.g. /: integer, integer -> float).
 "
   (declare ((or list symbol) t1 t2))
   (declare (symbol int-int-result))

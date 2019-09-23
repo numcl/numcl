@@ -213,36 +213,89 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 ;; inlining makes them as fast as the normal CL functions when the arguments are numbers
 
-(defun numcl:sin            (x) (if (numberp x) (sin x) (map-array 'sin x)))
-(defun numcl:cos            (x) (if (numberp x) (cos x) (map-array 'cos x)))
-(defun numcl:tan            (x) (if (numberp x) (tan x) (map-array 'tan x)))
-(defun numcl:asin           (x) (if (numberp x) (asin x) (map-array 'asin x)))
-(defun numcl:acos           (x) (if (numberp x) (acos x) (map-array 'acos x)))
-(defun numcl:atan           (x) (if (numberp x) (atan x) (map-array 'atan x)))
-(defun numcl:sinh           (x) (if (numberp x) (sinh x) (map-array 'sinh x)))
-(defun numcl:cosh           (x) (if (numberp x) (cosh x) (map-array 'cosh x)))
-(defun numcl:tanh           (x) (if (numberp x) (tanh x) (map-array 'tanh x)))
-(defun numcl:exp            (x) (if (numberp x) (exp x) (map-array 'exp x)))
-(defun numcl:log            (x) (if (numberp x) (log x) (map-array 'log x)))
-(defun numcl:sqrt           (x) (if (numberp x) (sqrt x) (map-array 'sqrt x)))
-(defun numcl:abs            (x) (if (numberp x) (abs x) (map-array 'abs x)))
-(defun numcl:signum         (x) (if (numberp x) (signum x) (map-array 'signum x)))
-(defun numcl:cis            (x) (if (numberp x) (cis x) (map-array 'cis x)))
+#+(or)
+(progn
+  ;; sbcl is not able to propagate the constant
+  (defun fn1 (x)
+    (print x))
+  (define-compiler-macro fn1 (&whole whole x)
+    (format t "~%;; ~50a : ~:[fluent~;constant~]" x (constantp x))
+    whole)
+
+  (declaim (inline fn2))
+  (defun fn2 (x)
+    (fn1 x)
+    (fn1 '(1 2))
+    (fn1 `(1 ,x 2))
+    (fn1 `(1 3 2)))
+  
+  (defun fn3 ()
+    (fn2 3))
+
+  ;; ; compiling (DEFUN FN1 ...)
+  ;; ; compiling (DEFINE-COMPILER-MACRO FN1 ...)
+  ;; ; compiling (DECLAIM (INLINE FN2))
+  ;; ; compiling (DEFUN FN2 ...)
+  ;; ;; X                                                  : fluent
+  ;; ;; '(1 2)                                             : constant
+  ;; ;; `(1 ,X 2)                                          : fluent
+  ;; ;; `(1 3 2)                                           : constant
+  ;; ; compiling (DEFUN FN3 ...)
+  ;; ;; X                                                  : fluent
+  ;; ;; '(1 2)                                             : constant
+  ;; ;; `(1 ,X 2)                                          : fluent
+  ;; ;; `(1 3 2)                                           : constant
+  )
+
+#+(or)
+(defun numcl:sin (x)
+  (if (numberp x)
+      (sin x)
+      (let ((y (empty (shape x) :type (infer-type 'sin (array-element-type x)))))
+        (einsum '(i -> (sin $1) -> i)
+                (flatten x)
+                (flatten y))
+        y)))
+
+(defmacro define-simple-mapper (numcl-fn cl-fn)
+  `(defun ,numcl-fn (x)
+     (if (numberp x)
+         (,cl-fn x)
+         (let ((y (empty (shape x) :type (infer-type ',cl-fn (array-element-type x)))))
+           (einsum '(i -> (,cl-fn $1) -> i)
+                   (flatten x)
+                   (flatten y))
+           y))))
+
+(define-simple-mapper numcl:sin sin)
+(define-simple-mapper numcl:cos cos)
+(define-simple-mapper numcl:tan tan)
+(define-simple-mapper numcl:asin asin)
+(define-simple-mapper numcl:acos acos)
+(define-simple-mapper numcl:atan atan)
+(define-simple-mapper numcl:sinh sinh)
+(define-simple-mapper numcl:cosh cosh)
+(define-simple-mapper numcl:tanh tanh)
+(define-simple-mapper numcl:exp exp)
+(define-simple-mapper numcl:log log)
+(define-simple-mapper numcl:sqrt sqrt)
+(define-simple-mapper numcl:abs abs)
+(define-simple-mapper numcl:signum signum)
+(define-simple-mapper numcl:cis cis)
 ;; (defun complex        (x) (map-array 'complex x))
-(defun numcl:conjugate      (x) (if (numberp x) (conjugate x) (map-array 'conjugate x)))
-(defun numcl:phase          (x) (if (numberp x) (phase x) (map-array 'phase x)))
-(defun numcl:realpart       (x) (if (numberp x) (realpart x) (map-array 'realpart x)))
-(defun numcl:imagpart       (x) (if (numberp x) (imagpart x) (map-array 'imagpart x)))
-(defun numcl:numerator      (x) (if (numberp x) (numerator x) (map-array 'numerator x)))
-(defun numcl:denominator    (x) (if (numberp x) (denominator x) (map-array 'denominator x)))
-(defun numcl:logcount       (x) (if (numberp x) (logcount x) (map-array 'logcount x)))
-(defun numcl:integer-length (x) (if (numberp x) (integer-length x) (map-array 'integer-length x)))
+(define-simple-mapper numcl:conjugate conjugate)
+(define-simple-mapper numcl:phase phase)
+(define-simple-mapper numcl:realpart realpart)
+(define-simple-mapper numcl:imagpart imagpart)
+(define-simple-mapper numcl:numerator numerator)
+(define-simple-mapper numcl:denominator denominator)
+(define-simple-mapper numcl:logcount logcount)
+(define-simple-mapper numcl:integer-length length)
 ;; (defun float          (x) (map-array 'float x))
 
-(declaim (inline %square))
-(defun %square (x) (* x x))
-(defun numcl:square            (x) (if (numberp x) (%square x) (map-array '%square x)))
-
+(declaim (inline square))
+(defun square (x) (* x x))
+(define-simple-mapper numcl:square square)
 
 ;; type upgrading. Why this is not available by default in common lisp??
 

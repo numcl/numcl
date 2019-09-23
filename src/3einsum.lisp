@@ -31,12 +31,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (compile nil (einsum-lambda normalized-subscripts)))
 
 (define-compiler-macro einsum (&whole whole subscripts &rest args)
-  (match subscripts
-    ((list 'quote subscripts)
-     `(funcall ,(einsum-lambda (einsum-normalize-subscripts subscripts))
-               ,@args))
-    (_
-     whole)))
+  (if (constantp subscripts)
+      `(funcall ,(einsum-lambda (einsum-normalize-subscripts (eval subscripts)))
+                ,@args)
+      whole))
 
 (defun safe-string= (a b)
   (and (typep a 'string-designator)

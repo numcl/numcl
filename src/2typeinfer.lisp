@@ -146,36 +146,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
      ((and-type types)
       (reduce #'intersection-to-float-type types :key #'cos-inferer)))))
 
-(set-type-inferer
- 'sin
- (defun sin-inferer (x)
-   (declare (trivia:optimizer :trivial))
-   (ematch x
-     ((or (real-subtype _ '*)
-          (real-subtype '* _))
-      `(,%float%
-        ,(coerce -1 %float%)
-        ,(coerce 1 %float%)))
-     ((real-subtype)
-      ;; sin(x) = cos(x-pi/2)
-      (cos-inferer
-       (sub-to-float-type
-        x
-        ;; http://clhs.lisp.se/Body/v_pi.htm
-        ;; The best long float approximation to the mathematical constant <PI>.
-        `(,(type-of pi) ,+quater+ ,+quater+))))
-     ((complex-type)
-      ;; TBD
-      'complex)
-     ((or-type types)
-      (reduce #'union-to-float-type types :key #'sin-inferer))
-     ((and-type types)
-      (reduce #'intersection-to-float-type types :key #'sin-inferer)))))
+(set-type-inferer 'sin (defun sin-inferer (x) (interpret-type `(cos (- ,x ,+quater+)))))
 
-(set-type-inferer
- 'tan
- (defun tan-inferer (x)
-   (infer-type '/ (infer-type 'sin x) (infer-type 'cos x))))
+(set-type-inferer 'tan (defun tan-inferer (x) (interpret-type `(/ (sin ,x) (cos ,x)))))
 
 (set-type-inferer
  'exp

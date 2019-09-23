@@ -47,7 +47,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (_
      (if (constantp form)
          (if (realp form)
-             `(real ,form ,form)
+             `(,(first (ensure-list (type-of form))) ,form ,form)
              'complex)
          form))))
 

@@ -443,3 +443,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
            (0 0 1 1)
            (0 0 1 1))
        (kron (eye 2) (ones '(2 2))))))
+
+(test (copy :compile-at :run-time)
+  (let ((a (reshape (arange 25) '(5 5))))
+    (is (equalp (copy a) a))))

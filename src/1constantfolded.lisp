@@ -108,3 +108,19 @@ We thank Baggers' TAMEI library for the reference database.
 (define-foldable-version string-trim)
 (define-foldable-version string-upcase)
 
+;; on sbcl, this prevents type inference for %coerce 
+#-sbcl
+(declaim (inline csubtypep))
+
+#+sbcl
+(sb-c:defknown csubtypep (* *) (values boolean boolean &optional) (sb-c:foldable sb-c:unsafely-flushable)
+               :overwrite-fndb-silently t)
+
+(defun csubtypep (x y)
+  (subtypep x y))
+
+#-sbcl
+(define-compiler-macro csubtypep (&whole whole x y)
+  (if (and (constantp x) (constantp y))
+      (eval `(subtypep ,x ,y))
+      whole))

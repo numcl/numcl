@@ -521,11 +521,53 @@ to the least specific FLOAT type when any one of them are not fixnums."
 (constantfold %coerce)
 (declaim (inline %coerce))
 (defun %coerce (object type)
-  "COERCE that additionally converts FLOATs and RATIOs into INTEGERs by rounding."
-  (if (and (realp object)
-           (integer-subtype-p type))
-      (round object)
-      (coerce object type)))
+  "COERCE that additionally converts NUMBER into INTEGER by rounding, and NUMBER to (un/signed-byte N) by modular arithmetic."
+  ;; wrong; could be used for char-conversions
+  ;; (assert (numberp object))
+  #.(iter (for width from 1 to 64)
+          ;; Note : This implicitly covers the case of TYPE = FIXNUM, as long as
+          ;; FIXNUM bit width being below 64
+          (when (= width 1)
+            (collecting 'cond))
+          (collecting
+           `((csubtypep type '(unsigned-byte ,width))
+             (ub ,width (round object))))
+          (collecting
+           `((csubtypep type '(signed-byte ,width))
+             (sb ,width (round object))))
+          (when (= width 64)
+            (collecting
+             `((csubtypep type 'integer)
+               (round object)))
+            (collecting
+             `(t
+               (coerce object type))))))
+
+;; on sbcl, subtypep is not constant foldable after inlining!
+;; (subtypep 'integer '(unsigned-byte 2))
+;; (csubtypep 'integer '(unsigned-byte 2))
+
+;; these are NOT constant folded!
+;; (defun fn0 () (subtypep '(unsigned-byte 2) '(unsigned-byte 8)))
+;; (defun fn1 () (subtypep '(unsigned-byte 16) '(unsigned-byte 8)))
+;; (declaim (inline fn2))
+;; (defun fn2 (x) (subtypep x '(unsigned-byte 8)))
+;; (defun fn3 () (fn2 '(unsigned-byte 2)))
+;; (defun fn3 () (fn2 '(unsigned-byte 16)))
+;; 
+;; With constantfolded functions, these are folded
+;; (declaim (inline fn2c))
+;; (defun fn2c (x) (csubtypep x '(unsigned-byte 8)))
+;; (defun fn3c () (fn2c '(unsigned-byte 2)))
+;; (defun fn4c () (fn2c '(unsigned-byte 16)))
+
+;; This must be inferred as returning (UNSIGNED-BYTE 8)
+;; (defun fn (x)
+;;   (%coerce x '(unsigned-byte 8)))
+
+;; This must be inferred as returning FIXNUM, not (unsigned-byte 64)
+;; (defun fn (x)
+;;   (%coerce x 'fixnum))
 
 ;;;; type-of
 
@@ -559,17 +601,26 @@ to the least specific FLOAT type when any one of them are not fixnums."
 (declaim (inline sb))
 (defun sb (N num)
   "Truncate NUM as (signed-byte N) integer, preserving the sign"
-  (logior (signum num) (logand num (1- (expt 2 (1- N))))))
+  (- (mod (+ num (expt 2 (1- N)))
+          (expt 2 N))
+     (expt 2 (1- N))))
+;; is this the most efficient pattern??
 
 ;; (defun fn (x)
 ;;   (declare (fixnum x)
 ;;            (optimize (speed 3)))
-;;   (ub 32 (1+ x)))
+;;   (ub 4 x))
 ;; (defun fn (x)
 ;;   (declare (fixnum x)
 ;;            (optimize (speed 3)))
-;;   (sb 32 (1+ x)))
+;;   (sb 4 x))
 
+#+(or)
+(print
+ (list (list (sb 1 -4) (sb 1 -3) (sb 1 -2) (sb 1 -1) (sb 1 0) (sb 1 1) (sb 1 2) (sb 1 3))
+       (list (sb 2 -4) (sb 2 -3) (sb 2 -2) (sb 2 -1) (sb 2 0) (sb 2 1) (sb 2 2) (sb 2 3))
+       (list (ub 1 -4) (ub 1 -3) (ub 1 -2) (ub 1 -1) (ub 1 0) (ub 1 1) (ub 1 2) (ub 1 3))
+       (list (ub 2 -4) (ub 2 -3) (ub 2 -2) (ub 2 -1) (ub 2 0) (ub 2 1) (ub 2 2) (ub 2 3))))
 
 (defmacro compile-time-type-of (variable &environment e)
   (list 'quote

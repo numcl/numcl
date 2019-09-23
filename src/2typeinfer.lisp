@@ -51,6 +51,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              'complex)
          form))))
 
+(defun funcall* (fn x &optional (default '*))
+  (if (numberp x)
+      (handler-case (funcall fn x)
+        (floating-point-overflow ()
+          '*))
+      default))
+
 ;; (interpret-type '(+ (integer 0 100) (integer -10 100))) -> (integer -10 200)
 
 (set-type-inferer
@@ -157,76 +164,60 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
  'exp
  (defun exp-inferer (x)
    (declare (trivia:optimizer :trivial))
-   (flet ((fn* (x &optional (default '*))
-            (if (numberp x)
-                (handler-case (exp x)
-                  (floating-point-overflow ()
-                    '*))
-                default)))
-     (ematch x
-       ((real-subtype low high)
-        (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
-          `(,head ,(fn* low (coerce 0 head)) ,(fn* high))))
-       ((complex-type)
-        ;; TBD
-        'complex)
-       ((or-type types)
-        (reduce #'union-to-float-type types :key #'exp-inferer))
-       ((and-type types)
-        (reduce #'intersection-to-float-type types :key #'exp-inferer))))))
+   (ematch x
+     ((real-subtype low high)
+      (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
+        `(,head ,(funcall* 'exp low (coerce 0 head)) ,(funcall* 'exp high))))
+     ((complex-type)
+      ;; TBD
+      'complex)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'exp-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'exp-inferer)))))
 
 (set-type-inferer
  'log
  (defun log-inferer (x)
    (declare (trivia:optimizer :trivial))
-   (flet ((fn* (x &optional (default '*))
-            (if (numberp x)
-                (handler-case (log x)
-                  (floating-point-overflow ()
-                    '*))
-                default)))
-     (ematch x
-       ((real-subtype low high)
-        (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
-          ;; when minus, may become complex
-          (cond
-            ((interval2-< low 0)
-             `(complex ,head))
-            ((= low 0)
-             `(,head * ,(fn* high)))
-            (t
-             `(,head ,(fn* low) ,(fn* high))))))
-       ((complex-type)
-        ;; TBD
-        'complex)
-       ((or-type types)
-        (reduce #'union-to-float-type types :key #'log-inferer))
-       ((and-type types)
-        (reduce #'intersection-to-float-type types :key #'log-inferer))))))
+   (ematch x
+     ((real-subtype low high)
+      (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
+        ;; when minus, may become complex
+        (cond
+          ((interval2-< low 0)
+           `(complex ,head))
+          ((= low 0)
+           `(,head * ,(funcall* 'log high)))
+          (t
+           `(,head ,(funcall* 'log low) ,(funcall* 'log high))))))
+     ((complex-type)
+      ;; TBD
+      'complex)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'log-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'log-inferer)))))
 
 (set-type-inferer
  'abs
  (defun abs-inferer (x)
    (declare (trivia:optimizer :trivial))
-   (flet ((fn* (x &optional (default '*))
-            (if (numberp x)
-                (abs x)
-                default)))
-     (ematch x
-       ((real-subtype)
-        (let ((head (float-substitution x)))
-          (union-to-float-type
-           (intersection-to-float-type x `(,head ,(coerce 0 head) *))
-           (mul-to-float-type
-            `(,head ,(coerce -1 head) ,(coerce -1 head))
-            (intersection-to-float-type x `(,head * ,(coerce 0 head)))))))
-       ((complex-type)
-        ;; TBD
-        'complex)
-       ((or-type types)
-        (reduce #'union-to-float-type types :key #'abs-inferer))
-       ((and-type types)
-        (reduce #'intersection-to-float-type types :key #'abs-inferer))))))
+   (ematch x
+     ((real-subtype)
+      (let ((head (float-substitution x)))
+        (union-to-float-type
+         (intersection-to-float-type x `(,head ,(coerce 0 head) *))
+         (mul-to-float-type
+          `(,head ,(coerce -1 head) ,(coerce -1 head))
+          (intersection-to-float-type x `(,head * ,(coerce 0 head)))))))
+     ((complex-type)
+      ;; TBD
+      'complex)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'abs-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'abs-inferer)))))
 
 ;; floor is same as / except the handling of integer-integer
 

@@ -50,13 +50,18 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           (reshape out simplified-dims)))
 
     
+    (iter (for i below (rank (first arrays)))
+          (unless (= i axis)
+            (iter (for array1 in arrays)
+                  (for dim1 = (array-dimension array1 i))
+                  (for dim2 previous dim1)
+                  (when dim2
+                    (assert (= dim1 dim2))))))
+
     (iter (for array in arrays-simplified)
           (for dim-axis = (array-dimension array 1))
-          (iter (for i below dims-before)
-                (iter (for j below dim-axis)
-                      (iter (for k below dims-after)
-                            (setf (aref out-simplified i (+ j sum) k)
-                                  (%coerce (aref array i j k) type)))))
+          (setf (numcl:aref out-simplified t (list sum (+ sum dim-axis)) t)
+                array)
           (summing dim-axis into sum))
     out))
 
@@ -94,13 +99,18 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
          (out-simplified
           (reshape out simplified-dims)))
 
+    (iter (for i below (rank (first arrays)))
+          (unless (= i axis)
+            (iter (for array1 in arrays)
+                  (for dim1 = (array-dimension array1 i))
+                  (for dim2 previous dim1)
+                  (when dim2
+                    (assert (= dim1 dim2))))))
     
     (iter (for array in arrays-simplified)
           (for dim-axis from 0)
-          (iter (for i below dims-before)
-                (iter (for k below dims-after)
-                      (setf (aref out-simplified i dim-axis k)
-                            (%coerce (aref array i k) type))))
+          (setf (numcl:aref out-simplified t dim-axis t)
+                array)
           (summing dim-axis into sum))
     out))
 

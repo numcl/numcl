@@ -24,6 +24,7 @@
               :specialized-function
               :gtype)
  :components ((:module "src"
+               :serial t
                :components ((:file "0package")
                             (:file "0specialops")
                             (:file "1constantfolded")

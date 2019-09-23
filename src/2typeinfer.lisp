@@ -190,7 +190,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
         (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
           ;; when minus, may become complex
           (cond
-            ((interval1-< low 0)
+            ((interval2-< low 0)
              `(complex ,head))
             ((= low 0)
              `(,head * ,(fn* high)))

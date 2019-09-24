@@ -134,10 +134,10 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
                           `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1)))))))))
          (list :inputs i-specs-num :transforms transforms :outputs o-specs-num))))))
 
-(defun ? (i) (in-current-package (symbolicate '? (princ-to-string i)))) ; index limit var
-(defun $ (i) (in-current-package (symbolicate '$ (princ-to-string i)))) ; input element var
-(defun @ (i) (in-current-package (symbolicate '@ (princ-to-string i)))) ; output element var
-(defun & (i) (in-current-package (symbolicate '& (princ-to-string i)))) ; index iteration var
+(defun ? (i) "Variable for the iteration limit"      (in-current-package (symbolicate '? (princ-to-string i))))
+(defun $ (i) "Variable for the input array element"  (in-current-package (symbolicate '$ (princ-to-string i))))
+(defun @ (i) "Variable for the output array element" (in-current-package (symbolicate '@ (princ-to-string i))))
+(defun & (i) "Variable for the iteration count"      (in-current-package (symbolicate '& (princ-to-string i))))
 (defun map-specs (fn specs)
   (iter (for spec in specs)
         (collecting

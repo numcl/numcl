@@ -74,44 +74,53 @@
          (i-idx (make-gensym-list (length i-vars) "$IDX"))
          (o-idx (make-gensym-list (length o-vars) "@IDX"))
          (const-vars  (append o-idx i-idx))
-         (const-inits (mapcar (constantly 0) const-vars))
+         (const-inits (mapcar (constantly 0) const-vars)) ;initialized to 0
          used-evars)
     ((lambda (nodes)
-       ;; note: const-vars and const-inits are updated in the loop
+       ;; note: const-vars and const-inits are updated in the MIDDLE loop
        `(let* ,(mapcar #'list const-vars const-inits)
           (declare (type index ,@const-vars))
           ,(einsum-body-iter nodes ev)))
-     (iter outer
+     (iter OUTER
            (for (spec . rest) on iter-specs)
-           (for ? = (? spec))
-           (for & = (& spec))
+           (for ? = (? spec))           ; iteration limit variable
+           (for & = (& spec))           ; iteration count variable
 
-           (iter middle
+           (iter MIDDLE
                  (for i from 0)
                  (for spec2 in (append o-specs i-specs))
                  (for out-p = (< i (length o-specs)))
-                 (for index in (append o-idx i-idx))
-                 (for var   in (append o-vars i-vars))
-                 (for evar  in (append o-evars i-evars))
-                 (iter (for (spec3 . rest2) on spec2)
+                 (for index in (append o-idx i-idx))      ; index variable for accessing the array element
+                 (for var   in (append o-vars i-vars))    ; array variable
+                 (for evar  in (append o-evars i-evars))  ; array element variable, i.e., evar = (aref var index)
+                 (iter INNER
+                       ;; For the loop spec of each array (spec2), 
+                       (for (spec3 . rest2) on spec2)
+                       ;; Variable to store the loop step size
                        (for step  = (gensym (if out-p "@STEP" "$STEP")))
                        (when (eql spec spec3)
+                         ;; Step size is the product of the rest of the loop limit variables.
+                         ;; This value can be cached at the top of the loop.
                          (push step const-vars)
                          (push `(* ,@(mapcar #'? rest2)) const-inits)
-                         (in middle
+                         (in MIDDLE
                              (if-let ((pos (position index vars)))
-                                 (setf (elt steps pos)
-                                       `(+ ,step ,(elt steps pos)))
+                               ;; When the same index variable appears more than
+                               ;; twice (e.g. (einsum '(ii -> i)) ), it needs an adjustment;
+                               ;; For example, X_ii of a (N, N) matrix X can be accessed by i*N+i in the
+                               ;; row-major order, so the index must be updated with the step size 1+N.
+                               (setf (elt steps pos)
+                                     `(+ ,step ,(elt steps pos)))
                                (progn
-                                 (collecting index             into vars)
-                                 (collecting index             into inits)
-                                 (collecting `(+ ,step ,index) into steps)
-                                 (collecting `(declare (type index ,index))
-                                             into declaration))))))
+                                 (collecting index                          into vars)
+                                 (collecting index                          into inits)
+                                 (collecting `(+ ,step ,index)              into steps)
+                                 (collecting `(declare (type index ,index)) into declaration))))))
                  (when (and (not (spec-depends-on spec2 rest))
                             (not (member evar used-evars)))
-                   ;; check if spec2 does not depend on any more iteration variables.
-                   ;; If so, then the array element can be bound to the element variable evar.
+                   ;; Accessing the array element as early as possible.
+                   ;; It ensures that spec2 does not depend on any more iteration variables.
+                   ;; If so, the array element can be bound to the element variable evar.
                    (push evar used-evars)
                    
                    (collecting evar                into late-vars)
@@ -119,9 +128,10 @@
                    (collecting `(declare (derive ,var type (array-subtype-element-type type) ,evar))
                                into late-declaration)
                    (when out-p
+                     ;; Code for storing the result back to the output array.
                      (collecting `(setf (aref ,var ,index) ,evar) into store)))
                  (finally
-                  (in outer
+                  (in OUTER
                       (collecting
                        (make-do-node
                         :base-var   &
@@ -140,8 +150,8 @@
 
 (defun einsum-body-iter (nodes ev)
   "Consume one index in iter-specs and use it for dotimes."
-
   (labels ((step-form (vars steps)
+             "construct the update forms for the loop index."
              (iter (for v in vars)
                    (for s in steps)
                    (when (first-iteration-p)
@@ -149,13 +159,14 @@
                    (collect v)
                    (collect s)))
            (rec (nodes)
+             "Consume one loop index by generating a DO loop."
              (ematch nodes
-               ;; unroll
                ((list* (do-node base-var base-limit
                                 vars inits steps
                                 late-vars late-inits late-declaration
                                 declaration store)
                        nil)
+                ;; Bottom loop: No more loop variables left. Perform unrolling
                 (let ((form `(let ,(mapcar #'list late-vars late-inits)
                                ,@late-declaration
                                ,(rec nil)
@@ -166,7 +177,7 @@
                          (,end-var ,*unroll-width* (+ ,end-var ,*unroll-width*))
                          ,@(mapcar #'list vars inits))
                         ((<= ,base-limit ,end-var)
-                         ;; unroll remainder
+                         ;; Processing the unroll remainder
                          (do* ((,base-var ,base-var (+ ,base-var 1))
                                ,@(mapcar #'list vars inits))
                               ((<= ,base-limit ,base-var))
@@ -175,6 +186,7 @@
                            ,step-form))
                      (declare (type index ,end-var))
                      ,@declaration
+                     ;; Unrolling the bottom loop
                      ,@(iter (repeat *unroll-width*)
                              (collecting form)
                              (collecting step-form)))))
@@ -183,6 +195,7 @@
                                 late-vars late-inits late-declaration
                                 declaration store)
                        rest)
+                ;; Intermediate loop: Consume one loop variable.
                 `(do* ((,base-var 0 (+ ,base-var 1))
                        ,@(mapcar #'list vars inits))
                       ((<= ,base-limit ,base-var))
@@ -194,7 +207,9 @@
                    ,(step-form vars steps)))
                
                (nil
-                
+                ;; Innermost code block: No loop variable left.
+                ;; Invoked by the bottom loop expander.
+                ;; Also a special case for when there are no loop variables.
                 (iter (for transform in (einsum-vars-transforms ev))
                       (for o-var     in (einsum-vars-o-vars ev))
                       (for o-evar    in (einsum-vars-o-evars ev))
@@ -202,7 +217,9 @@
                         (collecting 'progn))
                       (collecting
                        `(setf ,o-evar
-                              ;; coerce the result to the array element type
+                              ;; Coerce the result to the array element type.
+                              ;; This is necessary because some potentially-complex function may return
+                              ;; a real value, and storing a real value to a complex array results in an error.
                               (%coerce ,transform
                                        (compile-time-type-of ,o-evar)))))))))
     (rec nodes)))

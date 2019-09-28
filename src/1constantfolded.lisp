@@ -124,3 +124,37 @@ We thank Baggers' TAMEI library for the reference database.
   (if (and (constantp x) (constantp y))
       (eval `(subtypep ,x ,y))
       whole))
+
+;; on sbcl, this prevents type inference for %coerce 
+#-sbcl
+(declaim (inline cupgraded-array-element-type))
+
+#+sbcl
+(sb-c:defknown cupgraded-array-element-type (*) * (sb-c:foldable sb-c:unsafely-flushable)
+               :overwrite-fndb-silently t)
+
+(defun cupgraded-array-element-type (x)
+  (upgraded-array-element-type x))
+
+#-sbcl
+(define-compiler-macro cupgraded-complex-part-type (&whole whole x)
+  (if (constantp x)
+      (eval `(upgraded-complex-part-type ,x))
+      whole))
+
+#-sbcl
+(declaim (inline cupgraded-complex-part-type))
+
+#+sbcl
+(sb-c:defknown cupgraded-complex-part-type (*) * (sb-c:foldable sb-c:unsafely-flushable)
+               :overwrite-fndb-silently t)
+
+(defun cupgraded-complex-part-type (x)
+  (upgraded-complex-part-type x))
+
+#-sbcl
+(define-compiler-macro cupgraded-complex-part-type (&whole whole x)
+  (if (constantp x)
+      (eval `(upgraded-complex-part-type ,x))
+      whole))
+

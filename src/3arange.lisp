@@ -153,6 +153,29 @@ Don't worry, we provide a compiler-macro to avoid the runtime dispatch.
   ;;   (arange 5.0 :type (mytype)))
   )
 
+;; benchmarking
+
+#+(or)
+(progn
+  (defun benchmark1 ()
+    (loop repeat 1000 do (arange 200000.0)))
+  (print :benchmark1)
+  (benchmark1)
+  (time (benchmark1))
+  (defun benchmark2 (a)
+    (loop repeat 1000 do (arange a)))
+  (print :benchmark2)
+  (benchmark2 1.0)
+  (time (benchmark2 200000.0))
+  (defun benchmark3 (a b)
+    (loop repeat 1000 do (arange a b)))
+  (print :benchmark3)
+  (benchmark3 0.0 1.0)
+  (time (benchmark3 0.0 200000.0))
+  (disassemble #'last-specialized-function))
+
+
+
 (declaim (inline linspace))
 (defun linspace (start stop length &key type endpoint)
   (declare (fixnum length))

@@ -24,14 +24,14 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (defun %make-array (shape
                     &key
-                      (element-type t)
+                      (element-type t element-type-given)
                       displaced-to
                       (displaced-index-offset 0)
-                      initial-element)
-  "The base function for the arrays managed by NUMCL.
+                      (initial-element nil initial-element-given))
+  "The base function for creating a new array satisfying NUMCL-ARRAY-P. (See also: Type NUMCL-ARRAY.)
 
-This function instantiate a new flattened array and returns another array
-displaced to it with the specified shape. The flattened array is returned as the
+This function instantiates a fresh 1D array and returns another array
+displaced to it with the specified shape. The 1D array is returned as the
 secondary value.
 
 The justification for this scheme is that some implementations (esp. SBCL)
@@ -43,33 +43,49 @@ multi-dimentional array.
 We also ensure that the length of the base arrays are the multiples of 8.
 This ensures that the program can safely iterate over that extended region
 with a future support for SIMD operations in mind.
+
+When DISPLACED-TO is given, it should be a numcl array.
+
+When DISPLACED-INDEX-OFFSET is also given, the actual offset is
+the specified offset plus the original offset in DISPLACED-TO.
+
+When DISPLACED-TO and ELEMENT-TYPE are given, the upgraded-array-element-type of ELEMENT-TYPE
+should be TYPE= to the actual array element type of DISPLACED-TO.
+
+When DISPLACED-TO is given and ELEMENT-TYPE is not given,
+ELEMENT-TYPE is simply the actual array element type of DISPLACED-TO.
 "
-  (check-type shape (or list (integer 0 #.array-total-size-limit)))
+  (declare (type (or list (integer 0 #.array-total-size-limit)) shape))
+  (declare (type (or null numcl-array) displaced-to))
+  (declare (type (integer 0 #.array-total-size-limit) displaced-index-offset))
   (if displaced-to
-      (multiple-value-bind (d o) (array-displacement displaced-to)
-        (let ((base-array (or d displaced-to)))
-          (check-type base-array (simple-array * 1))
+      (locally
+          (declare (type numcl-array displaced-to))
+        (when element-type-given
+          (assert (and (csubtypep (cupgraded-array-element-type element-type)
+                                  (array-element-type displaced-to))
+                       (csubtypep (array-element-type displaced-to)
+                                  (cupgraded-array-element-type element-type)))))
+        (multiple-value-bind (base-array offset) (array-displacement displaced-to)
+          (declare (type base-array base-array))
+          ;; constant foldable by inlining
           (values (make-array shape
-                              :element-type element-type
-                              :displaced-to
-                              (if d d displaced-to)
-                              :displaced-index-offset
-                              (+ o displaced-index-offset))
+                              :element-type (array-element-type displaced-to)
+                              :displaced-to base-array
+                              :displaced-index-offset (+ offset displaced-index-offset))
                   base-array)))
       (let ((total-size (* 8 (ceiling (if (listp shape)
                                           (reduce #'* shape)
                                           shape)
                                       8))))
-        (check-type total-size (integer 0 #.array-total-size-limit))
         (let ((base-array
-               (cond
-                 (initial-element
-                  (make-array total-size
-                              :element-type element-type
-                              :initial-element initial-element))
-                 (t
-                  (make-array total-size
-                              :element-type element-type)))))
+               (if initial-element-given
+                   (make-array total-size
+                               :element-type element-type
+                               :initial-element initial-element)
+                   (make-array total-size
+                               :element-type element-type))))
+          (declare (type base-array base-array))
           (values (make-array shape
                               :element-type element-type
                               :displaced-to base-array)

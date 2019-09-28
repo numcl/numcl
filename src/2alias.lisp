@@ -110,16 +110,12 @@ invalid:
     (null
      a)
     (array
-     (%make-array (array-total-size a) 
-                  :element-type (array-element-type a)
-                  :displaced-to a))
+     (%make-array (array-total-size a) :displaced-to a))
     (cons
      (the list (alexandria:flatten a)))))
 
 (defun squeeze (a)
-  (%make-array (remove 1 (shape a)) 
-               :element-type (array-element-type a)
-               :displaced-to a))
+  (%make-array (remove 1 (shape a)) :displaced-to a))
 
 (defun expand-dims (a axes)
   "axes: an int or a list of ints"
@@ -135,8 +131,6 @@ invalid:
                    (when (first dims)
                      (collect (first dims))
                      (pop dims)))
-                   
-                 :element-type (array-element-type a)
                  :displaced-to a)))
 
 ;; transpose

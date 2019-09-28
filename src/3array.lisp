@@ -20,6 +20,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :numcl.impl)
 
+;; microbenchmark
+#+(or)
+(let ((a (zeros '(10000 10000) :type 'single-float)))
+  (time (asarray a :type 'fixnum)))
+
 (defun asarray (contents &key type)
   #.*asarray-documentation*
   (when (subtypep 'array type)
@@ -31,8 +36,25 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
        ((and (arrayp contents)
              (equal (shape contents) shape))
         (multiple-value-bind (a base) (%make-array shape :element-type type)
-          (dotimes (i (array-total-size contents))
-            (setf (aref base i) (%coerce (row-major-aref contents i) type)))
+          (if (numcl-array-p contents)
+              ;; flattening is available only for numcl arrays.
+              (multiple-value-bind (base2 offset) (array-displacement contents)
+                (declare (index offset))
+                (let ((end (+ offset (array-total-size contents))))
+                  (declare (index end))
+                  (specializing (base2 base) ()
+                    (do ((i offset (1+ i))
+                         (j 0      (1+ j)))
+                        ((= i end))
+                    (setf (aref base j)
+                          (%coerce (aref base2 i)
+                                   ;; (array-element-type base) can't be replaced by the variable TYPE,
+                                   ;; which precludes constant propagation.
+                                   (array-element-type base)))))))
+              (dotimes (i (array-total-size contents))
+                (setf (aref base i)
+                      (%coerce (row-major-aref contents i)
+                               (array-element-type base)))))
           (values a base)))
        ((typep contents 'sequence)
         (multiple-value-bind (a base) (%make-array shape :element-type type)

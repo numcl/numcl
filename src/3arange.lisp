@@ -18,6 +18,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 |#
 
+#+sbcl
+(declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
 (in-package :numcl.impl)
 
 ;; (defpythonfun (start stop step &optional type)
@@ -36,11 +38,76 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (declaim (inline %arange))
 (defun %arange (start stop step type)
   (let* ((length (max 0 (floor (- stop start) step))))
+    (declare (fixnum length))
     (multiple-value-bind (a base) (%make-array length :element-type type)
+      ;; benchnmark1 0.321 seconds
+      ;; benchnmark2 1.906 seconds
+      ;; benchnmark3 2.168 seconds
+      #+(or)
       (let ((tmp start))
         (dotimes (i length)
           (setf (aref base i) tmp)
           (incf tmp step)))
+
+      ;; 0.980 seconds
+      ;; 0.888 seconds
+      ;; 0.885 seconds
+                                        ; 1F:       31C0             XOR EAX, EAX
+                                        ; 21:       EB42             JMP L1
+                                        ; 23:       660F1F840000000000 NOP
+                                        ; 2C:       0F1F4000         NOP
+                                        ; 30: L0:   66480F6EC7       MOVQ XMM0, RDI
+                                        ; 35:       0FC6C0FD         SHUFPS XMM0, XMM0, #4r3331
+                                        ; 39:       F30F11444201     MOVSS [RDX+RAX*2+1], XMM0
+                                        ; 3F:       66480F6ECF       MOVQ XMM1, RDI
+                                        ; 44:       0FC6C9FD         SHUFPS XMM1, XMM1, #4r3331
+                                        ; 48:       66480F6ED1       MOVQ XMM2, RCX
+                                        ; 4D:       0FC6D2FD         SHUFPS XMM2, XMM2, #4r3331
+                                        ; 51:       F30F58D1         ADDSS XMM2, XMM1
+                                        ; 55:       660F7ED7         MOVD EDI, XMM2
+                                        ; 59:       48C1E720         SHL RDI, 32
+                                        ; 5D:       4080CF19         OR DIL, 25
+                                        ; 61:       4883C002         ADD RAX, 2
+                                        ; 65: L1:   4839D8           CMP RAX, RBX
+                                        ; 68:       7CC6             JL L0
+                                        ; 6A:       BA17001050       MOV EDX, #x50100017              ; NIL
+                                        ; 6F:       488BE5           MOV RSP, RBP
+                                        ; 72:       F8               CLC
+                                        ; 73:       5D               POP RBP
+                                        ; 74:       C3               RET
+      #+(or)
+      (specializing (base) ()
+        (declare (optimize (speed 3) (safety 0)))
+        (locally                        ; != cl:locally
+            (declare (derive base type (array-subtype-element-type type) start step))
+          (dotimes (i length)
+            (setf (aref base i) start)
+            (setf start (+ start step)))))
+      
+      ;; 0.493 seconds
+      ;; 0.383 seconds
+      ;; 0.369 seconds
+                                        ; 0D:       31C0             XOR EAX, EAX
+                                        ; 0F:       EB20             JMP L1
+                                        ; 11:       660F1F840000000000 NOP
+                                        ; 1A:       660F1F440000     NOP
+                                        ; 20: L0:   F30F114C4201     MOVSS [RDX+RAX*2+1], XMM1
+                                        ; 26:       0F28C1           MOVAPS XMM0, XMM1
+                                        ; 29:       F30F58CA         ADDSS XMM1, XMM2
+                                        ; 2D:       4883C002         ADD RAX, 2
+                                        ; 31: L1:   4839C8           CMP RAX, RCX
+                                        ; 34:       7CEA             JL L0
+                                        ; 36:       BA17001050       MOV EDX, #x50100017              ; NIL
+                                        ; 3B:       488BE5           MOV RSP, RBP
+                                        ; 3E:       F8               CLC
+                                        ; 3F:       5D               POP RBP
+                                        ; 40:       C3               RET
+      ;; #+(or)
+      (specializing (base start step) ()
+        (declare (optimize (speed 3) (safety 0)))
+        (dotimes (i length)
+          (setf (aref base i) start)
+          (setf start (+ start step))))
       (values a base))))
 
 (declaim (inline %%arange))

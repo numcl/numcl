@@ -91,7 +91,7 @@ Don't worry, we provide a compiler-macro to avoid the runtime dispatch.
     ((list start stop step)
      (%%arange start stop step (%arange-infer-type start stop step)))))
 
-(define-compiler-macro arange (&whole whole &rest args &environment env)
+(define-compiler-macro arange (&rest args &environment env)
   (ematch args
     ((list stop :type type)
      `(%%arange 0 ,stop 1 ,type))
@@ -105,17 +105,20 @@ Don't worry, we provide a compiler-macro to avoid the runtime dispatch.
     ((list stop)
      (if (every (rcurry #'constantp env) args)
          `(%%arange 0 ,stop 1 ',(%arange-infer-type 0 stop 1))
-         whole))
+         (once-only (stop)
+           `(%%arange 0 ,stop 1 (%arange-infer-type 0 ,stop 1)))))
     
     ((list start stop)
      (if (every (rcurry #'constantp env) args)
          `(%%arange ,start ,stop 1 ',(%arange-infer-type start stop 1))
-         whole))
+         (once-only (start stop)
+           `(%%arange ,start ,stop 1 (%arange-infer-type ,start ,stop 1)))))
 
     ((list start stop step)
      (if (every (rcurry #'constantp env) args)
          `(%%arange ,start ,stop ,step ',(%arange-infer-type start stop step))
-         whole))))
+         (once-only (start stop step)
+           `(%%arange ,start ,stop ,step (%arange-infer-type ,start ,stop ,step)))))))
 
 #+(or)
 (defun fn ()

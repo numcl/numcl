@@ -24,26 +24,43 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (declaim (inline shape size rank dtype numcl:length to-simple-array reshape numcl:flatten squeeze expand-dims transpose))
 
 (defun shape (array)
+  (declare (type (or number array sequence) array))
   (etypecase array
     (number nil)
-    (array (array-dimensions array))))
+    (array (array-dimensions array))
+    (sequence (list (length array)))))
 
 (defun size (array)
-  (array-total-size array))
+  (declare (type (or number array sequence) array))
+  (etypecase array
+    (number 1)
+    (array (array-total-size array))
+    (sequence (length array))))
 
 (defun rank (array)
-  (array-rank array))
+  (declare (type (or number array sequence) array))
+  (etypecase array
+    (number 0)
+    (array (array-rank array))
+    (sequence 1)))
 
 (defun dtype (array)
-  (array-element-type array))
+  (declare (type (or number array sequence) array))
+  (etypecase array
+    (number (type-of array))
+    (array  (array-element-type array))
+    (sequence t)))
 
 (defun numcl:length (array)
-  (if (arrayp array)
-      (first (shape array))
-      (length array)))
+  (declare (type (or array sequence) array))
+  (etypecase array
+    ;; (number (type-of array))
+    (array (array-dimension array 0))
+    (sequence (length array))))
 
 (defun to-simple-array (array)
   "Returns a simple array of the equivalent contents."
+  (declare (type array array))
   (alexandria:copy-array array :fill-pointer nil :adjustable nil))
 
 (defun reshape (a shape)

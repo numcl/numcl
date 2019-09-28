@@ -96,17 +96,14 @@ ELEMENT-TYPE is simply the actual array element type of DISPLACED-TO.
 
 (defun %displace-at (array i)
   "Displace to the i-th element subarray in the first axis"
-  (let ((newshape (cdr (shape array))))
-    (%make-array newshape
-                 :element-type (array-element-type array)
-                 :displaced-to array
-                 :displaced-index-offset (* i (reduce #'* newshape)))))
+  (%make-array (cdr (shape array))
+               :displaced-to array
+               ;; we know the result of this division is integer
+               :displaced-index-offset (* i (floor (array-total-size array) (array-dimension array 0)))))
 
 (defun %displace-range (array from to)
   "Displace to the subarray between FROM-th and TO-th element subarray in the first axis"
-  (let ((newshape (cdr (shape array))))
-    (%make-array (list* (- to from) newshape)
-                 :element-type (array-element-type array)
-                 :displaced-to array
-                 :displaced-index-offset (* from (reduce #'* newshape)))))
-
+  (%make-array (list* (- to from) (cdr (shape array)))
+               :displaced-to array
+               ;; we know the result of this division is integer
+               :displaced-index-offset (* from (floor (array-total-size array) (array-dimension array 0)))))

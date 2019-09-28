@@ -28,9 +28,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (multiple-value-bind (base-array offset) (array-displacement array)
     (multiple-value-bind (a2 base-array2) (empty-like array)
       ;; empty array is 0-offset
-      (replace base-array2 base-array
-               :start1 offset
-               :end1 (+ offset (array-total-size array)))
+      (specializing (base-array base-array2 offset) ()
+        (replace base-array2 base-array
+                 :start1 offset
+                 :end1 (+ offset (array-total-size array))))
       (values a2 base-array2))))
 
 ;; astype

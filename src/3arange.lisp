@@ -63,6 +63,15 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline arange))
 (defun arange (&rest args)
+  "Arange's argument signature is irregular, following the API of numpy.
+The interpretation of its arguments depends on the number of arguments.
+
+ (arange stop            &key type)
+ (arange start stop      &key type)
+ (arange start stop step &key type)
+
+Don't worry, we provide a compiler-macro to avoid the runtime dispatch.
+"
   (ematch args
     ((list stop :type type)
      (%%arange 0 stop 1 type))
@@ -115,7 +124,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (arange 1 5)
   )
 
-;; unfortunately it cannot infer this
+;; unfortunately it cannot infer this; must to be a constant
 #+(or)
 (defun fn (a)
   (declare (single-float a))

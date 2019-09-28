@@ -627,3 +627,26 @@ to the least specific FLOAT type when any one of them are not fixnums."
         (cdr
          (assoc 'type
                 (nth-value 2 (cltl2:variable-information variable e))))))
+
+(declaim (inline numcl-array-p))
+(defun numcl-array-p (array)
+  "Returns true when ARRAY satisfies the NUMCL assumption, that is,
+an array displaced to a non-displaced 1D array."
+  (when (arrayp array)
+    (typep (array-displacement array)
+           '(simple-array * 1))))
+
+(deftype numcl-array (&optional element-type dimensions)
+  "Type specifier for the arrays satifying the NUMCL assumption, that is,
+an array displaced to a non-displaced 1D array."
+  `(and (array ,element-type ,dimensions)
+        (satisfies numcl-array-p)))
+
+(deftype base-array (&optional element-type length)
+  "Type specifier for the base, 1D arrays for the NUMCL arrays."
+  `(simple-array ,element-type (,length)))
+
+(declaim (inline base-array-p))
+(defun base-array-p (array)
+  "Returns true when ARRAY is a base array of numcl array."
+  (typep array 'base-array))

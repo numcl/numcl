@@ -28,7 +28,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (:use )
   (:export
  
-   ;; 2type
+   ;; 1type
+   #:numcl-array-p
+   #:numcl-array
    #+(or)
    #:fixnum-overflow
    #+(or)

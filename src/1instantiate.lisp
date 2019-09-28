@@ -91,19 +91,3 @@ ELEMENT-TYPE is simply the actual array element type of DISPLACED-TO.
                               :displaced-to base-array)
                   base-array)))))
 
-
-(declaim (inline %displace-at %displace-range))
-
-(defun %displace-at (array i)
-  "Displace to the i-th element subarray in the first axis"
-  (%make-array (cdr (shape array))
-               :displaced-to array
-               ;; we know the result of this division is integer
-               :displaced-index-offset (* i (floor (array-total-size array) (array-dimension array 0)))))
-
-(defun %displace-range (array from to)
-  "Displace to the subarray between FROM-th and TO-th element subarray in the first axis"
-  (%make-array (list* (- to from) (cdr (shape array)))
-               :displaced-to array
-               ;; we know the result of this division is integer
-               :displaced-index-offset (* from (floor (array-total-size array) (array-dimension array 0)))))

@@ -401,7 +401,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:logorc2  (&rest args) (reduce (lambda (x y) (broadcast 'logorc2  x y)) args))
 (defun numcl:logxor   (&rest args) (reduce (lambda (x y) (broadcast 'logxor   x y)) args))
 
-(defun numcl:lognot (x) (if (numberp x) (lognot x) (map-array 'lognot x)))
+(define-simple-mapper numcl:lognot lognot)
 
 
 

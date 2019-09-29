@@ -499,4 +499,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (is (equalp (stack (list a b) :axis -2)
                 #3A(((0 1) (0 1)) ((2 3) (2 3)))))
     (is (equalp (stack (list a b) :axis -1)
-                #3A(((0 0) (1 1)) ((2 2) (3 3)))))))
+                #3A(((0 0) (1 1)) ((2 2) (3 3))))))
+
+  (let ((a (zeros '(3 5))))
+    (is (equalp (stack (unstack a))
+                a))))

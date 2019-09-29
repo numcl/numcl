@@ -167,46 +167,8 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
                 (every #'sub-full rest)))))
     (single* subscripts)))
 
-
 (defun numcl:aref (array &rest subscripts)
-  "An extended `aref` that accepts ranges as lists, similar to numpy's array access.
-For a 3D array x,
-
-* range
-
-```
-x[1:5,2,3]   = (aref x '(1 5) 2 3)
-x[2,1:5,3]   = (aref x 2 '(1 5) 3)
-x[2,1:2:5,3] = (aref x 2 '(1 2 5) 3)
-x[2,1:,3]    = (aref x 2 '(1 t) 3)
-x[2,:1,3]    = (aref x 2 '(t 1) 3)
-x[2,:,3]     = (aref x 2 '(t t) 3)
-x[2,:,3]     = (aref x 2    t   3)
-```
-
-* insufficient axis
-
-```commonlisp
-(aref x '(1 5)) == (aref x '(1 5) t t)
-(aref x 2 '(1 5)) == (aref x 2 '(1 5) t)
-```
-
-* newaxis
-
-```commonlisp
-(aref x '(1 2 5) nil 2 3)
-```
-
-* ellipsis
-
-```commonlisp
-(aref x '- 2) = (aref x t t 2) = x[...,2]
-(aref x 2 '-) = (aref x 2 t t) = x[2,...]
-(aref x 2 '- 3) = (aref x 2 t 3) = x[2,...,3]
-(aref x 2 3 '-) = (aref x 2 3 t) = x[2,3,...]
-```
-
-"
+  #.*aref-documentation*
   (ensure-singleton
    (let* ((shape (shape array))
           (subscripts (normalize-subscripts subscripts shape)))
@@ -248,6 +210,7 @@ x[2,:,3]     = (aref x 2    t   3)
         (let* ((newvar (asarray newvar :type type))
                (value-shape (shape newvar))
                (range-shape (result-shape subscripts)))
+          (declare (dynamic-extent newvar))
           (assert (when-let ((pos (search (reverse value-shape)
                                           (reverse range-shape))))
                     (= 0 pos))
@@ -295,4 +258,8 @@ x[2,:,3]     = (aref x 2    t   3)
          (t
           (iter (for i from start below stop by step)
                 (%aset-replace newvar shape (%displace-at array i) rest))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; compiler macro
 

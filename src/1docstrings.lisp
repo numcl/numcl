@@ -178,3 +178,43 @@ We don't allow it to be a multidimentional array [at the moment.]
 (asarray '((1 2) (3 4))   :type '(array fixnum (* *)))  -> error
 ```
 ")
+
+(define-symbol-macro *aref-documentation*
+    "An extended `aref` that accepts ranges as lists, similar to numpy's array access.
+For a 3D array x,
+
+* range
+
+```
+x[1:5,2,3]   = (aref x '(1 5) 2 3)
+x[2,1:5,3]   = (aref x 2 '(1 5) 3)
+x[2,1:2:5,3] = (aref x 2 '(1 2 5) 3)
+x[2,1:,3]    = (aref x 2 '(1 t) 3)
+x[2,:1,3]    = (aref x 2 '(t 1) 3)
+x[2,:,3]     = (aref x 2 '(t t) 3)
+x[2,:,3]     = (aref x 2    t   3)
+```
+
+* insufficient axis
+
+```commonlisp
+(aref x '(1 5)) == (aref x '(1 5) t t)
+(aref x 2 '(1 5)) == (aref x 2 '(1 5) t)
+```
+
+* newaxis
+
+```commonlisp
+(aref x '(1 2 5) nil 2 3)
+```
+
+* ellipsis
+
+```commonlisp
+(aref x '- 2) = (aref x t t 2) = x[...,2]
+(aref x 2 '-) = (aref x 2 t t) = x[2,...]
+(aref x 2 '- 3) = (aref x 2 t 3) = x[2,...,3]
+(aref x 2 3 '-) = (aref x 2 3 t) = x[2,3,...]
+```
+
+")

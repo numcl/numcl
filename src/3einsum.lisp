@@ -148,10 +148,12 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
   (defstruct einsum-vars
     "A temporary structure holding the information for the einsum compiler.
 * `iter-specs`         : A list of integers that defines the nested loops.
+                         For example, (0 1 2) for the ijk loop in gemm.
 
 * `i-specs`, `o-specs` : A list of lists of integers that specifies the indices
                          for each input/output array. Each list should be a
                          subset of iter-specs.
+                         For example, ((0 1) (1 2) (0 2)) for the ijk loop in gemm.
                          
 * `i-vars`, `o-vars`   : A list of symbols for binding the array.
 

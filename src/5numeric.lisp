@@ -120,10 +120,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           (multiple-value-bind (r rbase) (empty rshape :type type)
             (multiple-value-bind (xbase xoffset) (array-displacement x)
               (multiple-value-bind (ybase yoffset) (array-displacement y)
-                (labels ((broadcast-core (fn
-                                          xbase xoffset xshape
-                                          ybase yoffset yshape
-                                          rbase roffset rshape)
+                (labels ((broadcast-core (xoffset xshape
+                                          yoffset yshape
+                                          roffset rshape)
                            (match* (xshape yshape rshape)
                              (((list 1)
                                (list ydim))
@@ -152,10 +151,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                               (iter (with yrest-size = (reduce #'* yrest))
                                     (with rrest-size = (reduce #'* rrest))
                                     (for i below ydim)
-                                    (broadcast-core fn
-                                                    xbase xoffset xrest
-                                                    ybase yoffset yrest
-                                                    rbase roffset rrest)
+                                    (broadcast-core xoffset xrest
+                                                    yoffset yrest
+                                                    roffset rrest)
                                     (incf yoffset yrest-size)
                                     (incf roffset rrest-size)))
 
@@ -165,10 +163,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                               (iter (with xrest-size = (reduce #'* xrest))
                                     (with rrest-size = (reduce #'* rrest))
                                     (for i below xdim)
-                                    (broadcast-core fn
-                                                    xbase xoffset xrest
-                                                    ybase yoffset yrest
-                                                    rbase roffset rrest)
+                                    (broadcast-core xoffset xrest
+                                                    yoffset yrest
+                                                    roffset rrest)
                                     (incf xoffset xrest-size)
                                     (incf roffset rrest-size)))
 
@@ -179,18 +176,16 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                                     (with yrest-size = (reduce #'* yrest))
                                     (with rrest-size = (reduce #'* rrest))
                                     (for i below xdim)
-                                    (broadcast-core fn
-                                                    xbase xoffset xrest
-                                                    ybase yoffset yrest
-                                                    rbase roffset rrest)
+                                    (broadcast-core xoffset xrest
+                                                    yoffset yrest
+                                                    roffset rrest)
                                     (incf xoffset xrest-size)
                                     (incf yoffset yrest-size)
                                     (incf roffset rrest-size))))))
                            
-                  (broadcast-core fn
-                                  xbase xoffset xshape
-                                  ybase yoffset yshape
-                                  rbase 0       rshape)
+                  (broadcast-core xoffset xshape
+                                  yoffset yshape
+                                  0       rshape)
                   (values r rbase)))))))))
 
 ;; (broadcast '+ (arange 10) (arange 10))

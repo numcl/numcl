@@ -146,8 +146,6 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
               (collecting
                (%normalize-subscript sub dim)))))))
 
-
-
 (defun result-shape (subscripts)
   (mapcar #'sub-width (remove-if #'sub-singleton subscripts)))
 

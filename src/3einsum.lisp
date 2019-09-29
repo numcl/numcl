@@ -144,6 +144,44 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
          (iter (for index in spec)
                (collecting (funcall fn index))))))
 
+#|
+
+how to make it loop at a certain index?
+
+example scenario: broadcast + between (2 1 5) array A and (5 5) array B.
+
+first reshape B to (1 5 5).
+
+(einsum '(ijk ijk ->  (+ $1 $2)  -> ijk) A B) ??
+
+(einsum '(-k -k ->  (+ $1 $2)  -> -k) A B) ??
+
+you will get an array C with shape (2 5 5).
+
+(einsum '(ij jk -> ik) a b c)
+(einsum '(i-j -jk -> ik-) a b c)
+(einsum '(i-j -jk -> ik) a b c)
+(einsum '(i-i i-i i-i -> -i) a b c)
+
+(einsum '(i- -j -> ij) a b c)
+
+(einsum '(i- i- -> i-) a b c)
+
+(einsum '(ij jk -> (+ @1 (* $1 $2)) -> ik) a b c)
+
+(einsum '(ii -> i ) a b)
+
+(einsum '(i -> i) (ones 5))
+
+(einsum '(ij jk -> (+ @1 (* $1 $2)) -> ik -> ((i :step 2)) ) a b c)
+
+;; should error
+(einsum '(ij jk -> (+ @1 (* $1 $2)) -> ik -> ((i :step *special-value*)) ) a b c)
+
+|#
+
+
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct einsum-vars
     "A temporary structure holding the information for the einsum compiler.
@@ -337,3 +375,95 @@ However, it penalize removing the index from the same set of subscripts that
 
 ;; (einsum '(ij jk -> ik) a b)             ; -> becomes an ijk loop
 ;; (einsum '(ik kj -> ij) a b)             ; -> becomes an ikj loop
+
+;; sbcl does not automatically do this...
+#+(or)
+(defun fn (c)
+  (declare ((mod 100) c))
+  (dotimes (i 10 c)
+    (dotimes (j 10)
+      (setf c (+ (* i 10) j)))))
+
+#+(or)
+(defun fn2 (c)
+  (declare ((mod 100) c))
+  (dotimes (i 10 c)
+    (let ((i10 (* i 10)))
+      (dotimes (j 10)
+        (setf c (+ i10 j))))))
+
+;; checking the behavior of recent sbcl regarding
+;; embedding the constant offset into the assembly e.g. [RAX+3].
+
+;; SBCL is able to do it only when there is no boundary checking.
+#+(or)
+(defun fn3 (a i)
+  (declare ((base-array (unsigned-byte 8) 100) a))
+  (declare ((unsigned-byte 8) i))
+  ;; Requires boundary checking since i could be > 100.
+  ;; This does not get embedded:
+  ;; 12:       4981F8C8000000   CMP R8, 200 <--- boundary checking
+  ;; 19:       0F83A8000000     JNB L0      <--- jumps to the index error
+  ;; 1F:       498BF8           MOV RDI, R8
+  ;; 22:       48D1FF           SAR RDI, 1
+  ;; 25:       0FB6543801       MOVZX EDX, BYTE PTR [RAX+RDI+1] <--- offset not embedded
+  ;; 2A:       48D1E2           SHL RDX, 1
+  ;; 2D:       498D7802         LEA RDI, [R8+2]
+  ;; 31:       4881FFC8000000   CMP RDI, 200
+  ;; 38:       0F8391000000     JNB L1
+  ;; 3E:       48D1FF           SAR RDI, 1
+  ;; 41:       0FB6743801       MOVZX ESI, BYTE PTR [RAX+RDI+1] <--- offset not embedded
+
+  (print (+ (aref a i)
+            (aref a (+ i 1))
+            (aref a (+ i 2))))
+  ;; SBCL can prove a constant offset, which can be embedded:
+  ;; 80:       488B45F0         MOV RAX, [RBP-16]
+  ;; 84:       0FB65006         MOVZX EDX, BYTE PTR [RAX+6]
+  ;; 88:       48D1E2           SHL RDX, 1
+  ;; 8B:       0FB67007         MOVZX ESI, BYTE PTR [RAX+7]
+  ;; 8F:       48D1E6           SHL RSI, 1
+  ;; 92:       4801F2           ADD RDX, RSI
+  ;; 95:       0FB67008         MOVZX ESI, BYTE PTR [RAX+8]
+  (let ((i 5))
+    (print (+ (aref a i)
+              (aref a (+ i 1))
+              (aref a (+ i 2)))))
+  (when (< i 98)
+    ;; this works via type inference
+    ;; F39:       498BF8           MOV RDI, R8
+    ;; F3C:       48D1FF           SAR RDI, 1
+    ;; F3F:       0FB6543801       MOVZX EDX, BYTE PTR [RAX+RDI+1]
+    ;; F44:       48D1E2           SHL RDX, 1
+    ;; F47:       498BF8           MOV RDI, R8
+    ;; F4A:       48D1FF           SAR RDI, 1
+    ;; F4D:       0FB6743802       MOVZX ESI, BYTE PTR [RAX+RDI+2]
+    ;; F52:       48D1E6           SHL RSI, 1
+    ;; F55:       4801F2           ADD RDX, RSI
+    ;; F58:       498BF8           MOV RDI, R8
+    ;; F5B:       48D1FF           SAR RDI, 1
+    ;; F5E:       0FB6743803       MOVZX ESI, BYTE PTR [RAX+RDI+3]
+    (print (+ (aref a i)
+              (aref a (+ i 1))
+              (aref a (+ i 2)))))
+  (locally
+      (declare ((mod 98) i))
+    ;; this also works via type inference
+    (print (+ (aref a i)
+              (aref a (+ i 1))
+              (aref a (+ i 2)))))
+  
+  (locally
+      (declare (optimize (speed 3) (safety 0)))
+    ;; this also works; removes bound checking.
+    (print (+ (aref a i)
+              (aref a (+ i 1))
+              (aref a (+ i 2)))))
+  (locally
+      (declare (optimize (speed 3) (safety 0)))
+    ;; this also works; removes bound checking.
+    (print (+ (row-major-aref a i)
+              (row-major-aref a (+ i 1))
+              (row-major-aref a (+ i 2)))))
+  a)
+

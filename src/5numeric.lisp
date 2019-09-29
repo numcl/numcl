@@ -34,52 +34,140 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 ;; thus by inlining map-array under a suitable set of declarations, the pattern matching simply disappears.
 
+(declaim (inline map-array-into))
+(defun map-array-into (result-sequence function &rest sequences)
+
+  (assert (numcl-array-p result-sequence))
+  (iter (with result-shape = (shape result-sequence))
+        (for sequence in sequences)
+        (assert (numcl-array-p sequence))
+        (assert (equal (shape sequence) result-shape)))
+  
+  (flet ((fn (&rest args)
+           (%coerce (apply function args) (array-element-type result-sequence))))
+    (declare (inline fn))
+    (declare (dynamic-extent #'fn))
+    (apply #'map-into (flatten result-sequence) #'fn (mapcar #'flatten sequences))
+    result-sequence))
+
+(defun %ok-to-use-fn-specialized (function env)
+  (match function
+    ((list 'function (list* 'lambda _))
+     t)
+    ((list 'function name)
+     (multiple-value-match (cltl2:function-information name env)
+       ((:function nil _)
+        ;; The first indicates the type of function definition or binding
+        ;; The second value is true if NAME is bound locally
+        t)))
+    ((list 'quote _)                 ; global function
+     t)))
+
+(defmacro %when-function-is-global (&body body)
+  "Internal use only! assumes a fixed set of variable names"
+  `(let ((fn (macroexpand function env)))
+     (if (not (%ok-to-use-fn-specialized fn env))
+         (progn
+           (simple-style-warning "~a -> ~a : function ~a cannot be inlined by compiler macro (is it a local function?)"
+                                 function fn fn)
+           whole)
+         (progn ,@body))))
+
+(define-compiler-macro map-array-into (&whole whole result-sequence function &rest sequences &environment env)
+  (%when-function-is-global
+    (let ((offsets (make-gensym-list (1+ (length sequences)) "OFFSET"))
+          (bases   (make-gensym-list (1+ (length sequences)) "BASE"))
+          (arrays  (make-gensym-list (1+ (length sequences)) "ARRAY")))
+      (labels ((get-bases (offsets bases arrays forms body)
+                 (ematch* (offsets bases arrays forms)
+                   (((list* o orest) (list* b brest) (list* a arest) (list* f frest))
+                    `(let ((,a ,f))
+                       (assert (numcl-array-p ,a))
+                       (multiple-value-bind (,b ,o) (array-displacement ,a)
+                         (declare (base-array ,b))
+                         ,(get-bases orest brest arest frest body))))
+                   ((nil nil nil nil)
+                    body))))
+        (get-bases
+         offsets
+         bases
+         arrays
+         (list* result-sequence sequences)
+         (with-gensyms (index limit)
+           `(let ((,limit (array-total-size ,(first arrays))))
+              (declare (index ,limit))
+              (specializing ,(append offsets bases) ()
+                (do ((,index 0 (1+ ,index)))
+                    ((< ,limit ,index))
+                  (declare (index ,index))
+                  (setf (aref ,(first bases) (+ ,(first offsets) ,index))
+                        (%coerce
+                         (funcall ,fn
+                                  ,@(iter (for b in (cdr bases))
+                                          (for o in (cdr offsets))
+                                          (collecting
+                                           `(aref ,b (+ ,o ,index)))))
+                         (array-element-type ,(first bases))))))
+              ,(first arrays))))))))
+
+;; wrapper functions
+
 (declaim (inline numcl:map-into))
 (defun numcl:map-into (result-sequence function &rest sequences)
-  (if (every (of-type 'sequence) sequences)
-      (apply #'map-into result-sequence function sequences)
-      (apply #'map-array-into result-sequence function sequences)))
+  (if (and (numcl-array-p result-sequence)
+           (every #'numcl-array-p sequences))
+      (apply #'map-array-into result-sequence function sequences)
+      (apply #'map-into result-sequence function sequences)))
 
 (declaim (inline numcl:map))
 (defun numcl:map (result-type function &rest sequences)
   (if (every (of-type 'sequence) sequences)
       (apply #'map result-type function sequences)
       (if result-type
-          (apply #'map-array-into
-                 (empty (shape (first sequences)) :type (array-subtype-element-type result-type))
-                 function
-                 sequences)
+          (progn
+            (unless (eq '* (array-subtype-dimensions result-type))
+              (warn "RESULT-TYPE ~a contains dimension specifiers ~a, but this is ignored in NUMCL:MAP."
+                    result-type (array-subtype-dimensions result-type)))
+            (apply #'%map-array-with-type
+                   (array-subtype-element-type result-type)
+                   function
+                   sequences))
           ;; when result-type is nil, do not collect the results into a new array.
           (apply #'map nil
                  function
                  (mapcar #'flatten sequences)))))
 
-(declaim (inline map-array-into))
-(defun map-array-into (result-sequence function &rest sequences)
-
-  (assert (every #'arrayp sequences))
-  (assert (every #'equal
-                 (map 'vector #'shape sequences)
-                 (map 'vector #'shape (cdr sequences))))
-  (assert (equal (shape result-sequence)
-                 (shape (first sequences))))
-  
-  (let ((type (array-element-type result-sequence)))
-    (flet ((fn (x)
-             (coerce (funcall function x) type)))
-      (declare (inline fn))
-      (declare (dynamic-extent #'fn))
-      (apply #'map-into (flatten result-sequence) #'fn (mapcar #'flatten sequences))
-      result-sequence)))
-
 (declaim (inline map-array))
 (defun map-array (function &rest sequences)
-  (let ((type (apply #'infer-type function
-                     (mapcar #'array-element-type sequences))))
-    (apply #'map-array-into
-           (empty (shape (first sequences)) :type type)
-           function
-           sequences)))
+  (apply #'%map-array-with-type
+         (apply #'infer-type function
+                (mapcar #'array-element-type sequences))
+         function
+         sequences))
+
+(declaim (inline %map-array-with-type))
+(defun %map-array-with-type (type function &rest sequences)
+  (apply #'map-array-into
+         (empty-like (first sequences) :type type)
+         function
+         sequences))
+
+#+(or)
+(define-compiler-macro map-array (&whole whole function &rest sequences &environment env)
+  (let ((fn (macroexpand function env)))
+    (if (not (%ok-to-use-fn-specialized fn env))
+        (progn
+          (simple-style-warning "~a -> ~a : function ~a cannot be inlined by compiler macro (is it a local function?)"
+                                function fn fn)
+          whole)
+        (let ((arrays (make-gensym-list (length sequences) "ARRAY")))
+          `(let* (,@(mapcar #'list arrays sequences))
+             (map-array-into (empty-like ,(first arrays)
+                                         :type (infer-type ,fn ,@(iter (for a in arrays)
+                                                                       (collecting
+                                                                        `(array-element-type ,a)))))
+                             ,function
+                             ,@arrays))))))
 
 (declaim (inline broadcast-p))
 (defun broadcast-p (x y)

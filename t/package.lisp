@@ -303,6 +303,22 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              (array-element-type
               (1+ (zeros 10))))))
 
+(test (map-array :compile-at :run-time :fixture muffle)
+  (let ((a (zeros '(3 3) :type 'single-float)))
+    (map-array-into a
+                    'cl:+
+                    (reshape (arange 9) '(3 3))
+                    (ones '(3 3)))
+    (is (equalp a
+                #2A((1.0 2.0 3.0) (4.0 5.0 6.0) (7.0 8.0 9.0)))))
+
+  (let ((a (map-array 'cl:+
+                      (reshape (arange 9) '(3 3))
+                      (ones '(3 3)))))
+    (is (subtypep (array-element-type a) 'fixnum))
+    (is (equalp a #2A((1 2 3) (4 5 6) (7 8 9))))))
+
+
 
 (test (arithmetic :compile-at :run-time :fixture muffle)
 

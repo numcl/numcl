@@ -18,6 +18,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 |#
 
+#+sbcl
+(declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
 (in-package :cl-user)
 (uiop:define-package :numcl.test
   (:use)
@@ -26,6 +28,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
         :trivia :alexandria :iterate))
 (in-package :numcl.test)
 
+(def-fixture muffle ()
+  #+sbcl
+  (declare (sb-ext:muffle-conditions sb-ext:compiler-note style-warning))
+  (&body))
 
 
 (def-suite :numcl)
@@ -39,7 +45,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
       (array :displaced-to (eq ab)))
      t)))
 
-(test (numcl :compile-at :run-time)
+(test (numcl :compile-at :run-time :fixture muffle)
   (is-true (typep (zeros 5)
                   '(array bit (5))))
   (is-true (typep (zeros '(5 5))
@@ -56,7 +62,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (is-false (eq (copy a) (copy a)))
     (is-true  (equalp a (copy a)))))
 
-(test (aref :compile-at :run-time)
+(test (aref :compile-at :run-time :fixture muffle)
   (let* ((a (zeros '(3 4 5 6))))
     
     (is-true (same-base-array-p a a))
@@ -127,7 +133,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
   (is (equalp (aref (arange 5) '(-3 -1)) #(3 4))))
 
-(test (aset-fill :compile-at :run-time)
+(test (aset-fill :compile-at :run-time :fixture muffle)
   (let ((a (zeros '(2 2) :type 'fixnum)))
     (setf (aref a 1 0) 1)
     
@@ -148,7 +154,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
-(test (aset-replace-shape-error :compile-at :run-time)
+(test (aset-replace-shape-error :compile-at :run-time :fixture muffle)
   (let ((a (zeros '(10 10 10) :type 'fixnum)))
     (finishes
       (setf (aref a '(0 2) '(0 2) 1) (zeros '(2 2))))
@@ -185,7 +191,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (signals error
       (setf (aref a 1 '(0 2) '(0 4)) (zeros '(2 2))))))
 
-(test (aset-replace :compile-at :run-time)
+(test (aset-replace :compile-at :run-time :fixture muffle)
   (let ((a (zeros '(4 4) :type 'fixnum)))
     (setf (aref a '(1 3) '(1 3))
           #2A((0 1)
@@ -266,7 +272,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                      (0 0 0 0)))
                 a))))
 
-(test (reshape :compile-at :run-time)
+(test (reshape :compile-at :run-time :fixture muffle)
   (is (equal '(4 5 5)
              (shape (reshape (arange 100) '(4 5 5)))))
   
@@ -292,13 +298,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              (shape (reshape (reshape (arange 120) '(3 4 10))
                              '(t -1 2 t))))))
 
-(test (1+/1- :compile-at :run-time)
+(test (1+/1- :compile-at :run-time :fixture muffle)
   (is (equal (upgraded-array-element-type '(unsigned-byte 2))
              (array-element-type
               (1+ (zeros 10))))))
 
 
-(test (arithmetic :compile-at :run-time)
+(test (arithmetic :compile-at :run-time :fixture muffle)
 
   (finishes (print (sin pi)))
   (is (typep (/ 1 2) 'ratio))
@@ -309,11 +315,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (subtypep (array-element-type (max (ones 5) 2)) 'fixnum))
   (is (subtypep (array-element-type (min (ones 5) 2)) 'fixnum)))
 
-(test (arange :compile-at :run-time)
+(test (arange :compile-at :run-time :fixture muffle)
   (is (cl:= 5 (length (arange 5))))
   (is (cl:= 5 (length (arange 5 10)))))
 
-(test (asarray :compile-at :run-time)
+(test (asarray :compile-at :run-time :fixture muffle)
   (is (cl:= 1 (array-rank (asarray '((1) (1 2))))))
   (is (cl:= 2 (array-rank (asarray '(((1) (1 2)) ((3) (3 4)))))))
   (is (cl:= 2 (array-rank (asarray '((1 2) (3 4))))))
@@ -335,12 +341,12 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (finishes
     (print (asarray '(1)))))
 
-(test (mixed :compile-at :run-time)
+(test (mixed :compile-at :run-time :fixture muffle)
   (finishes
    ;; should return #2A((1 2) (1 2))
    (aref (asarray '((1 2 "text") (1 2 "text"))) t '(0 2))))
 
-(test (reduce :compile-at :run-time)
+(test (reduce :compile-at :run-time :fixture muffle)
   (is (equalp 10 (reduce-array 'cl:+ (arange 5))))
   (is (cl:= 10 (sum (arange 5))))
   (finishes
@@ -366,16 +372,16 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
               (flet ((a (x y) (cl:+ x y)))
                 (reduce-array #'a (arange 5))))))
 
-(test (equality :compile-at :run-time)
+(test (equality :compile-at :run-time :fixture muffle)
   ;; it should return NIL (from cl:=), not 0
   (is (eq t (= 10 10)))
   (is (eq nil (= 10 11))))
 
-(test (histogram :compile-at :run-time)
+(test (histogram :compile-at :run-time :fixture muffle)
   (finishes (histogram (arange 5)))
   (finishes (histogram (uniform 5.0 10.0 10000))))
 
-(test (random :compile-at :run-time)
+(test (random :compile-at :run-time :fixture muffle)
   (is (integerp (bernoulli 0.3)))
   (is (typep (bernoulli 0.3 5) 'bit-vector))
   (is (typep (bernoulli 0.3 '(5 5)) '(array bit)))
@@ -385,7 +391,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (floatp (uniform 0 5.0)))
   (is (typep (uniform 0 5 5) `(VECTOR ,(upgraded-array-element-type '(integer 0 5)) 5))))
 
-(test (einsum :compile-at :run-time)
+(test (einsum :compile-at :run-time :fixture muffle)
 
   (signals type-error
     (numcl.impl::einsum-normalize-subscripts '(i00)))
@@ -435,7 +441,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (einsum '(ij -> ji) (asarray #2A((0 1) (2 3)) :type 'fixnum) result)
     (is (equalp #2A((0 2) (1 3)) result))))
 
-(test (linarg :compile-at :run-time)
+(test (linarg :compile-at :run-time :fixture muffle)
 
   (is (equalp 
        #2A((1 1 0 0)
@@ -444,12 +450,12 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
            (0 0 1 1))
        (kron (eye 2) (ones '(2 2))))))
 
-(test (copy :compile-at :run-time)
+(test (copy :compile-at :run-time :fixture muffle)
   (let ((a (reshape (arange 25) '(5 5))))
     (is (equalp (copy a) a))))
 
 
-(test (concatenate :compile-at :run-time)
+(test (concatenate :compile-at :run-time :fixture muffle)
   (let ((a (arange 5))
         (b (arange 5)))
     (is (equalp (concatenate (list a b))

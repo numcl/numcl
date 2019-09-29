@@ -275,24 +275,67 @@ Otherwise call float-substitution and simplify integers to fixnums."
   (intersection iter-specs spec))
 
 (defun sort-locality (indices subscripts)
-  (sort (copy-list indices)
-        (lambda (index1 index2)
-          (locality< index1 index2 subscripts))))
+  "In each iteration, greedily select the earliest index.
+However, it penalize removing the index from the same set of subscripts that
+ the past indices are removed from."
+  (let ((h (make-hash-table :test 'equal)))
+    (labels ((score (index)
+               (iter (for subscript in subscripts)
+                     (for pos = (position index subscript))
+                     (summing (if pos (1+ pos) 0))))
+             (sticky-score (index)
+               (gethash
+                (iter (for subscript in subscripts)
+                      (for i from 0)
+                      (for pos = (position index subscript))
+                      (when pos
+                        (collecting i)))
+                h
+                0))
+             ((setf sticky-score) (newval index)
+               (setf (gethash
+                      (iter (for subscript in subscripts)
+                            (for i from 0)
+                            (for pos = (position index subscript))
+                            (when pos
+                              (collecting i)))
+                      h
+                      0)
+                     newval))
+             
+             (next-index ()
+               (iter (for index in indices)
+                     (for score =
+                          (+ (score index)
+                             (* (length indices) (sticky-score index))))
+                     (finding index minimizing score))))
+      (iter (while indices)
+            ;; (print indices)
+            ;; (print (hash-table-alist h))
+            (for next = (next-index))
+            (incf (sticky-score next))
+            (collecting next)
+            (setf indices (remove next indices))))))
 
-(defun locality< (index1 index2 subscripts)
-  "Returns true when index1 is less local than index2; i.e. index2 is more local"
-  (assert (not (eq index1 index2)))
-  (flet ((score (index1 index2)
-           ;; the number of ordering violations
-           ;; for looping index1 first 
-           (iter (for spec in subscripts)
-                 (for pos1 = (position index1 spec))
-                 (for pos2 = (position index2 spec))
-                 (counting
-                  ;; count the violation
-                  (and pos1 pos2 (< pos2 pos1))))))
-    (< (score index1 index2)
-       (score index2 index1))))
+;; (defun sort-locality (indices subscripts)
+;;   (sort (copy-list indices)
+;;         (lambda (index1 index2)
+;;           (locality< index1 index2 subscripts))))
+;; 
+;; (defun locality< (index1 index2 subscripts)
+;;   "Returns true when index1 is less local than index2; i.e. index2 is more local"
+;;   (assert (not (eq index1 index2)))
+;;   (flet ((score (index1 index2)
+;;            ;; the number of ordering violations
+;;            ;; for looping index1 first 
+;;            (iter (for spec in subscripts)
+;;                  (for pos1 = (position index1 spec))
+;;                  (for pos2 = (position index2 spec))
+;;                  (counting
+;;                   ;; count the violation
+;;                   (and pos1 pos2 (< pos2 pos1))))))
+;;     (< (score index1 index2)
+;;        (score index2 index1))))
 
 ;; (einsum '(ij jk -> ik) a b)             ; -> becomes an ijk loop
 ;; (einsum '(ik kj -> ij) a b)             ; -> becomes an ikj loop

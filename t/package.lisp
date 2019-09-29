@@ -45,17 +45,23 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
       (array :displaced-to (eq ab)))
      t)))
 
+(defmacro is-type (form type)
+  (once-only (form)
+    `(is-true (typep ,form ,type)
+              "Type mismatch. Expected type ~a, actual: ~a"
+              ,type (type-of ,form))))
+
 (test (numcl :compile-at :run-time :fixture muffle)
-  (is-true (typep (zeros 5)
-                  '(array bit (5))))
-  (is-true (typep (zeros '(5 5))
-                  '(array bit (5 5))))
-  (is-true (typep (zeros 5 :type 'fixnum)
-                  '(array fixnum (5))))
-  (is-true (typep (ones 5)
-                  '(array bit (5))))
-  (is-true (typep (arange 10)
-                  '(array (integer 0 10) (10))))
+  (is-type (zeros 5)
+           '(array bit (5)))
+  (is-type (zeros '(5 5))
+           '(array bit (5 5)))
+  (is-type (zeros 5 :type 'fixnum)
+           '(array fixnum (5)))
+  (is-type (ones 5)
+           '(array bit (5)))
+  (is-type (arange 10)
+           '(array (integer 0 10) (10)))
 
   (let ((a (arange 100)))
     (is-false (eq a (copy a)))
@@ -99,20 +105,20 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   
   
   (let ((a (reshape (arange 100) '(4 5 5))))
-    (is-true (typep a
-                    '(array (integer 0 100) (4 5 5))))
-    (is-true (typep (aref a 0)
-                    '(array (integer 0 100) (5 5))))
-    (is-true (typep (aref a 0 0 0)
-                    '(integer 0 100)))
-    (is-true (typep (aref a '(0 1))
-                    '(array (integer 0 100) (1 5 5))))
-    (is-true (typep (aref a 0 '(0 2) 0)
-                    '(array (integer 0 100) (2))))
-    (is-true (typep (aref a '(0 2) '(0 2) 0)
-                    '(array (integer 0 100) (2 2))))
-    (is-true (typep (aref a '- '(0 2))
-                    '(array (integer 0 100) (4 5 2)))))
+    (is-type a
+             '(array (integer 0 100) (4 5 5)))
+    (is-type (aref a 0)
+             '(array (integer 0 100) (5 5)))
+    (is-type (aref a 0 0 0)
+             '(integer 0 100))
+    (is-type (aref a '(0 1))
+             '(array (integer 0 100) (1 5 5)))
+    (is-type (aref a 0 '(0 2) 0)
+             '(array (integer 0 100) (2)))
+    (is-type (aref a '(0 2) '(0 2) 0)
+             '(array (integer 0 100) (2 2)))
+    (is-type (aref a '- '(0 2))
+             '(array (integer 0 100) (4 5 2))))
 
   (let ((a (zeros 4 :type 'bit)))
     (setf (aref a '(0 4 2)) 1)
@@ -299,9 +305,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                              '(t -1 2 t))))))
 
 (test (1+/1- :compile-at :run-time :fixture muffle)
-  (is (equal (upgraded-array-element-type '(unsigned-byte 2))
-             (array-element-type
-              (1+ (zeros 10))))))
+  (is-type (1+ (zeros 10))
+           '(array (unsigned-byte 2))))
 
 (test (map-array :compile-at :run-time :fixture muffle)
   (let ((a (zeros '(3 3) :type 'single-float)))
@@ -323,8 +328,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (test (arithmetic :compile-at :run-time :fixture muffle)
 
   (finishes (print (sin pi)))
-  (is (typep (/ 1 2) 'ratio))
-  (is (typep (/ (ones 5) 2) '(array single-float)))
+  (is-type (/ 1 2) 'ratio)
+  (is-type (/ (ones 5) 2) '(array single-float))
   (is (subtypep (array-element-type (* (ones 5) 2)) 'fixnum))
   (is (subtypep (array-element-type (+ (ones 5) 2)) 'fixnum))
   (is (subtypep (array-element-type (- (ones 5) 2)) 'fixnum))
@@ -399,13 +404,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (test (random :compile-at :run-time :fixture muffle)
   (is (integerp (bernoulli 0.3)))
-  (is (typep (bernoulli 0.3 5) 'bit-vector))
-  (is (typep (bernoulli 0.3 '(5 5)) '(array bit)))
-  (is (typep (bernoulli-like (zeros '(5 5))) '(array bit (5 5))))
+  (is-type (bernoulli 0.3 5) 'bit-vector)
+  (is-type (bernoulli 0.3 '(5 5)) '(array bit))
+  (is-type (bernoulli-like (zeros '(5 5))) '(array bit (5 5)))
   
   (is (integerp (uniform 0 5)))
   (is (floatp (uniform 0 5.0)))
-  (is (typep (uniform 0 5 5) `(VECTOR ,(upgraded-array-element-type '(integer 0 5)) 5))))
+  (is-type (uniform 0 5 5) `(VECTOR ,(upgraded-array-element-type '(integer 0 5)) 5)))
 
 (test (einsum :compile-at :run-time :fixture muffle)
 

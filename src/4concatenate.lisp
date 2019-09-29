@@ -131,3 +131,47 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
       (progn
         (assert (null axis))
         (full n array))))
+
+;; unstack
+
+(defun unstack (array &key (axis 0))
+  (let* ((type (array-element-type array))
+         (dims (shape array))
+         (axis (mod axis (length dims)))
+         (len  (elt dims axis))
+         
+         (dims-before (reduce #'* dims :start 0 :end axis))
+         (dims-after  (reduce #'* dims :start (1+ axis)))
+         
+         (simplified
+          (reshape array (list dims-before
+                               len
+                               dims-after)))
+         (tmp
+          (empty (list len
+                       dims-before
+                       dims-after)
+                 :type type))
+         
+         (dims-each (append (subseq dims 0 axis)
+                            (subseq dims (1+ axis))))
+         (arrays
+          (iter (for i from 0 below len)
+                (collecting
+                 (%make-array dims-each
+                             :element-type type
+                             :displaced-to tmp
+                             :displaced-index-offset (* i dims-before dims-after))))))
+
+    
+    (iter (for dim-axis below len)
+          (setf (numcl:aref tmp dim-axis)
+                (numcl:aref simplified t dim-axis t)))
+
+    arrays))
+
+
+;; (unstack (stack (list (zeros '(2 2)) (ones '(2 2)))))
+;; (unstack (stack (list (zeros '(2 2)) (ones '(2 2))) :axis 0))
+;; (unstack (stack (list (zeros '(2 2)) (ones '(2 2))) :axis 1))
+;; (unstack (stack (list (zeros '(2 2)) (ones '(2 2))) :axis 2))

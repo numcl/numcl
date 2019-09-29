@@ -49,6 +49,12 @@ interprets a form consisting of functions and type specifiers (at the leafs).
  form : (inferer args*)
  arg  : type | form "
   (ematch form
+    ((list* (list 'lambda (list* arg args) body) type types)
+     (interpret-type
+      `((lambda ,args ,(subst type arg body)) ,@types)))
+    ((list (list 'lambda nil body))
+     (interpret-type
+      body))
     ((list* name types)
      (if (inferer-boundp name)
          (apply #'infer-type

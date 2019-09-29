@@ -138,6 +138,17 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
 (defun $ (i) "Variable for the input array element"  (in-current-package (symbolicate '$ (princ-to-string i))))
 (defun @ (i) "Variable for the output array element" (in-current-package (symbolicate '@ (princ-to-string i))))
 (defun & (i) "Variable for the iteration count"      (in-current-package (symbolicate '& (princ-to-string i))))
+(defun i-var (i) "Variable for the input array"       (in-current-package (symbolicate 'I (princ-to-string i))))
+(defun o-var (i) "Variable for the output array"      (in-current-package (symbolicate 'O (princ-to-string i))))
+(defun i-vars (specs) (mapcar #'i-var (iota (length specs))))
+(defun o-vars (specs) (mapcar #'o-var (iota (length specs))))
+(defun i-evars (specs) (mapcar #'$ (iota (length specs) :start 1)))
+(defun o-evars (specs) (mapcar #'@ (iota (length specs) :start 1)))
+(defun i-idx (i) "Variable for the 1D index of input array"  (in-current-package (symbolicate '$IDX (princ-to-string i))))
+(defun o-idx (i) "Variable for the 1D index of output array" (in-current-package (symbolicate '@IDX (princ-to-string i))))
+(defun i-idxs (specs) (mapcar #'i-idx (iota (length specs))))
+(defun o-idxs (specs) (mapcar #'o-idx (iota (length specs))))
+
 (defun map-specs (fn specs)
   (iter (for spec in specs)
         (collecting
@@ -183,7 +194,7 @@ you will get an array C with shape (2 5 5).
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defstruct einsum-vars
+  (defstruct einsum-specs
     "A temporary structure holding the information for the einsum compiler.
 * `iter-specs`         : A list of integers that defines the nested loops.
                          For example, (0 1 2) for the ijk loop in gemm.
@@ -193,24 +204,18 @@ you will get an array C with shape (2 5 5).
                          subset of iter-specs.
                          For example, ((0 1) (1 2) (0 2)) for the ijk loop in gemm.
                          
-* `i-vars`, `o-vars`   : A list of symbols for binding the array.
-
-* `i-evars`, `o-evars` : A list of symbols for binding the array element.
-                         These are always named $N and @N (for the
-                         input/output, resp.)
-
 * `transforms`         : A list of forms. One form is for each output array.
                          Each form is evaluated in each loop and the value is
                          assigned to the array element.
 "
     iter-specs
-    i-specs i-vars i-evars
-    o-specs o-vars o-evars
+    i-specs
+    o-specs
     transforms))
 
-(defun einsum-vars (normalized-subscripts)
+(defun einsum-specs (normalized-subscripts)
   "Takes a list of normalized subscripts and returns a temporary
-structure (einsum-vars)."
+structure (einsum-specs)."
   (match normalized-subscripts
     ((plist :inputs     i-specs
             :transforms transforms
@@ -225,40 +230,39 @@ structure (einsum-vars)."
                nil
                "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
                (set-difference o-flat i-flat) i-flat o-flat)
-       (make-einsum-vars
+       (make-einsum-specs
         :iter-specs iter-specs
         :i-specs i-specs
-        :i-vars  (make-gensym-list i-len "I")
-        :i-evars (mapcar #'$ (iota i-len :start 1))
         :o-specs o-specs
-        :o-vars  (make-gensym-list o-len "O")
-        :o-evars (mapcar #'@ (iota o-len :start 1))
         :transforms transforms)))))
 
 (defvar *compiler* :common-lisp)
 
-(defgeneric einsum-body (*compiler* einsum-vars)
+(defgeneric einsum-body (*compiler* einsum-specs)
   (:documentation
    " 
 * `*compiler*` : Special variable (supposed to be a keyword) used for
   dispatching the compilation scheme.
 
-* `einsum-vars` : einsum-vars structure. "))
+* `einsum-specs` : einsum-specs structure. "))
 
 (defun einsum-lambda (normalized-subscripts)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
-  (ematch (einsum-vars normalized-subscripts)
-    ((and ev (einsum-vars i-specs i-vars i-evars
-                          o-specs o-vars o-evars iter-specs transforms))
-     (with-gensyms (o-types)
+  (ematch (einsum-specs normalized-subscripts)
+    ((and ev (einsum-specs i-specs o-specs iter-specs transforms))
+     (let ((o-types (gensym "OTYPES"))
+           (i-vars (i-vars i-specs))
+           (o-vars (o-vars o-specs)))
        `(lambda (,@i-vars &optional ,@o-vars)
           (resolving
-            ,@(iter (for var in i-vars)
+            ;; resolve input array declarations
+            ,@(iter (for var  in i-vars)
                     (for spec in i-specs)
                     (collecting
                       `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
+            ;; generate or reuse output arrays
             (let* ((,o-types (einsum-output-types
-                              ',transforms ',i-evars ',o-evars ,@i-vars))
+                              ',transforms ',(i-evars i-specs) ',(o-evars o-specs) ,@i-vars))
                    ,@(iter (for o-var     in o-vars)
                            (for o-spec    in o-specs)
                            (for o from 0)
@@ -267,7 +271,8 @@ structure (einsum-vars)."
                                (or ,o-var
                                    (zeros (list ,@(mapcar #'? o-spec)) :type (nth ,o ,o-types)))))))
               (resolving
-                ,@(iter (for var in o-vars)
+                ;; resolve output array declarations
+                ,@(iter (for var  in o-vars)
                         (for spec in o-specs)
                         (collecting
                           `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))

@@ -83,16 +83,16 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     declaration))
 
 (defmethod einsum-body ((*compiler* (eql :common-lisp)) ev)
-  (let* ((iter-specs (einsum-vars-iter-specs ev))
-         (i-specs (einsum-vars-i-specs ev))
-         (o-specs (einsum-vars-o-specs ev))
-         (i-vars  (einsum-vars-i-vars ev))
-         (o-vars  (einsum-vars-o-vars ev))
-         (i-evars (einsum-vars-i-evars ev))
-         (o-evars (einsum-vars-o-evars ev))
-         (i-idx (make-gensym-list (length i-vars) "$IDX"))
-         (o-idx (make-gensym-list (length o-vars) "@IDX"))
-         (const-vars  (append o-idx i-idx))
+  (let* ((iter-specs (einsum-specs-iter-specs ev))
+         (i-specs (einsum-specs-i-specs ev))
+         (o-specs (einsum-specs-o-specs ev))
+         (i-vars  (i-vars i-specs))
+         (o-vars  (o-vars o-specs))
+         (i-evars (i-evars i-specs))
+         (o-evars (o-evars o-specs))
+         (i-idxs  (i-idxs i-specs))
+         (o-idxs  (o-idxs o-specs))
+         (const-vars  (append o-idxs i-idxs))
          (const-inits (mapcar (constantly 0) const-vars)) ;initialized to 0
          used-evars)
     ((lambda (nodes)
@@ -109,7 +109,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                  (for i from 0)
                  (for spec2 in (append o-specs i-specs))
                  (for out-p = (< i (length o-specs)))
-                 (for index in (append o-idx i-idx))      ; index variable for accessing the array element
+                 (for index in (append o-idxs i-idxs))      ; index variable for accessing the array element
                  (for var   in (append o-vars i-vars))    ; array variable
                  (for evar  in (append o-evars i-evars))  ; array element variable, i.e., evar = (aref var index)
                  (iter INNER
@@ -229,9 +229,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                 ;; Innermost code block: No loop variable left.
                 ;; Invoked by the bottom loop expander.
                 ;; Also a special case for when there are no loop variables.
-                (iter (for transform in (einsum-vars-transforms ev))
-                      (for o-var     in (einsum-vars-o-vars ev))
-                      (for o-evar    in (einsum-vars-o-evars ev))
+                (iter (for transform in (einsum-specs-transforms ev))
+                      (for o-var     in (o-vars  (einsum-specs-o-specs ev)))
+                      (for o-evar    in (o-evars (einsum-specs-o-specs ev)))
                       (when (first-iteration-p)
                         (collecting 'progn))
                       (collecting

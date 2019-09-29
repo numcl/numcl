@@ -120,78 +120,78 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           (multiple-value-bind (r rbase) (empty rshape :type type)
             (multiple-value-bind (xbase xoffset) (array-displacement x)
               (multiple-value-bind (ybase yoffset) (array-displacement y)
-                (broadcast-core fn
-                                xbase xoffset xshape
-                                ybase yoffset yshape
-                                rbase 0       rshape)
-                (values r rbase))))))))
+                (labels ((broadcast-core (fn
+                                          xbase xoffset xshape
+                                          ybase yoffset yshape
+                                          rbase roffset rshape)
+                           (match* (xshape yshape rshape)
+                             (((list 1)
+                               (list ydim))
+                              (let ((x (aref xbase xoffset)))
+                                (dotimes (i ydim)
+                                  (setf (aref rbase (+ roffset i))
+                                        (%coerce (funcall fn x (aref ybase (+ yoffset i))) (array-element-type rbase))))))
+                             (((list xdim)
+                               (list 1))
+                              (let ((y (aref ybase yoffset)))
+                                (dotimes (i xdim)
+                                  (setf (aref rbase (+ roffset i))
+                                        (%coerce (funcall fn (aref xbase (+ xoffset i)) y) (array-element-type rbase))))))
+                             (((list xdim)
+                               _)
+                              (dotimes (i xdim)
+                                (setf (aref rbase (+ roffset i))
+                                      (%coerce (funcall fn
+                                                        (aref xbase (+ xoffset i))
+                                                        (aref ybase (+ yoffset i)))
+                                               (array-element-type rbase)))))
+                             
+                             (((list* 1    xrest)
+                               (list* ydim yrest)
+                               (list* _    rrest))
+                              (iter (with yrest-size = (reduce #'* yrest))
+                                    (with rrest-size = (reduce #'* rrest))
+                                    (for i below ydim)
+                                    (broadcast-core fn
+                                                    xbase xoffset xrest
+                                                    ybase yoffset yrest
+                                                    rbase roffset rrest)
+                                    (incf yoffset yrest-size)
+                                    (incf roffset rrest-size)))
 
-(defun broadcast-core (fn
-                       xbase xoffset xshape
-                       ybase yoffset yshape
-                       rbase roffset rshape)
-  (match* (xshape yshape rshape)
-    (((list 1)
-      (list ydim))
-     (let ((x (aref xbase xoffset)))
-       (dotimes (i ydim)
-         (setf (aref rbase (+ roffset i))
-               (%coerce (funcall fn x (aref ybase (+ yoffset i))) (array-element-type rbase))))))
-    (((list xdim)
-      (list 1))
-     (let ((y (aref ybase yoffset)))
-       (dotimes (i xdim)
-         (setf (aref rbase (+ roffset i))
-               (%coerce (funcall fn (aref xbase (+ xoffset i)) y) (array-element-type rbase))))))
-    (((list xdim)
-      _)
-     (dotimes (i xdim)
-       (setf (aref rbase (+ roffset i))
-             (%coerce (funcall fn
-                               (aref xbase (+ xoffset i))
-                               (aref ybase (+ yoffset i)))
-                      (array-element-type rbase)))))
-    
-    (((list* 1    xrest)
-      (list* ydim yrest)
-      (list* _    rrest))
-     (iter (with yrest-size = (reduce #'* yrest))
-           (with rrest-size = (reduce #'* rrest))
-           (for i below ydim)
-           (broadcast-core fn
-                           xbase xoffset xrest
-                           ybase yoffset yrest
-                           rbase roffset rrest)
-           (incf yoffset yrest-size)
-           (incf roffset rrest-size)))
+                             (((list* xdim xrest)
+                               (list* 1    yrest)
+                               (list* _    rrest))
+                              (iter (with xrest-size = (reduce #'* xrest))
+                                    (with rrest-size = (reduce #'* rrest))
+                                    (for i below xdim)
+                                    (broadcast-core fn
+                                                    xbase xoffset xrest
+                                                    ybase yoffset yrest
+                                                    rbase roffset rrest)
+                                    (incf xoffset xrest-size)
+                                    (incf roffset rrest-size)))
 
-    (((list* xdim xrest)
-      (list* 1    yrest)
-      (list* _    rrest))
-     (iter (with xrest-size = (reduce #'* xrest))
-           (with rrest-size = (reduce #'* rrest))
-           (for i below xdim)
-           (broadcast-core fn
-                           xbase xoffset xrest
-                           ybase yoffset yrest
-                           rbase roffset rrest)
-           (incf xoffset xrest-size)
-           (incf roffset rrest-size)))
-
-    (((list* xdim xrest)
-      (list* _    yrest)
-      (list* _    rrest))
-     (iter (with xrest-size = (reduce #'* xrest))
-           (with yrest-size = (reduce #'* yrest))
-           (with rrest-size = (reduce #'* rrest))
-           (for i below xdim)
-           (broadcast-core fn
-                           xbase xoffset xrest
-                           ybase yoffset yrest
-                           rbase roffset rrest)
-           (incf xoffset xrest-size)
-           (incf yoffset yrest-size)
-           (incf roffset rrest-size)))))
+                             (((list* xdim xrest)
+                               (list* _    yrest)
+                               (list* _    rrest))
+                              (iter (with xrest-size = (reduce #'* xrest))
+                                    (with yrest-size = (reduce #'* yrest))
+                                    (with rrest-size = (reduce #'* rrest))
+                                    (for i below xdim)
+                                    (broadcast-core fn
+                                                    xbase xoffset xrest
+                                                    ybase yoffset yrest
+                                                    rbase roffset rrest)
+                                    (incf xoffset xrest-size)
+                                    (incf yoffset yrest-size)
+                                    (incf roffset rrest-size))))))
+                           
+                  (broadcast-core fn
+                                  xbase xoffset xshape
+                                  ybase yoffset yshape
+                                  rbase 0       rshape)
+                  (values r rbase)))))))))
 
 ;; (broadcast '+ (arange 10) (arange 10))
 ;; #(0 2 4 6 8 10 12 14 16 18)

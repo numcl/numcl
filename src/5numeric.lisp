@@ -120,13 +120,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           (multiple-value-bind (r rbase) (empty rshape :type type)
             (multiple-value-bind (xbase xoffset) (array-displacement x)
               (multiple-value-bind (ybase yoffset) (array-displacement y)
-                (broadcast-core fn type
+                (broadcast-core fn
                                 xbase xoffset xshape
                                 ybase yoffset yshape
                                 rbase 0       rshape)
                 (values r rbase))))))))
 
-(defun broadcast-core (fn type
+(defun broadcast-core (fn
                        xbase xoffset xshape
                        ybase yoffset yshape
                        rbase roffset rshape)
@@ -136,13 +136,13 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
      (let ((x (aref xbase xoffset)))
        (dotimes (i ydim)
          (setf (aref rbase (+ roffset i))
-               (%coerce (funcall fn x (aref ybase (+ yoffset i))) type)))))
+               (%coerce (funcall fn x (aref ybase (+ yoffset i))) (array-element-type rbase))))))
     (((list xdim)
       (list 1))
      (let ((y (aref ybase yoffset)))
        (dotimes (i xdim)
          (setf (aref rbase (+ roffset i))
-               (%coerce (funcall fn (aref xbase (+ xoffset i)) y) type)))))
+               (%coerce (funcall fn (aref xbase (+ xoffset i)) y) (array-element-type rbase))))))
     (((list xdim)
       _)
      (dotimes (i xdim)
@@ -150,7 +150,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              (%coerce (funcall fn
                                (aref xbase (+ xoffset i))
                                (aref ybase (+ yoffset i)))
-                      type))))
+                      (array-element-type rbase)))))
     
     (((list* 1    xrest)
       (list* ydim yrest)
@@ -158,7 +158,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
      (iter (with yrest-size = (reduce #'* yrest))
            (with rrest-size = (reduce #'* rrest))
            (for i below ydim)
-           (broadcast-core fn type
+           (broadcast-core fn
                            xbase xoffset xrest
                            ybase yoffset yrest
                            rbase roffset rrest)
@@ -171,7 +171,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
      (iter (with xrest-size = (reduce #'* xrest))
            (with rrest-size = (reduce #'* rrest))
            (for i below xdim)
-           (broadcast-core fn type
+           (broadcast-core fn
                            xbase xoffset xrest
                            ybase yoffset yrest
                            rbase roffset rrest)
@@ -185,7 +185,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
            (with yrest-size = (reduce #'* yrest))
            (with rrest-size = (reduce #'* rrest))
            (for i below xdim)
-           (broadcast-core fn type
+           (broadcast-core fn
                            xbase xoffset xrest
                            ybase yoffset yrest
                            rbase roffset rrest)

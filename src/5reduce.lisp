@@ -140,8 +140,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:standard-deviation (array &key axes)
   (if (typep array 'sequence)
       (alexandria:standard-deviation array)
-      (numcl:sqrt
-       (let ((axes (or axes (iota (rank array)))))
+      (let ((axes (or axes (iota (rank array)))))
+        (numcl:sqrt
          (numcl:/ (numcl:sum (square array) :axes axes)
                   (array-dimension* array axes))))))
 
@@ -161,8 +161,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:stdev (array &key axes)
   (if (typep array 'sequence)
       (alexandria:standard-deviation array)
-      (numcl:sqrt
-       (let ((axes (or axes (iota (rank array)))))
+      (let ((axes (or axes (iota (rank array)))))
+        (numcl:sqrt
          (numcl:/ (numcl:sum (square array) :axes axes)
                   (array-dimension* array axes))))))
 

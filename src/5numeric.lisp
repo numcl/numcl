@@ -171,6 +171,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline broadcast-p))
 (defun broadcast-p (x y)
+  "Broadcasting the binary operation is allowed when
+ the axes in the right-aligned common subscripts of the arrays are same or either subscript is 1"
   (every (lambda (dx dy)
            (declare (fixnum dx dy))
            (or (= dx dy)

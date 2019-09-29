@@ -169,6 +169,7 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
 
 (defun numcl:aref (array &rest subscripts)
   #.*aref-documentation*
+  (declare (numcl-array array))
   (ensure-singleton
    (let* ((shape (shape array))
           (subscripts (normalize-subscripts subscripts shape)))
@@ -203,6 +204,7 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
       array-or-number))
 
 (defun (setf numcl:aref) (newvar array &rest subscripts)
+  (declare (numcl-array array))
   (let* ((shape (shape array))
          (type (array-element-type array))
          (subscripts (normalize-subscripts subscripts shape)))

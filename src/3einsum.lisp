@@ -73,6 +73,8 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
                                    :format-control "Tried to make a spec from a non-alpha char ~a"
                                    :format-arguments (list c))
                            (collecting (intern (string c)))))))
+         (make-map (indices)
+           (mapcar #'cons indices (iota (length indices))))
          (indices (specs)
            (let (list)
              (iter (for spec in specs)
@@ -85,7 +87,7 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
               (indices  (indices i-specs))
               (o-specs (list (sort (copy-list indices) #'string<)))
 
-              (alist (mapcar #'cons indices (iota (length indices))))
+              (alist (make-map indices))
               (i-specs-num (sublis alist i-specs))
               (o-specs-num (sublis alist o-specs))
               
@@ -102,7 +104,7 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
               (o-specs (mapcar #'explode (or (subseq subscripts (1+ pos)) '(nil)))) ; default
 
               (indices (indices (append i-specs o-specs)))
-              (alist (mapcar #'cons indices (iota (length indices))))
+              (alist (make-map indices))
               (i-specs-num (sublis alist i-specs))
               (o-specs-num (sublis alist o-specs))
 
@@ -121,7 +123,7 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
               (o-specs (mapcar #'explode (or (subseq subscripts (1+ pos2)) '(nil)))) ; default
 
               (indices (indices (append i-specs o-specs)))
-              (alist (mapcar #'cons indices (iota (length indices))))
+              (alist (make-map indices))
               (i-specs-num (sublis alist i-specs))
               (o-specs-num (sublis alist o-specs))
 

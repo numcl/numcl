@@ -197,8 +197,6 @@ structure (einsum-vars)."
         :o-evars (mapcar #'@ (iota o-len :start 1))
         :transforms transforms)))))
 
-(deftype index () `(integer 0 (,array-dimension-limit)))
-
 (defvar *compiler* :common-lisp)
 
 (defgeneric einsum-body (*compiler* einsum-vars)

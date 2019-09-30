@@ -41,6 +41,26 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
        (typep b 'string-designator)
        (string= a b)))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defstruct einsum-specs
+    "A temporary structure holding the information for the einsum compiler.
+* `iter-specs`         : A list of integers that defines the nested loops.
+                         For example, (0 1 2) for the ijk loop in gemm.
+
+* `i-specs`, `o-specs` : A list of lists of integers that specifies the indices
+                         for each input/output array. Each list should be a
+                         subset of iter-specs.
+                         For example, ((0 1) (1 2) (0 2)) for the ijk loop in gemm.
+
+* `transforms`         : A list of forms. One form is for each output array.
+                         Each form is evaluated in each loop and the value is
+                         assigned to the array element.
+"
+    iter-specs
+    transforms
+    i-specs i-options
+    o-specs o-options))
+
 (defun einsum-normalize-subscripts (subscripts)
   (%einsum-normalize-subscripts
    (ecase (count '-> subscripts :test #'safe-string=)
@@ -118,15 +138,27 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
                         (collect
                             `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1))))))))
              (i-options-full (make-list i-len))
-             (o-options-full (make-list o-len)))
+             (o-options-full (make-list o-len))
+             (i-flat (remove-duplicates (alexandria:flatten i-specs-num)))
+             (o-flat (remove-duplicates (alexandria:flatten o-specs-num)))
+             (iter-specs
+              (sort-locality (union i-flat o-flat)
+                             (append i-specs-num o-specs-num))))
         (replace i-options-full i-options) ;stops at the shorter sequence (ANSI)
         (replace o-options-full o-options) ;stops at the shorter sequence (ANSI)
+        (setf i-options-full (sublis alist i-options-full))
+        (setf o-options-full (sublis alist o-options-full))
         (assert (= o-len (length transforms)))
-        (list :i-specs i-specs-num
-              :o-specs o-specs-num
-              :transforms transforms
-              :i-options i-options-full
-              :o-options o-options-full)))))
+        (assert (subsetp o-flat i-flat)
+                nil
+                "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
+                (set-difference o-flat i-flat) i-flat o-flat)
+        (make-einsum-specs :iter-specs iter-specs
+                           :transforms transforms
+                           :i-specs i-specs-num
+                           :o-specs o-specs-num
+                           :i-options i-options-full
+                           :o-options o-options-full)))))
 
 (defun ? (i) "Variable for the iteration limit"      (in-current-package (symbolicate '? (princ-to-string i))))
 (defun $ (i) "Variable for the input array element"  (in-current-package (symbolicate '$ (princ-to-string i))))
@@ -185,51 +217,6 @@ you will get an array C with shape (2 5 5).
 
 |#
 
-
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defstruct einsum-specs
-    "A temporary structure holding the information for the einsum compiler.
-* `iter-specs`         : A list of integers that defines the nested loops.
-                         For example, (0 1 2) for the ijk loop in gemm.
-
-* `i-specs`, `o-specs` : A list of lists of integers that specifies the indices
-                         for each input/output array. Each list should be a
-                         subset of iter-specs.
-                         For example, ((0 1) (1 2) (0 2)) for the ijk loop in gemm.
-                         
-* `transforms`         : A list of forms. One form is for each output array.
-                         Each form is evaluated in each loop and the value is
-                         assigned to the array element.
-"
-    iter-specs
-    i-specs
-    o-specs
-    transforms))
-
-(defun einsum-specs (normalized-subscripts)
-  "Takes a list of normalized subscripts and returns a temporary
-structure (einsum-specs)."
-  (match normalized-subscripts
-    ((plist :i-specs  i-specs
-            :transforms   transforms
-            :o-specs o-specs)
-     (let* ((i-flat (remove-duplicates (flatten i-specs)))
-            (o-flat (remove-duplicates (flatten o-specs)))
-            (i-len (length i-specs))
-            (o-len (length o-specs))
-            (iter-specs
-             (sort-locality (union i-flat o-flat) (append i-specs o-specs))))
-       (assert (subsetp o-flat i-flat)
-               nil
-               "The output spec contains ~a which are not used in the input specs:~% input spec: ~a~%output spec: ~a"
-               (set-difference o-flat i-flat) i-flat o-flat)
-       (make-einsum-specs
-        :iter-specs iter-specs
-        :i-specs i-specs
-        :o-specs o-specs
-        :transforms transforms)))))
-
 (defvar *compiler* :common-lisp)
 
 (defgeneric einsum-body (*compiler* einsum-specs)
@@ -240,10 +227,10 @@ structure (einsum-specs)."
 
 * `einsum-specs` : einsum-specs structure. "))
 
-(defun einsum-lambda (normalized-subscripts)
+(defun einsum-lambda (einsum-specs)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
-  (ematch (einsum-specs normalized-subscripts)
-    ((and ev (einsum-specs i-specs o-specs iter-specs transforms))
+  (ematch einsum-specs
+    ((einsum-specs i-specs o-specs iter-specs transforms)
      (let ((o-types (gensym "OTYPES"))
            (i-vars (i-vars i-specs))
            (o-vars (o-vars o-specs)))
@@ -277,7 +264,7 @@ structure (einsum-specs)."
                   (specializing (,@i-vars ,@o-vars) ()
                     (declare (optimize (speed 2) (safety 0)))
                     (declare (type index ,@(mapcar #'? iter-specs)))
-                    ,(einsum-body *compiler* ev)))
+                    ,(einsum-body *compiler* einsum-specs)))
                 (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                   o-vars))))))))))
 

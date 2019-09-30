@@ -34,8 +34,16 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 The SUBSCRIPT specification is significantly extended from that of Numpy
 and can be seens as a full-brown DSL for array operations.
 
-SUBSCRIPTS is a sequence of the form `(<SPEC>+ [-> <TRANSFORM>*] [-> [<SPEC>*])`.
+SUBSCRIPTS is a sequence of the form `(<ISPEC>+ [-> <TRANSFORM>*] [-> <OSPEC>*] [-> <IOPTION>*] [-> <OOPTION>*])`.
 The remaining arguments ARGS contain the input arrays and optionally the output arrays.
+
+Inputs are interpreted in the following rule, depending on the number of arrows.
+
+: (<ISPEC>+)
+: (<ISPEC>+ -> <OSPEC>*)
+: (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>*)
+: (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>* -> <IOPTION>*)
+: (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>* -> <IOPTION>* -> <OOPTION>*)
 
 # SPEC
 
@@ -45,10 +53,12 @@ Unlike Numpy, there can be multiple output subscripts:
 It can performs multiple operations in the same loop, then return multiple values.
 The symbol `->` can be a string and can belong to any package because it is compared by STRING=.
 
-Each SPEC is an alphabetical string designator, such as a symbol IJK or a string \"IJK\",
-where each alphabet is considered as an index. It signals a type-error when it contains any
-non-alpha char. 
+Each SPEC is an string designator, such as a symbol IJK or a string \"IJK\",
+where each character is considered as an index.
+Broadcasting can be specified by a hyphen.
+It signals a type-error when it contains any non-alpha char except hyphens (-).
 Note that a symbol NIL is interpreted as an empty list rather than N, I and L.
+Once broadcasting is used in one input, it must be used in all inputs/outputs.
 
 Alternatively, each SPEC can be a list that contains a list of symbols.
 For example, `((i j) (j k) -> (i k))` and `(ij jk -> ik)` are equivalent.
@@ -66,20 +76,42 @@ The number of TRANSFORM should correspond to the number of outputs.
 In each TRANSFORM, the elements in the input arrays can be referenced by $N, where N is a 1-indexed number.
 Similarly the output array can be referred to by @N.
 
-For example, `(ij ik -> (+ @1 (* $1 $2)) -> ik)` is equivalent to `(ij ik -> ik)` (a GEMM).
++ Example: `(ij ik -> (+ @1 (* $1 $2)) -> ik)` is equivalent to `(ij ik -> ik)` (a GEMM).
++ Example: `(i -> (sin $1) -> i)` is equivalent to mapping a sin function to an array.
 
 By default, TRANSFORM is `(+ @1 (* $1 ... $N))` for N inputs, which is equivalent to Einstein's summation.
+
+# OPTION
+
+Each OPTION is a list of iteration specifiers.
+Iteration specifier is a form (index &key (start 0) (end -1) (step 1)).
+START and END are the forms specifying the interval designator of the loop range, which supersedes the default full-width loop.
+STEP is a form specifying the increment of the index.
+INDEX is a symbol which should match one of the subscripts used in the corresponding SPEC.
+
+For example, you can specify
+
+ (einsum '(ij jk -> (+ @1 (* $1 $2)) -> ik -> ((j :step 2)) ((j :step 3)))
+         (ones '(5 10))
+         (ones '(15 5)))
+
+to suggest that
+     the index j for the first array should have a stride of 2,
+ and the index j for the second array should have a stride of 3.
+
+This is fairly complex, but we hope to provide the maximum flexibility.
 
 # ARGS
 
 The shape of each input array should unify against the corresponding input spec. For example,
 with a spec IJI, the input array should be of rank 3 as well as
 the 1st and the 3rd dimension of the input array should be the same.
+Note that this is affected by OPTIONS --- when specified,
+it uses the number of iteration instead of the size of the dimension.
 
 The shape of each output array is determined by the corresponding output spec.
-For example, if SUBSCRIPTS is `(ij jk -> ik)`, the output is an array of rank 2,
-and the output shape has the same dimension as the first input in the first axis,
-and the same dimension as the second input in the second axis.
+For example, if SUBSCRIPTS is `(ij jk -> ik)`
+and the input arrays are NxM and MxL matrices, the output has a shape NxL.
 
 If the output arrays are provided, their shapes and types are also checked against the
 corresponding output spec.  The types should match the result of the numerical

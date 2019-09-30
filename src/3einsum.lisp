@@ -266,23 +266,44 @@ you will get an array C with shape (2 5 5).
 
 * `einsum-specs` : einsum-specs structure. "))
 
-(defun shape-resolver (vars specs &optional out-p)
+(declaim (inline normalize-index))
+(defun normalize-index (index dimension)
+  (if (minusp index)
+      (1+ (mod index dimension))
+      (min index dimension)))
+
+(declaim (inline range-width))
+(defun range-width (array axis start end step)
+  (let ((dimension (array-dimension array axis)))
+    (ceiling (- (normalize-index end   dimension)
+                (normalize-index start dimension))
+             step)))
+
+(defun shape-resolver (vars specs options &optional out-p)
   "
 out-p: Produces the binding for output arrays."
   (iter outer
         (with unifiers-plist = nil)
         (for var  in vars)
         (for spec in specs)
+        (for option in options)
         ;; collect axis information forward until broadcast
         (iter (for dim in spec)
-              (for dimvar = (gensym))
               (for i from 0)
-              (in outer
-                  ;; bind the axis size to dimvar
-                  (collecting `(,dimvar (array-dimension ,var ,i))
-                              into bindings)
-                  ;; unify dimvar to the variable (? dim)
-                  (push dimvar (getf unifiers-plist (? dim)))))
+              (destructuring-bind (&whole dimopt &key (start 0) (end -1) (step 1)) (cdr (assoc dim option))
+                ;; Note: to specify the varaible step, you should construct a list dynamically.
+                ;; Do not embed a form.
+                (assert (constantp start) nil "~s = ~s in ~s: iteration specifier option should be constant" :start start dimopt)
+                (assert (constantp end)   nil "~s = ~s in ~s: iteration specifier option should be constant" :end   end   dimopt)
+                (assert (constantp step)  nil "~s = ~s in ~s: iteration specifier option should be constant" :step  step  dimopt)
+                (when (eq t start) (setf start 0))
+                (when (eq t end )  (setf end  -1))
+                ;; unify d to the variable (? dim)
+                (with-gensyms (w)
+                  (in outer
+                      (collecting `(,w (range-width ,var ,i ,start ,end ,step))
+                                  into bindings)
+                      (push w (getf unifiers-plist (? dim)))))))
         ;; unify the collected informations, bind them to ?-variables
         (finally
          (return-from shape-resolver
@@ -310,15 +331,15 @@ out-p: Produces the binding for output arrays."
 (defun einsum-lambda (einsum-specs)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
   (ematch einsum-specs
-    ((einsum-specs i-specs o-specs iter-specs transforms)
+    ((einsum-specs i-specs o-specs i-options o-options iter-specs transforms)
      (let ((i-vars (i-vars i-specs))
            (o-vars (o-vars o-specs)))
        `(lambda (,@i-vars &optional ,@o-vars)
           ;; resolve input array shapes
-          (let* ,(shape-resolver i-vars i-specs)
+          (let* ,(shape-resolver i-vars i-specs i-options)
             ;; generate or reuse output arrays
             (let* ,(%output-generator o-specs o-vars i-specs i-vars transforms)
-              (let* ,(shape-resolver o-vars o-specs t)
+              (let* ,(shape-resolver o-vars o-specs o-options t)
                 (let ,(iter (for var in (append i-vars o-vars))
                             (collecting
                               ;; extract the base array

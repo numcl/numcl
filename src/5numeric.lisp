@@ -173,6 +173,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun broadcast-p (x y)
   "Broadcasting the binary operation is allowed when
  the axes in the right-aligned common subscripts of the arrays are same or either subscript is 1"
+  (declare (numcl-array x y))
   (every (lambda (dx dy)
            (declare (fixnum dx dy))
            (or (= dx dy)
@@ -183,6 +184,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline broadcast-result-shape))
 (defun broadcast-result-shape (x y)
+  (declare (numcl-array x y))
   (let* ((rrank (max (rank x) (rank y)))
          ;; make their ranks equal, e.g.
          ;; (1 10 3 1 4)

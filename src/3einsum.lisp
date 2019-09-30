@@ -42,6 +42,22 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
        (string= a b)))
 
 (defun einsum-normalize-subscripts (subscripts)
+  (%einsum-normalize-subscripts
+   (ecase (count '-> subscripts :test #'safe-string=)
+     (0
+      (list :i-specs subscripts))
+     (1
+      (let ((pos1 (position '-> subscripts :test #'safe-string=)))
+        (list :i-specs (subseq subscripts 0 pos1)
+              :o-specs (or (subseq subscripts (1+ pos1)) '(())))))
+     (2
+      (let* ((pos1 (position '-> subscripts :test #'safe-string=))
+             (pos2 (position '-> subscripts :test #'safe-string= :start (1+ pos1))))
+        (list :i-specs    (subseq subscripts 0 pos1)
+              :transforms (subseq subscripts (1+ pos1) pos2)
+              :o-specs (or (subseq subscripts (1+ pos2)) '(()))))))))
+
+(defun %einsum-normalize-subscripts (subscripts)
   "Normalizes the input to the einsum.
 It first 'explodes' each spec into the list form.
 It then generates the default output form, if missing.
@@ -52,15 +68,18 @@ the specs with the different symbols into the canonical form,
 e.g. `(ij jk -> ik)` and `(ik kj -> ij)` both results in something equivalent to
  `((0 1) (1 2) -> (0 2))`.
 
+The subscripts are converted into numbers in order to cache the resulting compiled function
+when einsum is called with a dynamically generated subscript.
+
 It then inserts the default transforms, if missing.
 
-The value returned is a plist of :inputs, :transforms, :outputs.
+The value returned is a plist of :i-specs, :transforms, :o-specs.
 For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
 
 ```lisp
-  (:inputs     ((0 1) (1 2))
+  (:i-specs    ((0 1) (1 2))
    :transforms ((+ @1 (* $1 $2)))
-   :outputs    ((0 2)))
+   :o-specs    ((0 2)))
 ```
 
 "
@@ -81,60 +100,33 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
                    (iter (for index in spec)
                          (pushnew index list)))
              (nreverse list))))
-    (ecase (count '-> subscripts :test #'safe-string=)
-      (0
-       (let* ((i-specs (mapcar #'explode subscripts))
-              (indices  (indices i-specs))
-              (o-specs (list (sort (copy-list indices) #'string<)))
-
-              (alist (make-map indices))
-              (i-specs-num (sublis alist i-specs))
-              (o-specs-num (sublis alist o-specs))
-              
-              (i-len (length i-specs))
-              (o-len (length o-specs))
-              (transforms
-               (iter (for o from 1 to o-len)
-                     (collect
-                         `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1))))))))
-         (list :inputs i-specs-num :transforms transforms :outputs o-specs-num)))
-      (1
-       (let* ((pos (position '-> subscripts :test #'safe-string=))
-              (i-specs (mapcar #'explode (subseq subscripts 0 pos)))
-              (o-specs (mapcar #'explode (or (subseq subscripts (1+ pos)) '(nil)))) ; default
-
-              (indices (indices (append i-specs o-specs)))
-              (alist (make-map indices))
-              (i-specs-num (sublis alist i-specs))
-              (o-specs-num (sublis alist o-specs))
-
-              (i-len (length i-specs))
-              (o-len (length o-specs))
-              (transforms
-               (iter (for o from 1 to o-len)
-                     (collecting
-                      `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1))))))))
-         (list :inputs i-specs-num :transforms transforms :outputs o-specs-num)))
-      (2
-       (let* ((pos (position '-> subscripts :test #'safe-string=))
-              (i-specs (mapcar #'explode (subseq subscripts 0 pos)))
-              (pos2 (position '-> subscripts :test #'safe-string= :start (1+ pos)))
-              (transforms (subseq subscripts (1+ pos) pos2))
-              (o-specs (mapcar #'explode (or (subseq subscripts (1+ pos2)) '(nil)))) ; default
-
-              (indices (indices (append i-specs o-specs)))
-              (alist (make-map indices))
-              (i-specs-num (sublis alist i-specs))
-              (o-specs-num (sublis alist o-specs))
-
-              (i-len (length i-specs))
-              (o-len (length o-specs))
-              (transforms
-               (iter (for o from 1 to o-len)
-                     (collecting
-                      (or (nth (1- o) transforms)
-                          `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1)))))))))
-         (list :inputs i-specs-num :transforms transforms :outputs o-specs-num))))))
+    (destructuring-bind (&key i-specs o-specs transforms i-options o-options &allow-other-keys) subscripts
+      (let* ((i-specs (mapcar #'explode i-specs))
+             (indices  (indices i-specs)) ; list of symbols
+             (o-specs (if o-specs
+                          (mapcar #'explode o-specs)
+                          (list (sort (copy-list indices) #'string<))))
+             (alist (make-map indices))
+             (i-specs-num (sublis alist i-specs)) ; list of numbers
+             (o-specs-num (sublis alist o-specs)) ; list of numbers
+             
+             (i-len (length i-specs))
+             (o-len (length o-specs))
+             (transforms
+              (or transforms
+                  (iter (for o from 1 to o-len)
+                        (collect
+                            `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1))))))))
+             (i-options-full (make-list i-len))
+             (o-options-full (make-list o-len)))
+        (replace i-options-full i-options) ;stops at the shorter sequence (ANSI)
+        (replace o-options-full o-options) ;stops at the shorter sequence (ANSI)
+        (assert (= o-len (length transforms)))
+        (list :i-specs i-specs-num
+              :o-specs o-specs-num
+              :transforms transforms
+              :i-options i-options-full
+              :o-options o-options-full)))))
 
 (defun ? (i) "Variable for the iteration limit"      (in-current-package (symbolicate '? (princ-to-string i))))
 (defun $ (i) "Variable for the input array element"  (in-current-package (symbolicate '$ (princ-to-string i))))
@@ -219,9 +211,9 @@ you will get an array C with shape (2 5 5).
   "Takes a list of normalized subscripts and returns a temporary
 structure (einsum-specs)."
   (match normalized-subscripts
-    ((plist :inputs     i-specs
-            :transforms transforms
-            :outputs    o-specs)
+    ((plist :i-specs  i-specs
+            :transforms   transforms
+            :o-specs o-specs)
      (let* ((i-flat (remove-duplicates (flatten i-specs)))
             (o-flat (remove-duplicates (flatten o-specs)))
             (i-len (length i-specs))

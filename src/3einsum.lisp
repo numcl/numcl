@@ -214,6 +214,11 @@ In the returned list, indices corresponding to the broadcasted axes are -1.
 (defun i-idxs (specs) (mapcar #'i-idx (iota (length specs))))
 (defun o-idxs (specs) (mapcar #'o-idx (iota (length specs))))
 
+(defun i-p (x) "dummy predicate for enabling the structure matching in trivia" (declare (ignore x)) t)
+(defun o-p (x) "dummy predicate for enabling the structure matching in trivia" (declare (ignore x)) t)
+(deftype i () t)
+(deftype o () t)
+
 (defun map-specs (fn specs)
   (iter (for spec in specs)
         (collecting

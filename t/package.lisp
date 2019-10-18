@@ -485,6 +485,30 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (einsum '(ij -> ji) (asarray #2A((0 1) (2 3)) :type 'fixnum) result)
     (is (equalp #2A((0 2) (1 3)) result))))
 
+(test (einsum-stride :compile-at :run-time :fixture muffle)
+
+  (is (= 10 (einsum '(i -> ) (ones 10))))
+  (is (= 10 (einsum '(i -> (cl:+ @1 $1) -> ) (ones 10))))
+  (is (= 10 (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 10 :step 1))) (ones 10))))
+  (is (= 5  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 10 :step 2))) (ones 10))))
+  (is (= 4  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 10 :step 3))) (ones 10))))
+  
+  (is (= 3  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 3  :step 1))) (ones 10))))
+  (is (= 5  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 5  :step 1))) (ones 10))))
+  (is (= 7  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 7  :step 1))) (ones 10))))
+
+  (is (= 7  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 3 :end 10 :step 1))) (ones 10))))
+  (is (= 5  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 5 :end 10 :step 1))) (ones 10))))
+  (is (= 3  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 7 :end 10 :step 1))) (ones 10))))
+
+  (is (= 3  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 5  :step 2))) (ones 10))))
+  (is (= 2  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 5  :step 3))) (ones 10))))
+   
+  (is (= 3  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 5 :end 10 :step 2))) (ones 10))))
+  (is (= 2  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 5 :end 10 :step 3))) (ones 10))))
+  
+  (is (= 2  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 5 :end 9  :step 2))) (ones 10)))))
+
 (test (linarg :compile-at :run-time :fixture muffle)
 
   (is (equalp 

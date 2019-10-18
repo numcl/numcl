@@ -44,7 +44,9 @@ We also ensure that the length of the base arrays are the multiples of 8.
 This ensures that the program can safely iterate over that extended region
 with a future support for SIMD operations in mind.
 
-When DISPLACED-TO is given, it should be a numcl array.
+When DISPLACED-TO is given, it should be a numcl array
+and the returned array is displaced to its 1D backing array
+with the same offsets as the DISPLACED-TO.
 
 When DISPLACED-INDEX-OFFSET is also given, the actual offset is
 the specified offset plus the original offset in DISPLACED-TO.

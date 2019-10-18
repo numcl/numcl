@@ -509,6 +509,37 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   
   (is (= 2  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 5 :end 9  :step 2))) (ones 10)))))
 
+(test (einsum-broadcast :compile-at :run-time :fixture muffle)
+
+  (is (equalp #3A(((0 1) (0 3)) ((0 3) (4 9)))
+              (einsum '(-i -i -> -i)
+                      ;; #2A((0 1) (2 3))
+                      (reshape (arange 4)   '(2 2))
+                      ;; #3A(((0 1)) ((2 3)))
+                      (reshape (arange 4) '(2 1 2)))))
+
+  (is (equalp #2A((0 1 2 3 4)
+                  (1 2 3 4 5)
+                  (2 3 4 5 6)
+                  (3 4 5 6 7)
+                  (4 5 6 7 8))
+              (einsum '(- - -> (cl:+ $1 $2) -> -)
+                      ;; #2A((0 1) (2 3))
+                      (reshape (arange 5)   '(5))
+                      ;; #3A(((0 1)) ((2 3)))
+                      (reshape (arange 5) '(5 1)))))
+  
+  (is (equalp #2A((0  0  0  0  0 )
+                  (0  1  2  3  4 )
+                  (0  2  4  6  8 )
+                  (0  3  6  9  12)
+                  (0  4  8  12 16))
+              (einsum '(- - -> (cl:* $1 $2) -> -)
+                      ;; #2A((0 1) (2 3))
+                      (reshape (arange 5)   '(5))
+                      ;; #3A(((0 1)) ((2 3)))
+                      (reshape (arange 5) '(5 1))))))
+ 
 (test (linarg :compile-at :run-time :fixture muffle)
 
   (is (equalp 

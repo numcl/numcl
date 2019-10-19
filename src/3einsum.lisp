@@ -102,17 +102,31 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
    :o-specs    ((0 2)))
 ```
 
+Broadcasting can be specified by a hyphen. For example, '(-k -k -> -k)
+is equivalent to numpy's ellipses '...k,...k->...k' .
+In the returned list, indices corresponding to the broadcasted axes are -1.
 "
   (flet ((explode (s)
            (typecase s
-             (list (assert (every #'symbolp s)) s)
+             (list   (iter (for c in s)
+                           (assert (symbolp c))
+                           (collecting c)))
              (symbol (iter (for c in-vector (symbol-name s))
-                           (assert (alpha-char-p c) nil
+                           (assert (or (char= #\- c) (alpha-char-p c)) nil
                                    'simple-type-error
                                    :format-control "Tried to make a spec from a non-alpha char ~a"
                                    :format-arguments (list c))
-                           (collecting (intern (string c)))))))
+                           (collecting (intern (string c)
+                                               (symbol-package s)))))))
          (make-map (indices)
+           (iter (for index in indices)
+                 (for i from 0)
+                 (collecting
+                  (cons index
+                        (if (safe-string= index '-)
+                            -1
+                            i))))
+           #+(or)                       ; old code before hyphens were introduced
            (mapcar #'cons indices (iota (length indices))))
          (indices (specs)
            (let (list)
@@ -270,7 +284,7 @@ you will get an array C with shape (2 5 5).
                               `(,var (array-displacement ,var))))
                   (specializing (,@i-vars ,@o-vars) ()
                     (declare (optimize (speed 2) (safety 0)))
-                    (declare (type index ,@(mapcar #'? iter-specs)))
+                    (declare (type index ,@(mapcar #'? (remove -1 iter-specs))))
                     ,(einsum-body *compiler* einsum-specs)))
                 (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
                                   o-vars))))))))))

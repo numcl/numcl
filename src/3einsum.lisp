@@ -293,26 +293,31 @@ out-p: Produces the binding for output arrays."
                               `(,unified (progn (assert (= ,unified ,@sources)) ,unified))
                               `(,unified (progn (assert (= ,@sources)) ,(first sources)))))))))))
 
+(defun %output-generator (o-specs o-vars i-specs i-vars transforms)
+  (with-gensyms (o-types)
+    (iter (for o-var     in o-vars)
+          (for o-spec    in o-specs)
+          (for o from 0)
+          (when (first-iteration-p)
+            ;; compute the output array type
+            (collecting
+             `(,o-types (einsum-output-types
+                         ',transforms ',(i-evars i-specs) ',(o-evars o-specs) ,@i-vars))))
+          ;; generate or reuse output arrays
+          (collecting
+           `(,o-var (or ,o-var (zeros (list ,@(mapcar #'? o-spec)) :type (nth ,o ,o-types))))))))
+
 (defun einsum-lambda (einsum-specs)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
   (ematch einsum-specs
     ((einsum-specs i-specs o-specs iter-specs transforms)
-     (let ((o-types (gensym "OTYPES"))
-           (i-vars (i-vars i-specs))
+     (let ((i-vars (i-vars i-specs))
            (o-vars (o-vars o-specs)))
        `(lambda (,@i-vars &optional ,@o-vars)
           ;; resolve input array shapes
           (let* ,(shape-resolver i-vars i-specs)
             ;; generate or reuse output arrays
-            (let* ((,o-types (einsum-output-types
-                              ',transforms ',(i-evars i-specs) ',(o-evars o-specs) ,@i-vars))
-                   ,@(iter (for o-var     in o-vars)
-                           (for o-spec    in o-specs)
-                           (for o from 0)
-                           (collecting
-                             `(,o-var
-                               (or ,o-var
-                                   (zeros (list ,@(mapcar #'? o-spec)) :type (nth ,o ,o-types)))))))
+            (let* ,(%output-generator o-specs o-vars i-specs i-vars transforms)
               (let* ,(shape-resolver o-vars o-specs t)
                 (let ,(iter (for var in (append i-vars o-vars))
                             (collecting

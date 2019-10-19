@@ -75,7 +75,25 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
              (pos2 (position '-> subscripts :test #'safe-string= :start (1+ pos1))))
         (list :i-specs    (subseq subscripts 0 pos1)
               :transforms (subseq subscripts (1+ pos1) pos2)
-              :o-specs (or (subseq subscripts (1+ pos2)) '(()))))))))
+              :o-specs    (or (subseq subscripts (1+ pos2)) '(())))))
+     (3
+      (let* ((pos1 (position '-> subscripts :test #'safe-string=))
+             (pos2 (position '-> subscripts :test #'safe-string= :start (1+ pos1)))
+             (pos3 (position '-> subscripts :test #'safe-string= :start (1+ pos2))))
+        (list :i-specs    (subseq subscripts 0 pos1)
+              :transforms (subseq subscripts (1+ pos1) pos2)
+              :o-specs    (or (subseq subscripts (1+ pos2) pos3) '(()))
+              :i-options  (subseq subscripts (1+ pos3)))))
+     (4
+      (let* ((pos1 (position '-> subscripts :test #'safe-string=))
+             (pos2 (position '-> subscripts :test #'safe-string= :start (1+ pos1)))
+             (pos3 (position '-> subscripts :test #'safe-string= :start (1+ pos2)))
+             (pos4 (position '-> subscripts :test #'safe-string= :start (1+ pos3))))
+        (list :i-specs    (subseq subscripts 0 pos1)
+              :transforms (subseq subscripts (1+ pos1) pos2)
+              :o-specs    (or (subseq subscripts (1+ pos2) pos3) '(()))
+              :i-options  (subseq subscripts (1+ pos3) pos4)
+              :o-options  (subseq subscripts (1+ pos4))))))))
 
 (defun %einsum-normalize-subscripts (subscripts)
   "Normalizes the input to the einsum.

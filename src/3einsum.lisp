@@ -133,7 +133,14 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
              (i-len (length i-specs))
              (o-len (length o-specs))
              (transforms
-              (or transforms
+              (if transforms
+                  (sublis (iter (for elem in (remove-duplicates (alexandria:flatten transforms)))
+                                (match elem
+                                  ((symbol name)
+                                   (when (and (member (aref name 0) '(#\@ #\$))
+                                              (every #'digit-char-p (subseq name 1)))
+                                     (collecting (cons elem (intern name :numcl.impl)))))))
+                          transforms)
                   (iter (for o from 1 to o-len)
                         (collect
                             `(+ ,(@ o) (* ,@(mapcar #'$ (iota i-len :start 1))))))))
@@ -160,12 +167,12 @@ For example, `(einsum-normalize-subscripts '(ik kj -> ij))` returns
                            :i-options i-options-full
                            :o-options o-options-full)))))
 
-(defun ? (i) "Variable for the iteration limit"      (in-current-package (symbolicate '? (princ-to-string i))))
-(defun $ (i) "Variable for the input array element"  (in-current-package (symbolicate '$ (princ-to-string i))))
-(defun @ (i) "Variable for the output array element" (in-current-package (symbolicate '@ (princ-to-string i))))
-(defun & (i) "Variable for the iteration count"      (in-current-package (symbolicate '& (princ-to-string i))))
-(defun i-var (i) "Variable for the input array"       (in-current-package (symbolicate 'I (princ-to-string i))))
-(defun o-var (i) "Variable for the output array"      (in-current-package (symbolicate 'O (princ-to-string i))))
+(defun ? (i) "Variable for the iteration limit"      (intern (format nil "?~a" i) :numcl.impl))
+(defun $ (i) "Variable for the input array element"  (intern (format nil "$~a" i) :numcl.impl))
+(defun @ (i) "Variable for the output array element" (intern (format nil "@~a" i) :numcl.impl))
+(defun & (i) "Variable for the iteration count"      (intern (format nil "&~a" i) :numcl.impl))
+(defun i-var (i) "Variable for the input array"      (intern (format nil "I~a" i) :numcl.impl))
+(defun o-var (i) "Variable for the output array"     (intern (format nil "O~a" i) :numcl.impl))
 (defun i-vars (specs) (mapcar #'i-var (iota (length specs))))
 (defun o-vars (specs) (mapcar #'o-var (iota (length specs))))
 (defun i-evars (specs) (mapcar #'$ (iota (length specs) :start 1)))

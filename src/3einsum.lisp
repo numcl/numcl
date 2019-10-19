@@ -280,16 +280,25 @@ you will get an array C with shape (2 5 5).
              step)))
 
 (defun shape-resolver (vars specs options &optional out-p)
-  "
+  "Returns a list whose first value is a binding form for LET.
+The rest of the elements are declaration and assertion forms for the body of let.
+
 out-p: Produces the binding for output arrays."
   (iter outer
         (with unifiers-plist = nil)
         (for var  in vars)
         (for spec in specs)
         (for option in options)
+        (for broadcast-used  = nil)
+        (for broadcast-start = 0)
+        (for broadcast-end   = 0)
         ;; collect axis information forward until broadcast
         (iter (for dim in spec)
               (for i from 0)
+              (when (= dim -1)
+                (setf broadcast-used t
+                      broadcast-start i)
+                (finish))
               (destructuring-bind (&whole dimopt &key (start 0) (end -1) (step 1)) (cdr (assoc dim option))
                 ;; Note: to specify the varaible step, you should construct a list dynamically.
                 ;; Do not embed a form.
@@ -304,21 +313,143 @@ out-p: Produces the binding for output arrays."
                       (collecting `(,w (range-width ,var ,i ,start ,end ,step))
                                   into bindings)
                       (push w (getf unifiers-plist (? dim)))))))
+        (when broadcast-used
+          ;; When broadcast is found in the forward pass, collect backward until broadcast
+          (iter (for dim in (reverse spec))
+                (for i from 0)
+                (when (= dim -1)
+                  (setf broadcast-end i)
+                  (finish))
+                (destructuring-bind (&whole dimopt &key (start 0) (end -1) (step 1)) (cdr (assoc dim option))
+                  (assert (constantp start) nil "~s = ~s in ~s: iteration specifier option should be constant" :start start dimopt)
+                  (assert (constantp end)   nil "~s = ~s in ~s: iteration specifier option should be constant" :end   end   dimopt)
+                  (assert (constantp step)  nil "~s = ~s in ~s: iteration specifier option should be constant" :step  step  dimopt)
+                  (when (eq t start) (setf start 0))
+                  (when (eq t end )  (setf end  -1))
+                  (with-gensyms (w)
+                    (in outer
+                        (collecting `(,w (range-width ,var (- (array-rank ,var) ,(1+ i)) ,start ,end ,step))
+                                    into bindings)
+                        (push w (getf unifiers-plist (? dim)))))))
+          (collecting
+           `(subseq (array-dimensions ,var)
+                    ,broadcast-start
+                    (- (array-rank ,var) ,broadcast-end))
+           into broadcast-source-shapes))
         ;; unify the collected informations, bind them to ?-variables
         (finally
          (return-from shape-resolver
-           (append bindings
-                   (iter (for (unified sources . rest) on unifiers-plist by #'cddr)
-                         (collecting
-                          (if out-p
-                              `(,unified (progn (assert (= ,unified ,@sources)) ,unified))
-                              `(,unified (progn (assert (= ,@sources)) ,(first sources)))))))))))
+           (list*
+            (append bindings
+                    (iter (for (unified sources . rest) on unifiers-plist by #'cddr)
+                          (collecting
+                           (if out-p
+                               `(,unified (progn (assert (= ,unified ,@sources)) ,unified))
+                               `(,unified (progn (assert (= ,@sources)) ,(first sources))))))
+                    (when broadcast-source-shapes
+                      (if out-p
+                          `((o-broadcast-shapes (list ,@broadcast-source-shapes)))
+                          `((i-broadcast-shapes (list ,@broadcast-source-shapes))
+                            (plan (plan-broadcast i-broadcast-shapes))))))
+            
+            (when broadcast-source-shapes
+              (if out-p
+                  `((declare (dynamic-extent o-broadcast-shapes))
+                    (assert (%output-result-shapes-match-p o-broadcast-shapes plan)
+                            nil "The output shapes do not match the broadcast plan!"))
+                  `((declare (dynamic-extent i-broadcast-shapes plan)
+                             (type (simple-array index (2 ,(1+ (length broadcast-source-shapes)) *))
+                                   plan))))))))))
+
+;; idea for making the array stack-allocated by dynamic-extent
+#+(or)
+(defparameter *broadcast-axes-limit* 32
+  "The limit on the number of axes to be broadcasted.
+We believe this default value is fairly safe for the most common usecases --- who would use the 32-dimensional arrays anyways!? ")
+
+;; array-dimension-limit
+;; array-rank-limit
+
+(defun plan-broadcast (shapes)
+  "Store the broadcast information in a matrix of size (2, N+1, M),
+where N is the number of arrays (lengths of shapes) and
+      M is the maximum rank of the dimensions being broadcasted.
+
+ (0, 0, ...)   contains the shape of the output arrays.
+ (0, i+1, ...) contains the shape of the i-th input array.
+ (1, 0,   j)   contains the step size of the output arrays for axis j.
+ (1, i+1, j)   contains the step size of the i-th input array for axis j.
+
+The step size for axis j is the product of the dimensions after j-th axes for that array.
+"
+  (let* ((rrank (reduce #'max shapes :key #'length)) ; M
+         (len (length shapes))                       ; N
+         (plan (make-array (list 2 (1+ len) rrank)
+                           :initial-element 1
+                           :element-type 'index)))
+
+    ;; populate the matrix
+    (iter (for i from 0)
+          (for shape in shapes)
+
+          (iter (for j from (- rrank (length shape)))
+                (for dim in shape)
+                (setf (aref plan 0 (1+ i) j) dim)))
+
+    ;; compute the result shape
+    (iter (for i below len)
+          (iter (for j below rrank)
+                (maxf (aref plan 0 0 j) (aref plan 0 (1+ i) j))))
+
+    ;; verify the result shape
+    (iter (for i below len)
+          (iter (for j below rrank)
+                (assert (or (= (aref plan 0 (1+ i) j) 1)
+                            (= (aref plan 0 (1+ i) j) (aref plan 0 0 j))))))
+
+    ;; compute the step sizes
+    (iter (for i to len)
+          (iter (for j from (- rrank 2) downto 0)
+                (setf (aref plan 1 i j)
+                      (* (aref plan 0 i (1+ j))
+                         (aref plan 1 i (1+ j))))))
+
+    plan))
+
+;; (print (plan-broadcast (list '(2 4 1 3) '(4 5 3) '(1 5 1))))
+;; #3A(((2 4 5 3) (2 4 1 3) (1 4 5 3) (1 1 5 1))
+;;     ((60 15 3 1) (12 3 3 1) (60 15 3 1) (5 5 1 1)))
+
+(defun %output-result-shapes-match-p (o-broadcast-shapes plan)
+  (iter outer
+        (for o-broadcast-shape in o-broadcast-shapes)
+        (iter (for dim in o-broadcast-shape)
+              (for i from 0)
+              (in outer
+                  (always (= dim (aref plan 0 0 i)))))))
 
 (defun %output-generator (o-specs o-vars i-specs i-vars transforms)
   (with-gensyms (o-types)
     (iter (for o-var     in o-vars)
           (for o-spec    in o-specs)
           (for o from 0)
+          (for shape-form =
+               ;; generate the shape form for zeros
+               (iter (with broadcast-used = nil)
+                     (for dim in o-spec)
+                     (if (= dim -1)
+                         (setf broadcast-used t)
+                         (if broadcast-used
+                             (collect (? dim) into after)
+                             (collect (? dim) into before)))
+                     (finally
+                      (return
+                        (if broadcast-used
+                            `(append (list ,@before)
+                                     (iter (for i below (array-dimension plan 2))
+                                           (collecting (aref plan 0 0 i)))
+                                     (list ,@after))
+                            `(list ,@before))))))
           (when (first-iteration-p)
             ;; compute the output array type
             (collecting
@@ -326,7 +457,7 @@ out-p: Produces the binding for output arrays."
                          ',transforms ',(i-evars i-specs) ',(o-evars o-specs) ,@i-vars))))
           ;; generate or reuse output arrays
           (collecting
-           `(,o-var (or ,o-var (zeros (list ,@(mapcar #'? o-spec)) :type (nth ,o ,o-types))))))))
+           `(,o-var (or ,o-var (zeros ,shape-form :type (nth ,o ,o-types))))))))
 
 (defun einsum-lambda (einsum-specs)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
@@ -336,16 +467,17 @@ out-p: Produces the binding for output arrays."
            (o-vars (o-vars o-specs)))
        `(lambda (,@i-vars &optional ,@o-vars)
           ;; resolve input array shapes
-          (let* ,(shape-resolver i-vars i-specs i-options)
+          (let* ,@(shape-resolver i-vars i-specs i-options) ;; including declarations / assertions
             ;; generate or reuse output arrays
             (let* ,(%output-generator o-specs o-vars i-specs i-vars transforms)
-              (let* ,(shape-resolver o-vars o-specs o-options t)
+              ;; resolve output array shapes (because output array may be provided externally)
+              (let* ,@(shape-resolver o-vars o-specs o-options t) ;; including declarations / assertions
+                ;; extract the base array
                 (let ,(iter (for var in (append i-vars o-vars))
                             (collecting
-                              ;; extract the base array
                               `(,var (array-displacement ,var))))
                   (specializing (,@i-vars ,@o-vars) ()
-                    (declare (optimize (speed 2) (safety 0)))
+                    (declare (optimize (speed 3) (safety 0)))
                     (declare (type index ,@(mapcar #'? (remove -1 iter-specs))))
                     ,(einsum-body *compiler* einsum-specs)))
                 (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))

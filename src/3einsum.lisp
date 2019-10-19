@@ -266,6 +266,33 @@ you will get an array C with shape (2 5 5).
 
 * `einsum-specs` : einsum-specs structure. "))
 
+(defun shape-resolver (vars specs &optional out-p)
+  "
+out-p: Produces the binding for output arrays."
+  (iter outer
+        (with unifiers-plist = nil)
+        (for var  in vars)
+        (for spec in specs)
+        ;; collect axis information forward until broadcast
+        (iter (for dim in spec)
+              (for dimvar = (gensym))
+              (for i from 0)
+              (in outer
+                  ;; bind the axis size to dimvar
+                  (collecting `(,dimvar (array-dimension ,var ,i))
+                              into bindings)
+                  ;; unify dimvar to the variable (? dim)
+                  (push dimvar (getf unifiers-plist (? dim)))))
+        ;; unify the collected informations, bind them to ?-variables
+        (finally
+         (return-from shape-resolver
+           (append bindings
+                   (iter (for (unified sources . rest) on unifiers-plist by #'cddr)
+                         (collecting
+                          (if out-p
+                              `(,unified (progn (assert (= ,unified ,@sources)) ,unified))
+                              `(,unified (progn (assert (= ,@sources)) ,(first sources)))))))))))
+
 (defun einsum-lambda (einsum-specs)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
   (ematch einsum-specs
@@ -274,12 +301,8 @@ you will get an array C with shape (2 5 5).
            (i-vars (i-vars i-specs))
            (o-vars (o-vars o-specs)))
        `(lambda (,@i-vars &optional ,@o-vars)
-          (resolving
-            ;; resolve input array declarations
-            ,@(iter (for var  in i-vars)
-                    (for spec in i-specs)
-                    (collecting
-                      `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
+          ;; resolve input array shapes
+          (let* ,(shape-resolver i-vars i-specs)
             ;; generate or reuse output arrays
             (let* ((,o-types (einsum-output-types
                               ',transforms ',(i-evars i-specs) ',(o-evars o-specs) ,@i-vars))
@@ -290,12 +313,7 @@ you will get an array C with shape (2 5 5).
                              `(,o-var
                                (or ,o-var
                                    (zeros (list ,@(mapcar #'? o-spec)) :type (nth ,o ,o-types)))))))
-              (resolving
-                ;; resolve output array declarations
-                ,@(iter (for var  in o-vars)
-                        (for spec in o-specs)
-                        (collecting
-                          `(declare (gtype (array * ,(mapcar #'? spec)) ,var))))
+              (let* ,(shape-resolver o-vars o-specs t)
                 (let ,(iter (for var in (append i-vars o-vars))
                             (collecting
                               ;; extract the base array

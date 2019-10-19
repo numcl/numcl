@@ -474,6 +474,7 @@ because it handles the runtime information of the size of the input arrays.
      (let ((i-avars (i-avars i-specs))
            (o-avars (o-avars o-specs)))
        `(lambda (,@i-avars &optional ,@o-avars)
+          (declare (optimize (speed 0) (safety 3) (debug 3)))
           ;; resolve input array shapes
           (let* ,@(shape-resolver i-avars i-specs i-options) ;; including declarations / assertions
             ;; generate or reuse output arrays
@@ -485,7 +486,7 @@ because it handles the runtime information of the size of the input arrays.
                             (collecting
                               `(,var (array-displacement ,var))))
                   (specializing (,@i-avars ,@o-avars) ()
-                    (declare (optimize (speed 3) (safety 0)))
+                    (declare (optimize (speed 3) (safety 0) (debug 0)))
                     (declare (type index ,@(mapcar #'? (remove -1 iter-specs))))
                     ,(einsum-body *compiler* einsum-specs)))
                 (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))

@@ -514,7 +514,8 @@ Otherwise call float-substitution and simplify integers to fixnums."
 (defun sort-locality (indices subscripts)
   "In each iteration, greedily select the earliest index.
 However, it penalize removing the index from the same set of subscripts that
- the past indices are removed from."
+ the past indices are removed from.
+This makes it easier to implement the block-matrix algorithms for improved cache locality."
   (let ((h (make-hash-table :test 'equal)))
     (labels ((score (index)
                (iter (for subscript in subscripts)

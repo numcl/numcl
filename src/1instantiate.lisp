@@ -69,13 +69,15 @@ ELEMENT-TYPE is simply the actual array element type of DISPLACED-TO.
                        (csubtypep (array-element-type displaced-to)
                                   (cupgraded-array-element-type element-type)))))
         (multiple-value-bind (base-array offset) (array-displacement displaced-to)
-          (declare (type base-array base-array))
-          ;; constant foldable by inlining
-          (values (make-array shape
-                              :element-type (array-element-type displaced-to)
-                              :displaced-to base-array
-                              :displaced-index-offset (+ offset displaced-index-offset))
-                  base-array)))
+          (assert base-array)
+          (locally
+              (declare (type base-array base-array))
+            ;; constant foldable by inlining
+            (values (make-array shape
+                                :element-type (array-element-type displaced-to)
+                                :displaced-to base-array
+                                :displaced-index-offset (+ offset displaced-index-offset))
+                    base-array))))
       (let ((total-size (* 8 (ceiling (if (listp shape)
                                           (reduce #'* shape)
                                           shape)

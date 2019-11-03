@@ -18,8 +18,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 |#
 
-#+sbcl
-(declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
 (in-package :numcl.impl)
 
 ;; (defpythonfun (start stop step &optional type)

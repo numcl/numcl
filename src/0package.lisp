@@ -257,3 +257,6 @@ base, we use 3 packages: NUMCL.EXPORTED, NUMCL.IMPL, NUMCL.
 This package replaces COMMON-LISP package by shadowing-import symbols from
 NUMCL.EXPORTED on top of COMMON-LISP package.
 "))
+
+#+sbcl
+(declaim (sb-ext:muffle-conditions sb-ext:compiler-note))

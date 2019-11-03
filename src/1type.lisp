@@ -641,6 +641,7 @@ an array displaced to a non-displaced 1D array."
   "Type specifier for the arrays satifying the NUMCL assumption, that is,
 an array displaced to a non-displaced 1D array."
   `(and (array ,element-type ,dimensions)
+        (not simple-array)
         (satisfies numcl-array-p)))
 
 (deftype base-array (&optional element-type length)

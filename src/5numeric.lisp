@@ -498,9 +498,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (define-simple-mapper numcl:integer-length length)
 ;; (defun float          (x) (map-array 'float x))
 
-(declaim (inline square))
-(defun square (x) (* x x))
-(define-simple-mapper numcl:square square)
+(declaim (inline %square))
+(defun %square (x) (* x x))
+(define-simple-mapper numcl:square %square)
 
 ;; type upgrading. Why this is not available by default in common lisp??
 

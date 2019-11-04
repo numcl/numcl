@@ -495,7 +495,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (define-simple-mapper numcl:numerator numerator)
 (define-simple-mapper numcl:denominator denominator)
 (define-simple-mapper numcl:logcount logcount)
-(define-simple-mapper numcl:integer-length length)
+(define-simple-mapper numcl:integer-length integer-length)
 ;; (defun float          (x) (map-array 'float x))
 
 (declaim (inline %square))

@@ -23,25 +23,26 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 #|
 
-This file contains a constant-foldable variant of the standard functions, such
-as list, vector. The functions mainly consists of sequense function.
+
+|#
+
+(defmacro define-foldable-version (symbol)
+  "
+This macro defines a constant-foldable variant of the standard functions, such
+as list or a vector. The functions in 1constantfolded.lisp mainly consists of sequense functions.
 
 Standard functions, e.g. list, require that a new object (a list) is created every time.
 However, there are many cases in numcl that it is preferable to constant-fold them
 assuming that the result value is only used as a compile-time constant.
 
 These are typically the functions that are declared flushable but not foldable in SBCL.
-
 We do not include copier functions.
 
 New functions are named with an additional C in the beginning. For example,
 CLIST is a constant-foldable version of LIST.
 
 We thank Baggers' TAMEI library for the reference database.
-
-|#
-
-(defmacro define-foldable-version (symbol)
+"
   (let ((csymbol (symbolicate 'c symbol)))
     `(progn
        (constantfold ,csymbol)

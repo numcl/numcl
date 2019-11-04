@@ -30,7 +30,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;;  and can be used only once in each SPEC, similar to Numpy's ellipses (...).
 
 (define-symbol-macro *einsum-documentation*
-  "Performs Einstein's summation.
+  "Note: Broadcasting with `EINSUM` is experimental.
+
+Performs Einstein's summation.
 The SUBSCRIPT specification is significantly extended from that of Numpy
 and can be seens as a full-brown DSL for array operations.
 
@@ -39,11 +41,13 @@ The remaining arguments ARGS contain the input arrays and optionally the output 
 
 Inputs are interpreted in the following rule, depending on the number of arrows.
 
-: (<ISPEC>+)
-: (<ISPEC>+ -> <OSPEC>*)
-: (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>*)
-: (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>* -> <IOPTION>*)
-: (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>* -> <IOPTION>* -> <OOPTION>*)
+```commonlisp
+ (<ISPEC>+)
+ (<ISPEC>+ -> <OSPEC>*)
+ (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>*)
+ (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>* -> <IOPTION>*)
+ (<ISPEC>+ -> <TRANSFORM>* -> <OSPEC>* -> <IOPTION>* -> <OOPTION>*)
+```
 
 # SPEC
 
@@ -51,7 +55,7 @@ The first set of SPECs specifies the input subscripts,
 and the second set of SPECs specifies the output subscripts.
 Unlike Numpy, there can be multiple output subscripts:
 It can performs multiple operations in the same loop, then return multiple values.
-The symbol `->` can be a string and can belong to any package because it is compared by STRING=.
+The symbol `->` can be a string and can belong to any package because it is compared by `STRING=`.
 
 Each SPEC is an string designator, such as a symbol IJK or a string \"IJK\",
 where each character is considered as an index.
@@ -84,33 +88,35 @@ By default, TRANSFORM is `(+ @1 (* $1 ... $N))` for N inputs, which is equivalen
 # OPTION
 
 Each OPTION is a list of iteration specifiers.
-Iteration specifier is a form (index &key (start 0) (end -1) (step 1)).
-START and END are the forms specifying the interval designator of the loop range, which supersedes the default full-width loop.
-STEP is a form specifying the increment of the index.
-INDEX is a symbol which should match one of the subscripts used in the corresponding SPEC.
+Iteration specifier is a form `(index &key (start 0) (end -1) (step 1))`.
+`START` and `END` are the forms specifying the interval designator of the loop range, which supersedes the default full-width loop.
+`STEP` is a form specifying the increment of the index.
+`INDEX` is a symbol which should match one of the subscripts used in one of the `SPEC`.
 
 For example, you can specify
 
+```commonlisp
  (einsum '(ij jk -> (+ @1 (* $1 $2)) -> ik -> ((j :step 2)) ((j :step 3)))
          (ones '(5 10))
          (ones '(15 5)))
+```
 
 to suggest that
-     the index j for the first array should have a stride of 2,
- and the index j for the second array should have a stride of 3.
+     the index `j` for the first array should have a stride of 2,
+ and the index `j` for the second array should have a stride of 3.
 
 This is fairly complex, but we hope to provide the maximum flexibility.
 
 # ARGS
 
 The shape of each input array should unify against the corresponding input spec. For example,
-with a spec IJI, the input array should be of rank 3 as well as
+with a spec `IJI`, the input array should be of rank 3 as well as
 the 1st and the 3rd dimension of the input array should be the same.
-Note that this is affected by OPTIONS --- when specified,
+Note that this is affected by `OPTIONS` --- when specified,
 it uses the number of iteration instead of the size of the dimension.
 
 The shape of each output array is determined by the corresponding output spec.
-For example, if SUBSCRIPTS is `(ij jk -> ik)`
+For example, if `SUBSCRIPTS` is `(ij jk -> ik)`
 and the input arrays are NxM and MxL matrices, the output has a shape NxL.
 
 If the output arrays are provided, their shapes and types are also checked against the
@@ -119,19 +125,19 @@ operations on the elements of the input arrays.
 
 The outputs are calculated in the following rule.
 
-+ The output array types are calculated based on the TRANSFORM, and 
-  the shapes are calcurated based on the SPEC and the input arrays.
++ The output array types are calculated based on the `TRANSFORM`, and 
+  the shapes are calcurated based on the `SPEC` and the input arrays.
 + The output arrays are allocated and initialized by zeros.
 + Einsum nests one loop for each index in the input specs.
   For example, `(ij jk -> ik)` results in a triple loop.
 + In the innermost loop, each array element is bound to `$1..$N` / `@1..@N`.
-+ For each `@i`, `i`-th TRANSFORM is evaluated and assigned to `@i`.
++ For each `@i`, `i`-th transform is evaluated and assigned to `@i`.
 
 + If the same index appears multiple times in a single spec,
   they share the same value in each iteration.
   For example, `(ii -> i)` returns the diagonal elements of the matrix.
 
-When TRANSFORMs are missing, it follows naturally from the default TRANSFORM values that
+When TRANSFORMs are missing, it follows naturally from the default `TRANSFORM` values that
 
 + When an index used in the input spec is missing in the output spec,
   the axis is aggregated over the iteration by summation.
@@ -141,7 +147,7 @@ When TRANSFORMs are missing, it follows naturally from the default TRANSFORM val
   `(setf (aref a2 i k) (* (aref a0 i j) (aref a1 j k)))`
   when a0, a1 are the input arrays and a2 is the output array.
 
-For example, (einsum '(ij jk) a b) is equivalent to:
+For example, `(einsum '(ij jk) a b)` is equivalent to:
 
 ```commonlisp
  (dotimes (i <max> <output>)
@@ -152,7 +158,7 @@ For example, (einsum '(ij jk) a b) is equivalent to:
 
 # Performance
 
-If SUBSCRIPTS is a constant, the compiler macro
+If `SUBSCRIPTS` is a constant, the compiler macro
 builds an iterator function and make them inlined. Otherwise,
 a new function is made in each call to einsum, resulting in a large bottleneck.
  (It could be memoized in the future.)
@@ -166,12 +172,14 @@ EINSUM reorders the indices so that it maximizes the cache locality.
 ")
 
 (define-symbol-macro *asarray-documentation*
-    "Copy CONTENTS to a new array. NOTE: ASARRAY is *SLOW* as it recurses into the substructures.
-When CONTENTS is a multidimentional array, its elements are copied to a new array that guarantees the NUMCL assumption.
-When CONTENTS is a nested sequence, it is traversed up to the depth that guarantees the sane shape for an array.
+    "Note: ASARRAY is *SLOW* as it recurses into the substructures.
+
+Copy `CONTENTS` to a new array.
+When `CONTENTS` is a multidimentional array, its elements are copied to a new array that guarantees the NUMCL assumption.
+When `CONTENTS` is a nested sequence, it is traversed up to the depth that guarantees the sane shape for an array.
 When elements are copied, it is coerced to TYPE.
-When TYPE is not given, it is replaced with the float-contagion type deduced from the elements of CONTENTS.
-It may return a 0-dimensional array with CONTENTS being the only element.
+When TYPE is not given, it is replaced with the float-contagion type deduced from the elements of `CONTENTS`.
+It may return a 0-dimensional array with `CONTENTS` being the only element.
 
 For example:
 

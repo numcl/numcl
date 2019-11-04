@@ -127,16 +127,25 @@ a {
   .extension:before {
     content: "."; }
 
+.span {
+  display: inline; }
+
 .doctype {
   color: gray; }
+  .doctype:first-child:before {
+    content: none; }
+  .doctype:before {
+    content: ",";
+    margin-right: 0.3em; }
 
-.sep1 {
-  margin-right: 0.3em;
-  color: gray; }
-
-.sep2 {
+.name:first-child:before {
+  content: ":";
   margin-left: 0.1em;
-  margin-right: 0.1em; }
+  margin-right: 0.1em;
+  color: gray; }
+.name:before {
+  content: ",";
+  margin-right: 0.3em; }
 
 .package {
   font-size: 0.7em;

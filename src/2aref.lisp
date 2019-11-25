@@ -94,6 +94,11 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
      (%normalize-subscript `(,start ,stop 1) dim))
     
     ((list start stop step)
+     ;; When a range is given and it is out of range,
+     ;; aref should return an array with axis size 0 and should not error out.
+     (setf start (alexandria:clamp start (- dim) dim)
+           stop  (alexandria:clamp stop  (- dim) dim))
+     #+(or)
      (assert (and (< start dim)
                   (<= (- dim) start))
              nil
@@ -189,10 +194,13 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
        ((and contiguous (every #'sub-full rest))
         (%displace-range array start stop))
        (t
-        (stack                         ; needs copying
-         (iter (for i from start below stop by step)
-               (collecting
-                (%aref (%displace-at array i) rest)))))))))
+        (or (stack                         ; needs copying
+             (iter (for i from start below stop by step)
+                   (collecting
+                    (%aref (%displace-at array i) rest))))
+            ;; above stack could return nil when the leftmost axis is 0,
+            ;; in which case we return the width 0 array as is
+            (empty (list* 0 (rest (shape array))) :type (dtype array))))))))
 
 (declaim (inline ensure-singleton))
 (defun ensure-singleton (array-or-number)

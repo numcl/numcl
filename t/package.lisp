@@ -133,11 +133,34 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (iter (for i from -4 to -1)
           (for j from 0 to 3)
           (is (= j (aref a i))))
-    (signals invalid-array-index-error (aref a -5))
+    (signals invalid-array-index-error (aref a -5)))
 
-    (signals invalid-array-index-error (aref (arange 5) '(-6 -1))))
+  (is (equalp (aref (arange 5) '(-3 -1)) #(3 4)))
+  
+  ;; range access : when part of the range is out-of-range, it is ignored
+  (is (equalp (aref (arange 5) '(-5 -1))
+              (aref (arange 5) '(-6 -1))))
+  (is (equalp (aref (arange 5) '(-5 -1))
+              (aref (arange 5) '(-7 -1))))
+  (is (equalp (aref (arange 5) '(-5 -1))
+              (aref (arange 5) '(-8 -1))))
+  ;; range access : when the range is out-of-range for the given array,
+  ;; an array with size-0 axis is returned
+  (is (equalp (empty 0)
+              (aref (arange 5) '(-8 -5))))
+  (is (equalp (empty 0)
+              (aref (arange 5) '(6 10))))
 
-  (is (equalp (aref (arange 5) '(-3 -1)) #(3 4))))
+  (is (equalp (zeros '(0 100))
+              (aref (zeros '(0 100)) t)))
+  (is (equalp (zeros '(0 100))
+              (aref (zeros '(5 100)) '(6 10))))
+              
+      
+
+
+
+  )
 
 (test (aset-fill :compile-at :run-time :fixture muffle)
   (let ((a (zeros '(2 2) :type 'fixnum)))

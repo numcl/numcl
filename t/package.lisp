@@ -477,6 +477,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 
 (test (concatenate :compile-at :run-time :fixture muffle)
+  (is (equalp (concatenate nil) nil))
+  (is (equalp (stack nil) nil))
   (let ((a (arange 5))
         (b (arange 5)))
     (is (equalp (concatenate (list a b))

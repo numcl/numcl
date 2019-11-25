@@ -25,6 +25,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; concatenate
 
 (defun numcl:concatenate (arrays &key (axis 0) out)
+  (when (null arrays)
+    (return-from numcl:concatenate arrays))
   (let* ((type (reduce #'union-to-float-type arrays :key #'array-element-type))
          (dims1 (shape (first arrays)))
          (axis (mod axis (length dims1)))
@@ -73,6 +75,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; stack
 
 (defun stack (arrays &key (axis 0) out)
+  (when (null arrays)
+    (return-from stack arrays))
   (let* ((type (reduce #'union-to-float-type arrays :key #'array-element-type))
          (dims1 (shape (first arrays)))
          (len (length arrays))

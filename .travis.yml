@@ -38,6 +38,7 @@ install:
   - ( cd ~/lisp/ ; git clone https://github.com/numcl/constantfold.git )
   - ( cd ~/lisp/ ; git clone https://github.com/numcl/gtype.git )
   - ( cd ~/lisp/ ; git clone https://github.com/numcl/specialized-function.git )
+  - ros install $LISP2
 
 cache:
   directories:
@@ -45,5 +46,4 @@ cache:
     - $HOME/.config/common-lisp
 
 script:
-  - ros install $LISP2
   - ros -L $LISP2 ./testscr.ros

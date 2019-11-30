@@ -550,3 +550,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (let ((a (zeros '(3 5))))
     (is (equalp (stack (unstack a))
                 a))))
+
+(test (issue-19 :compile-at :run-time :fixture muffle)
+  (let ((a (bernoulli 0.2 10)))
+    (is (typep a 'bit-vector))
+    (is (typep (- 1 a) 'bit-vector))))
+

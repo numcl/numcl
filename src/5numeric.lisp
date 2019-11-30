@@ -197,7 +197,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (values rshape xshape yshape)))
 
 (declaim (inline broadcast))
-(defun broadcast (fn x y &key type (atomic fn))
+(defun broadcast (function x y &key type (atomic function))
   "For binary functions"
   (cond
     ((and (not (arrayp x)) (not (arrayp y)))
@@ -214,9 +214,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
        (declare (numcl-array x y))
        (assert (broadcast-p x y) nil
                "Given arrays have incompatible shape for broadcasting the ~a op:~% ~a and ~a.~_ Arrays:~%~a~%~a"
-               fn (shape x) (shape y) x y)
-
-       (let* ((type (or type (infer-type fn x-type y-type))))
+               function (shape x) (shape y) x y)
+       (let* ((type (or type (infer-type function x-type y-type))))
          (multiple-value-bind (rshape xshape yshape) (broadcast-result-shape x y)
            (multiple-value-bind (r rbase) (empty rshape :type type)
              (declare (base-array rbase))
@@ -233,18 +232,18 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                                (let ((x (aref xbase xoffset)))
                                  (dotimes (i ydim)
                                    (setf (aref rbase (+ roffset i))
-                                         (%coerce (funcall fn x (aref ybase (+ yoffset i))) (array-element-type rbase))))))
+                                         (%coerce (funcall function x (aref ybase (+ yoffset i))) (array-element-type rbase))))))
                               (((list xdim)
                                 (list 1))
                                (let ((y (aref ybase yoffset)))
                                  (dotimes (i xdim)
                                    (setf (aref rbase (+ roffset i))
-                                         (%coerce (funcall fn (aref xbase (+ xoffset i)) y) (array-element-type rbase))))))
+                                         (%coerce (funcall function (aref xbase (+ xoffset i)) y) (array-element-type rbase))))))
                               (((list xdim)
                                 _)
                                (dotimes (i xdim)
                                  (setf (aref rbase (+ roffset i))
-                                       (%coerce (funcall fn
+                                       (%coerce (funcall function
                                                          (aref xbase (+ xoffset i))
                                                          (aref ybase (+ yoffset i)))
                                                 (array-element-type rbase)))))

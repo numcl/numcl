@@ -50,6 +50,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (apply #'map-into (flatten result-sequence) #'fn (mapcar #'flatten sequences))
     result-sequence))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
 (defun %ok-to-use-fn-specialized (function env)
   (match function
     ((list 'function (list* 'lambda _))
@@ -62,6 +63,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
         t)))
     ((list 'quote _)                 ; global function
      t)))
+)
 
 (defmacro %when-function-is-global (&body body)
   "Internal use only! assumes a fixed set of variable names"

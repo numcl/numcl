@@ -551,6 +551,14 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (is (equalp (stack (unstack a))
                 a))))
 
+(test (issue-18 :compile-at :run-time :fixture muffle)
+  (let ((a (- (uniform 0 10 10))))
+    (is (subtypep '(integer -10 0)
+                  (array-element-type a))))
+  (let ((a (/ (uniform 1 10 10))))
+    (is (subtypep numcl.impl::*numcl-default-float-format*
+                  (array-element-type a)))))
+
 (test (issue-19 :compile-at :run-time :fixture muffle)
   (let ((a (bernoulli 0.2 10)))
     (is (typep a 'bit-vector))

@@ -513,11 +513,18 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (declaim (inline numcl:+ numcl:- numcl:* numcl:/ numcl:max numcl:min numcl:clip))
 
 (defun numcl:+   (&rest args) (reduce (lambda (x y) (broadcast '+ x y)) args))
-(defun numcl:-   (&rest args) (reduce (lambda (x y) (broadcast '- x y)) args))
 (defun numcl:*   (&rest args) (reduce (lambda (x y) (broadcast '* x y)) args))
-(defun numcl:/   (&rest args) (reduce (lambda (x y) (broadcast '/ x y)) args))
 (defun numcl:max (&rest args) (reduce (lambda (x y) (broadcast 'max x y)) args))
 (defun numcl:min (&rest args) (reduce (lambda (x y) (broadcast 'min x y)) args))
+
+(defun numcl:-   (first &rest args)
+  (if args
+      (reduce (lambda (x y) (broadcast '- x y)) args :initial-value first)
+      (broadcast '- 0 first)))
+(defun numcl:/   (first &rest args)
+  (if args
+      (reduce (lambda (x y) (broadcast '/ x y)) args :initial-value first)
+      (broadcast '/ 1 first)))
 
 (defun numcl:clip (array min max) (broadcast 'max min (broadcast 'min array max)))
 

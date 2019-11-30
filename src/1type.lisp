@@ -571,6 +571,7 @@ to the least specific FLOAT type when any one of them are not fixnums."
 
 ;;;; type-of
 
+(declaim (inline strict-type-of))
 (defun strict-type-of (x)
   "stricter version of type-of, which does not simplify the type -- e.g., (type-of 5) is (integer 5 5), not fixnum."
   (etypecase x

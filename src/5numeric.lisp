@@ -287,6 +287,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (%when-function-is-global
     (once-only (x y type)
       (with-gensyms (r rrank
+                     x-type y-type
                      xshape yshape rshape
                      xbase ybase rbase
                      xoffset yoffset roffset
@@ -301,15 +302,15 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
             ;; x shape: (10 3 1 4)
             ;; y shape: (2 10 1 2 4)
             (let ((,x (if (arrayp ,x) ,x (full nil ,x)))
-                  (,y (if (arrayp ,y) ,y (full nil ,y))))
+                  (,y (if (arrayp ,y) ,y (full nil ,y)))
+                  (,x-type (if (arrayp ,x) (array-element-type ,x) (strict-type-of ,x)))
+                  (,y-type (if (arrayp ,y) (array-element-type ,y) (strict-type-of ,y))))
               (declare (numcl-array ,x ,y))
               (declare (optimize (debug 3)))
               (assert (broadcast-p ,x ,y) nil
                       "Given arrays have incompatible shape for broadcasting the ~a op:~% ~a and ~a.~_ Arrays:~%~a~%~a"
                       ,fn (shape ,x) (shape ,y) ,x ,y)
-              (let* ((,type (or ,type (infer-type ,fn
-                                                  (array-element-type ,x)
-                                                  (array-element-type ,y))))
+              (let* ((,type (or ,type (infer-type ,fn ,x-type ,y-type)))
                      (,rrank (max (rank ,x) (rank ,y)))
                      ;; make their ranks equal, e.g.
                      ;; (1 10 3 1 4)

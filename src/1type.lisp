@@ -653,3 +653,5 @@ an array displaced to a non-displaced 1D array."
   (typep array 'base-array))
 
 (deftype index () `(integer 0 (,array-dimension-limit)))
+
+(deftype numcl:* () '*)                 ; alias to cl:*

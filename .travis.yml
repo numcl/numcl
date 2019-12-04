@@ -13,21 +13,21 @@ env:
     - PATH=~/.roswell/bin:$PATH
     - ROSWELL_INSTALL_DIR=$HOME/.roswell
   matrix:
-    - LISP=sbcl-bin/1.5.6 LISP2=sbcl
-    - LISP=sbcl-bin/1.5.6 LISP2=ccl-bin
-    - LISP=sbcl-bin/1.5.6 LISP2=abcl
-    - LISP=sbcl-bin/1.5.6 LISP2=clisp
-    - LISP=sbcl-bin/1.5.6 LISP2=ecl
-    - LISP=sbcl-bin/1.5.6 LISP2=cmucl
-    - LISP=sbcl-bin/1.5.6 LISP2=alisp
+    - LISP=sbcl
+    - LISP=ccl-bin
+    - LISP=abcl
+    - LISP=clisp
+    - LISP=ecl
+    - LISP=cmucl
+    - LISP=alisp
 
 matrix:
   allow_failures:
-    - env: LISP=sbcl-bin/1.5.6 LISP2=abcl 
-    - env: LISP=sbcl-bin/1.5.6 LISP2=clisp
-    - env: LISP=sbcl-bin/1.5.6 LISP2=ecl  
-    - env: LISP=sbcl-bin/1.5.6 LISP2=cmucl
-    - env: LISP=sbcl-bin/1.5.6 LISP2=alisp
+    - env: LISP=abcl 
+    - env: LISP=clisp
+    - env: LISP=ecl  
+    - env: LISP=cmucl
+    - env: LISP=alisp
 
 install:
   - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
@@ -38,7 +38,6 @@ install:
   - ( cd ~/lisp/ ; git clone https://github.com/numcl/constantfold.git )
   - ( cd ~/lisp/ ; git clone https://github.com/numcl/gtype.git )
   - ( cd ~/lisp/ ; git clone https://github.com/numcl/specialized-function.git )
-  - ros install $LISP2
 
 cache:
   directories:
@@ -46,4 +45,4 @@ cache:
     - $HOME/.config/common-lisp
 
 script:
-  - ros -L $LISP2 ./testscr.ros
+  - ./testscr.ros

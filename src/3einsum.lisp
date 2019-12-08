@@ -203,10 +203,10 @@ In the returned list, indices corresponding to the broadcasted axes are -1.
 (defun $ (i) "Variable for the input array element"  (intern (format nil "$~a" i) :numcl.impl))
 (defun @ (i) "Variable for the output array element" (intern (format nil "@~a" i) :numcl.impl))
 (defun & (i) "Variable for the iteration count"      (intern (format nil "&~a" i) :numcl.impl))
-(defun i-var (i) "Variable for the input array"      (intern (format nil "I~a" i) :numcl.impl))
-(defun o-var (i) "Variable for the output array"     (intern (format nil "O~a" i) :numcl.impl))
-(defun i-vars (specs) (mapcar #'i-var (iota (length specs))))
-(defun o-vars (specs) (mapcar #'o-var (iota (length specs))))
+(defun i-avar (i) "Variable for the input array"      (intern (format nil "I~a" i) :numcl.impl))
+(defun o-avar (i) "Variable for the output array"     (intern (format nil "O~a" i) :numcl.impl))
+(defun i-avars (specs) (mapcar #'i-avar (iota (length specs))))
+(defun o-avars (specs) (mapcar #'o-avar (iota (length specs))))
 (defun i-evars (specs) (mapcar #'$ (iota (length specs) :start 1)))
 (defun o-evars (specs) (mapcar #'@ (iota (length specs) :start 1)))
 (defun i-idx (i) "Variable for the 1D index of input array"  (in-current-package (symbolicate '$IDX (princ-to-string i))))
@@ -428,9 +428,9 @@ The step size for axis j is the product of the dimensions after j-th axes for th
               (in outer
                   (always (= dim (aref plan 0 0 i)))))))
 
-(defun %output-generator (o-specs o-vars i-specs i-vars transforms)
+(defun %output-generator (o-specs o-avars i-specs i-avars transforms)
   (with-gensyms (o-types)
-    (iter (for o-var     in o-vars)
+    (iter (for o-avar    in o-avars)
           (for o-spec    in o-specs)
           (for o from 0)
           (for shape-form =
@@ -454,34 +454,34 @@ The step size for axis j is the product of the dimensions after j-th axes for th
             ;; compute the output array type
             (collecting
              `(,o-types (einsum-output-types
-                         ',transforms ',(i-evars i-specs) ',(o-evars o-specs) ,@i-vars))))
+                         ',transforms ',(i-evars i-specs) ',(o-evars o-specs) ,@i-avars))))
           ;; generate or reuse output arrays
           (collecting
-           `(,o-var (or ,o-var (zeros ,shape-form :type (nth ,o ,o-types))))))))
+           `(,o-avar (or ,o-avar (zeros ,shape-form :type (nth ,o ,o-types))))))))
 
 (defun einsum-lambda (einsum-specs)
   "Takes a normalized-subscripts and returns a lambda form that iterates over it."
   (ematch einsum-specs
     ((einsum-specs i-specs o-specs i-options o-options iter-specs transforms)
-     (let ((i-vars (i-vars i-specs))
-           (o-vars (o-vars o-specs)))
-       `(lambda (,@i-vars &optional ,@o-vars)
+     (let ((i-avars (i-avars i-specs))
+           (o-avars (o-avars o-specs)))
+       `(lambda (,@i-avars &optional ,@o-avars)
           ;; resolve input array shapes
-          (let* ,@(shape-resolver i-vars i-specs i-options) ;; including declarations / assertions
+          (let* ,@(shape-resolver i-avars i-specs i-options) ;; including declarations / assertions
             ;; generate or reuse output arrays
-            (let* ,(%output-generator o-specs o-vars i-specs i-vars transforms)
+            (let* ,(%output-generator o-specs o-avars i-specs i-avars transforms)
               ;; resolve output array shapes (because output array may be provided externally)
-              (let* ,@(shape-resolver o-vars o-specs o-options t) ;; including declarations / assertions
+              (let* ,@(shape-resolver o-avars o-specs o-options t) ;; including declarations / assertions
                 ;; extract the base array
-                (let ,(iter (for var in (append i-vars o-vars))
+                (let ,(iter (for var in (append i-avars o-avars))
                             (collecting
                               `(,var (array-displacement ,var))))
-                  (specializing (,@i-vars ,@o-vars) ()
+                  (specializing (,@i-avars ,@o-avars) ()
                     (declare (optimize (speed 3) (safety 0)))
                     (declare (type index ,@(mapcar #'? (remove -1 iter-specs))))
                     ,(einsum-body *compiler* einsum-specs)))
                 (values ,@(mapcar (lambda (var) `(ensure-singleton ,var))
-                                  o-vars))))))))))
+                                  o-avars))))))))))
 
 (defun einsum-output-types (transforms i-evars o-evars &rest arrays)
   "Try to simulate the range for 10 iterations; Stop if it converges.

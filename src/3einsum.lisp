@@ -371,16 +371,19 @@ We believe this default value is fairly safe for the most common usecases --- wh
 ;; array-rank-limit
 
 (defun plan-broadcast (shapes)
-  "Store the broadcast information in a matrix of size (2, N+1, M),
+  "Store (precompute) the broadcast information in a matrix of size (2, N+1, M),
 where N is the number of arrays (lengths of shapes) and
       M is the maximum rank of the dimensions being broadcasted.
 
- (0, 0, ...)   contains the shape of the output arrays.
- (0, i+1, ...) contains the shape of the i-th input array.
- (1, 0,   j)   contains the step size of the output arrays for axis j.
- (1, i+1, j)   contains the step size of the i-th input array for axis j.
+ (0, 0,   j) contains the dimension of the output arrays for axis j.
+ (0, i+1, j) contains the dimension of the i-th input array for axis j.
+ (1, 0,   j) contains the step size of the output arrays for axis j.
+ (1, i+1, j) contains the step size of the i-th input array for axis j.
 
 The step size for axis j is the product of the dimensions after j-th axes for that array.
+
+This part of the code is run in the runtime, not in the compile time,
+because it handles the runtime information of the size of the input arrays.
 "
   (let* ((rrank (reduce #'max shapes :key #'length)) ; M
          (len (length shapes))                       ; N

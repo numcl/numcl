@@ -14,7 +14,7 @@ Track the progress at https://github.com/numcl/numcl/projects/1 .
   + We do not deviate from the traditional symbols/idioms in Common Lisp unless necessary.
     Therefore we provide symbols that conflicts the Common Lisp symbol.
     Math functions become aliases to the original CL functions when the inputs are not arrays.
-  + See [[./DETAILS.org#packages][./DETAILS.org#packages]] .
+  + See [[doc/DETAILS.org#packages][doc/DETAILS.org#packages]] .
 
 ** Features/Contracts
 

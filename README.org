@@ -28,19 +28,19 @@ Track the progress at https://github.com/numcl/numcl/projects/1 .
   + They always return arrays of the most specific array-element-type. For example,
   + (zeros 5) returns a bit vector.
   + (asarray '(1 2 3)) returns an (unsigned-byte 2) vector.
-  + See [[./DETAILS.org#types][./DETAILS.org#types]] .
+  + See [[doc/DETAILS.org#types][doc/DETAILS.org#types]] .
 + NUMCL Arrays are CL arrays.
   + As this library aims to extend Common Lisp (not to replace part of it) in a
     compatible way, we do not introduce custom structures/classes for
     representing an array.
-  + See [[./DETAILS.org#representation][./DETAILS.org#representation]] .
+  + See [[doc/DETAILS.org#representation][doc/DETAILS.org#representation]] .
 
 ** Examples & documentation
 
 [[./example.lisp]] contains a script that you can explore the functionality already
 implemented in NUMCL.
 
-See [[DETAILS.org]] for the types available in numcl, and object representation.
+See [[doc/DETAILS.org]] for the types available in numcl, and object representation.
 
 ** Dependencies
 

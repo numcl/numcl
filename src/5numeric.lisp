@@ -502,6 +502,12 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun %square (x) (* x x))
 (define-simple-mapper numcl:square %square)
 
+
+(declaim (inline %log2))
+(defun %log2 (x) (log x 2))
+(define-simple-mapper numcl:log2 %log2)
+
+
 ;; type upgrading. Why this is not available by default in common lisp??
 
 (declaim (inline numcl:1+))

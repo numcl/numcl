@@ -206,6 +206,29 @@ interprets a form consisting of functions and type specifiers (at the leafs).
      ((and-type types)
       (reduce #'intersection-to-float-type types :key #'log-inferer)))))
 
+(set-type-inferer
+ '%log2
+ (defun %log2-inferer (x)
+   (declare (trivia:optimizer :trivial))
+   (ematch x
+     ((real-subtype low high)
+      (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
+        ;; when minus, may become complex
+        (cond
+          ((interval2-< low 0)
+           `(complex ,head))
+          ((= low 0)
+           `(,head * ,(funcall* '%log2 high)))
+          (t
+           `(,head ,(funcall* '%log2 low) ,(funcall* '%log2 high))))))
+     ((complex-type)
+      ;; TBD
+      'complex)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'%log2-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'%log2-inferer)))))
+
 (set-type-inferer 'cosh (defun cosh-inferer (x) (interpret-type `(/ (+ (exp ,x) (exp (- ,x))) 2))))
 
 (set-type-inferer 'sinh (defun sinh-inferer (x) (interpret-type `(/ (- (exp ,x) (exp (- ,x))) 2))))

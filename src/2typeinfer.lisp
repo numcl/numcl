@@ -229,6 +229,21 @@ interprets a form consisting of functions and type specifiers (at the leafs).
      ((and-type types)
       (reduce #'intersection-to-float-type types :key #'%log2-inferer)))))
 
+(defun complex-part-inferer (x)
+  (declare (trivia:optimizer :trivial))
+  (ematch x
+    ((real-subtype)
+     x)
+    ((complex-type element-type)
+     element-type)
+    ((or-type types)
+     (reduce #'union-to-float-type types :key #'complex-part-inferer))
+    ((and-type types)
+     (reduce #'intersection-to-float-type types :key #'complex-part-inferer))))
+
+(set-type-inferer 'realpart 'complex-part-inferer)
+(set-type-inferer 'imagpart 'complex-part-inferer)
+
 (set-type-inferer 'cosh (defun cosh-inferer (x) (interpret-type `(/ (+ (exp ,x) (exp (- ,x))) 2))))
 
 (set-type-inferer 'sinh (defun sinh-inferer (x) (interpret-type `(/ (- (exp ,x) (exp (- ,x))) 2))))

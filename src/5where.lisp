@@ -87,26 +87,23 @@ the second list contains the indices for the 2nd dimension, and so on."
      (check-type base array)
      (locally
          (declare ((simple-array * 1) base))
-       (let ((result (full r (cons nil (cons nil nil)) :type 'cons))
-             (tails2 (full r (cons nil (cons nil nil)) :type 'cons))
-             (tmp (empty r :type 'fixnum)))
-         (map-into result (lambda (x) (declare (ignore x)) (cons nil (cons nil nil))) result)
-         (replace tails2 result)
+       (let ((result (full r (cons nil nil) :type 'cons))
+             (tails  (full r (cons nil nil) :type 'cons))
+             (tmp    (empty r :type 'fixnum)))
+         (map-into result (lambda (x) (declare (ignore x)) (cons nil nil)) result)
+         (replace tails result)
          (iter (for i below (array-total-size array))
                (declare (declare-variables))
                (when (funcall fn (aref base i))
                  (%array-index-from-row-major-index/vector array i tmp)
                  (dotimes (j r)
-                   (let* ((tail2 (aref tails2 j))
-                          (tail  (cdr tail2))
+                   (let* ((oldtail (aref tails j)) ; should be always (cons nil nil)
                           (newtail (cons nil nil)))
-                     (setf (car tail) (aref tmp j)
-                           (cdr tail) newtail
-                           (aref tails2 j) tail))))
+                     (setf (cdr oldtail) newtail
+                           (aref tails j) newtail
+                           (car newtail) (aref tmp j)))))
                (finally
                 (dotimes (j r)
-                  (let ((tail2 (aref tails2 j)))
-                    (setf (cdr tail2) nil))
                   (pop (aref result j)))))
          (coerce result 'list))))))
 

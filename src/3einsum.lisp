@@ -678,3 +678,36 @@ This makes it easier to implement the block-matrix algorithms for improved cache
               (row-major-aref a (+ i 2)))))
   a)
 
+
+;; CCL produces a different type only when (debug 3) (speed 0)
+#+ccl
+(defun test-ccl-bug ()
+  (iter outer
+        (for speed to 3)
+        (iter (for debug to 3)
+              (print
+               (type-of
+                (funcall
+                 (compile nil
+                          `(lambda ()
+                             (declare (optimize (speed ,speed) (debug ,debug)))
+                             (make-array 1 :element-type '(integer 0 (,array-dimension-limit)))))))))))
+
+#|
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY FIXNUM (1)) 
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+(SIMPLE-ARRAY (UNSIGNED-BYTE 64) (1))
+|#

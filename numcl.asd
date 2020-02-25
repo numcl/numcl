@@ -27,6 +27,7 @@
                :serial t
                :components ((:file "0package")
                             (:file "0specialops")
+                            (:file "1version")
                             (:file "1constantfolded")
                             (:file "1constants")
                             (:file "1docstrings")

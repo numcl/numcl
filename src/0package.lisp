@@ -27,6 +27,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   ;; It is thus necessary to explicitly provide (:use) so that it creates an empty package.
   (:use )
   (:export
+
+   ;; 1version
+   #:numcl-version
  
    ;; 1type
    #:numcl-array-p

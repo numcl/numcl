@@ -653,6 +653,6 @@ an array displaced to a non-displaced 1D array."
   "Returns true when ARRAY is a base array of numcl array."
   (typep array 'base-array))
 
-(deftype index () `(integer 0 (,array-dimension-limit)))
+(deftype index () (upgraded-array-element-type `(integer 0 (,array-dimension-limit))))
 
 (deftype numcl:* () '*)                 ; alias to cl:*

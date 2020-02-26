@@ -6,7 +6,7 @@
 ;;;; There are also an interface available from lisp:
 ;;;; (asd-generator:regen &key im-sure)
 (defsystem numcl
- :version "0.1"
+ :version "0.2.0"
  :author "Masataro Asai"
  :mailto "guicho2.71828@gmail.com"
  :license "LGPL"

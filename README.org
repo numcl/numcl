@@ -44,27 +44,23 @@ See [[doc/DETAILS.org]] for the types available in numcl, and object representat
 
 ** Dependencies
 
-NUMCL depends on the following libraries that must be installed manually and
-other libraries that are automatically loaded by quicklisp.
-
-+ https://github.com/numcl/constantfold
-+ https://github.com/numcl/gtype
-+ https://github.com/numcl/specialized-function .
-
-With Roswell, installation can be done by
-
-: ros install numcl/constantfold numcl/specialized-function numcl/gtype numcl/numcl
+NUMCL is currently available in Quicklisp.
 
 This library is at least tested on implementation listed below:
 
 + SBCL 1.4.12 on X86-64 Linux 4.4.0-141-generic (author's environment)
 + SBCL 1.5.1  on X86-64 Linux 4.4.0-141-generic (author's environment)
-+ CI tested on CCL, ECL.
++ SBCL 2.0.1  on X86-64 Ubuntu 16.04.6 LTS Linux 4.15.0-1028-gcp
++ ccl-1.11.5  on X86-64 Ubuntu 16.04.6 LTS Linux 4.15.0-1028-gcp
++ SBCL 2.0.1  on X86-64 Mac OS X 10.13.6
++ ccl-1.11.5  on X86-64 Mac OS X 10.13.6
++ SBCL 2.0.0  on X86-64 Windows Server, version 1809
++ SBCL 2.0.0  on Arm64   Ubuntu 16.04.6 LTS Linux 5.3.0-19-generic
++ SBCL 1.5.8  on ppc64le Ubuntu 16.04.6 LTS Linux 5.0.0-37-generic
 
 Dependency graph:
 
 [[./numcl.png]]
-
 
 ** Quick tutorial
 

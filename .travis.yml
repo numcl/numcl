@@ -20,11 +20,11 @@ env:
   jobs:
     - LISP=sbcl-bin
     - LISP=ccl-bin
-    - LISP=abcl
-    - LISP=clisp
-    - LISP=ecl
-    - LISP=cmucl
-    - LISP=alisp
+    # - LISP=abcl
+    # - LISP=clisp
+    # - LISP=ecl
+    # - LISP=cmucl
+    # - LISP=alisp
 
 jobs:
   fast_finish: true

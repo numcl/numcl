@@ -30,8 +30,13 @@ jobs:
   include:
     - os: linux
       arch: arm64
+      env: LISP=sbcl-bin
     - os: linux
       arch: ppc64le
+      env: LISP=sbcl-bin
+    - os: linux
+      arch: arm64
+      env: LISP=ccl-bin
   allow_failures:
     - env: LISP=abcl 
     - env: LISP=clisp

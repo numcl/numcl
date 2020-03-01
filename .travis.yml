@@ -6,6 +6,13 @@ os:
   - osx
   - windows
 
+addons:
+  apt:
+    packages:
+      - build-essential
+      - automake
+      - libcurl4-openssl-dev
+
 env:
   global:
     - PATH=~/.roswell/bin:$PATH

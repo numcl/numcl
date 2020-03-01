@@ -7,11 +7,6 @@ addons:
       - libc6-i386
       - clisp
 
-
-arch:
-  - amd64
-  - arm64
-  - ppc64le
 os:
   - linux
   - osx
@@ -32,6 +27,11 @@ env:
 
 jobs:
   fast_finish: true
+  include:
+    - os: linux
+      arch: arm64
+    - os: linux
+      arch: ppc64le
   allow_failures:
     - env: LISP=abcl 
     - env: LISP=clisp

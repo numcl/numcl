@@ -1,33 +1,53 @@
-language: common-lisp
+language: bash
 sudo: false
+
+os:
+  - linux
+  - osx
+  - windows
 
 addons:
   apt:
     packages:
-      - libc6-i386
-      - clisp
-      # - openjdk-7-jre
+      - build-essential
+      - automake
+      - libcurl4-openssl-dev
 
 env:
   global:
     - PATH=~/.roswell/bin:$PATH
     - ROSWELL_INSTALL_DIR=$HOME/.roswell
-  matrix:
-    - LISP=sbcl
+  jobs:
+    - LISP=sbcl-bin
     - LISP=ccl-bin
-    - LISP=abcl
-    - LISP=clisp
-    - LISP=ecl
-    - LISP=cmucl
-    - LISP=alisp
+    # - LISP=abcl
+    # - LISP=clisp
+    # - LISP=ecl
+    # - LISP=cmucl
+    # - LISP=alisp
 
-matrix:
+jobs:
+  fast_finish: true
+  include:
+    - os: linux
+      arch: arm64
+      env: LISP=sbcl-bin
+    - os: linux
+      arch: ppc64le
+      env: LISP=sbcl-bin
+    - os: linux
+      arch: arm64
+      env: LISP=ccl-bin
   allow_failures:
     - env: LISP=abcl 
     - env: LISP=clisp
     - env: LISP=ecl  
     - env: LISP=cmucl
     - env: LISP=alisp
+    - arch: arm64
+    - arch: ppc64le
+    - os: windows
+    - os: osx
 
 install:
   - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh

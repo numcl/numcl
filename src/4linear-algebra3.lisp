@@ -38,7 +38,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; implementation 1 : by thrashdin
 
-(defun matmul* (&rest args)
+(defun matmul*-thrashdin (&rest args)
   "Takes an arbitrary number of matrices and performs multiplication,
 optimizing the order using the shape information and the associativity
 to minimize the size of the intermediate matrix."
@@ -113,6 +113,107 @@ to minimize the size of the intermediate matrix."
   (loop :for i :from 1 :below (length sizes)
         :with fh := (car (aref sizes 0))
         :sum (* fh (car (aref sizes i)) (cadr (aref sizes i)))))
+
+;;; implementation 2 : O(n^2) naive DP https://en.wikipedia.org/wiki/Matrix_chain_multiplication#A_dynamic_programming_algorithm
+
+#|
+
+This is a copy from wikipedia. This code uses 1-based index, and I also believe
+there is an indexing bug.
+
+// Matrix A[i] has dimension dims[i-1] x dims[i] for i = 1..n
+MatrixChainOrder(int dims[])
+{
+    // length[dims] = n + 1
+    n = dims.length - 1;
+    // m[i,j] = Minimum number of scalar multiplications (i.e., cost)
+    // needed to compute the matrix A[i]A[i+1]...A[j] = A[i..j]
+    // The cost is zero when multiplying one matrix
+    for (i = 1; i <= n; i++)
+        m[i, i] = 0;
+
+    for (len = 2; len <= n; len++) { // Subsequence lengths
+        for (i = 1; i <= n - len + 1; i++) {
+            j = i + len - 1;
+            m[i, j] = MAXINT;
+            for (k = i; k <= j - 1; k++) {
+                cost = m[i, k] + m[k+1, j] + dims[i-1]*dims[k]*dims[j];
+                if (cost < m[i, j]) {
+                    m[i, j] = cost;
+                    s[i, j] = k; // Index of the subsequence split that achieved minimal cost
+                }
+            }
+        }
+    }
+}
+
+|#
+
+(defun matmul* (&rest args)
+  "Takes an arbitrary number of matrices and performs multiplication,
+optimizing the order using the shape information and the associativity
+to minimize the size of the intermediate matrix."
+
+  (let* ((n (length args))
+         (dims (make-array (1+ n) :element-type 'single-float)))
+    (setf (aref dims 0)
+          (float (array-dimension (first args) 0) 0.0))
+    (iter (for arg in args)
+          (for i from 1)
+          (setf (aref dims i)
+                (float (array-dimension arg 1) 0.0)))
+
+    (let ((order (matrix-chain-order dims n))
+          (args (coerce args 'vector))
+          (*print-array* t))
+      (declare (type (simple-array fixnum 2) order))
+      ;; (print order)
+      (labels ((rec (i j)
+                 (if (= i j)
+                     (aref args i)
+                     (let ((k (aref order i j)))
+                       (matmul (rec i k)
+                               (rec (1+ k) j))))))
+        (rec 0 (1- n))))))
+
+(defun matrix-chain-order (dims n)
+  (declare (type (simple-array single-float 1) dims)
+           (type (unsigned-byte 31) n)
+           (optimize (speed 3) (safety 0))
+           )
+  (let ((cost  (make-array (list n n) :element-type 'single-float :initial-element 0.0))
+        (index (make-array (list n n) :element-type 'fixnum :initial-element 0)))
+    (iter (declare (iterate:declare-variables))
+          (declare (fixnum len))
+          (for len from 2 to n)            ; e.g. n=10, len=4 : number of matrices involved
+          (iter (declare (iterate:declare-variables))
+                (declare (fixnum i j))
+                (for i to (- n len))       ; 0 <= i <= 6 --- within range
+                (for j = (+ i len -1))     ; 3 <= j <= 9 --- within range (j=10 is invalid)
+                ;; computing the cost of multiplying [i..k] and [k..j]
+                (setf (aref cost i j) most-positive-single-float)
+                (iter (declare (iterate:declare-variables))
+                      (declare (fixnum k))
+                      (declare (single-float c))
+                      (for k from i below j)
+                      (for c = (+ (aref cost i k)       ; cost of [i..k]
+                                  (aref cost (1+ k) j)  ; cost of [k+1..j]
+                                  ;; e.g. i=2, k=3, j=5
+                                  ;; 
+                                  ;; dims = [_, _, 2, 5, 3, 7, 4, _, _, _, _]
+                                  ;; dimensions: [2x5, 5x3], [3x7, 7x4]
+                                  ;; [i  ..k+1] = [2..3] = [2,5,3] --- result : 2x3
+                                  ;; [k+1..j+1] = [4..5] = [3,7,4] --- result : 3x4
+                                  ;; 
+                                  ;; computation -- (3 mul + 2 add) x 4 x 2
+                                  (* (aref dims i)          ; first  dim of i
+                                     (aref dims (1+ k))     ; second dim of k
+                                     (aref dims (1+ j))))) ; second dim of j
+                      (when (< c (aref cost i j))
+                        (setf (aref cost  i j) c)
+                        (setf (aref index i j) k)))))
+    index))
+
 
 ;;; performance testing
 

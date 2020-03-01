@@ -162,8 +162,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 ;; naive version
 
-#+(or)
-(defun matmul* (&rest args)
+(defun matmul*-naive (&rest args)
   "Takes an arbitrary number of matrices and performs multiplication."
   (reduce (lambda (acc m)
             (matmul acc m))
@@ -256,6 +255,7 @@ to minimize the size of the intermediate matrix."
 
 ;; performance testing
 
+#+(or)
 (defun test1-base ()
   (let ((*print-array* nil))
     (time (print
@@ -264,6 +264,7 @@ to minimize the size of the intermediate matrix."
   nil)
 
 ;; should be same as test1-base
+#+(or)
 (defun test2-check-compiler-macro ()
   (let ((*print-array* nil))
     (time (print
@@ -273,6 +274,7 @@ to minimize the size of the intermediate matrix."
 
 
 ;; test the effect
+;; #+(or)
 (defun test3 ()
   (let ((*print-array* nil))
     (time (print
@@ -280,6 +282,16 @@ to minimize the size of the intermediate matrix."
            (matmul* (zeros '(1000 1) :type 'fixnum)
                     (zeros '(1 1000) :type 'fixnum)
                     (zeros '(1000 1000) :type 'fixnum)))))
+  nil)
+
+;; #+(or)
+(defun test3-naive ()
+  (let ((*print-array* nil))
+    (time (print
+           ;; naive approach will generate a 1000x1000 intermediate matrix
+           (matmul*-naive (zeros '(1000 1) :type 'fixnum)
+                          (zeros '(1 1000) :type 'fixnum)
+                          (zeros '(1000 1000) :type 'fixnum)))))
   nil)
 
 ;; Results
@@ -290,7 +302,7 @@ Environment: sbcl 1.5.9, RYZEN 1700
 
 * Naive
 
-IMPL> (test3)
+IMPL> (test3-naive)
 
 #<(ARRAY FIXNUM (1000 1000)) {1004500D1F}> 
 Evaluation took:
@@ -308,16 +320,17 @@ NIL
 
 * proposed
 
-IMPL> (test2)
+IMPL> (test3)
 
-(MATMUL #<(ARRAY FIXNUM (1000 1)) {1005BC1F5F}>
-        (MATMUL #<(ARRAY FIXNUM (1 1000)) {1005BC3F9F}> #<(ARRAY FIXNUM (1000 1000)) {1005BC408F}>)) 
+#<(ARRAY FIXNUM (1000 1000)) {1003C3046F}> 
 Evaluation took:
-  0.003 seconds of real time
-  0.002612 seconds of total run time (0.002612 user, 0.000000 system)
+  0.032 seconds of real time
+  0.031556 seconds of total run time (0.031556 user, 0.000000 system)
   100.00% CPU
-  7,659,570 processor cycles
-  8,025,856 bytes consed
+  6 forms interpreted
+  410 lambdas converted
+  95,227,980 processor cycles
+  22,308,112 bytes consed
   
 NIL
 

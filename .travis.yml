@@ -17,7 +17,7 @@ env:
     - PATH=~/.roswell/bin:$PATH
     - ROSWELL_INSTALL_DIR=$HOME/.roswell
   jobs:
-    - LISP=sbcl
+    - LISP=sbcl-bin
     - LISP=ccl-bin
     - LISP=abcl
     - LISP=clisp

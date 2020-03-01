@@ -6,13 +6,22 @@ addons:
     packages:
       - libc6-i386
       - clisp
-      # - openjdk-7-jre
+
+
+arch:
+  - amd64
+  - arm64
+  - ppc64le
+os:
+  - linux
+  - osx
+  - windows
 
 env:
   global:
     - PATH=~/.roswell/bin:$PATH
     - ROSWELL_INSTALL_DIR=$HOME/.roswell
-  matrix:
+  jobs:
     - LISP=sbcl
     - LISP=ccl-bin
     - LISP=abcl
@@ -21,13 +30,18 @@ env:
     - LISP=cmucl
     - LISP=alisp
 
-matrix:
+jobs:
+  fast_finish: true
   allow_failures:
     - env: LISP=abcl 
     - env: LISP=clisp
     - env: LISP=ecl  
     - env: LISP=cmucl
     - env: LISP=alisp
+    - arch: arm64
+    - arch: ppc64le
+    - os: windows
+    - os: osx
 
 install:
   - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh

@@ -219,6 +219,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:einsum
    #:transpose
    #:matmul
+   #:matmul*
    #:dot
    #:inner
    #:vdot

@@ -9,6 +9,12 @@ At the moment the library is written in pure Common Lisp, focusing more on corre
 
 [[https://asciinema.org/a/245792][https://asciinema.org/a/245792.svg]]
 
+** NEWS
+
++ 2020/2/26 version 0.2.0 is released! 
++ 2020/2/29 =matmul*= : multi-argument version of =matmul= is added. It
+  optimizes the multiplication order in order to reduce the runtime / memory.
+
 ** Quick tutorial
 
 In order to guarantee the speed and to simplify the implementation, the arrays

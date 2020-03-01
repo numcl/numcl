@@ -45,6 +45,7 @@
                             (:file "4concatenate")
                             (:file "4einsum-backends/common-lisp")
                             (:file "4linear-algebra2")
+                            (:file "4linear-algebra3")
                             (:file "5numeric")
                             (:file "5random")
                             (:file "5reduce")

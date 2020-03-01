@@ -1,12 +1,6 @@
 language: bash
 sudo: false
 
-addons:
-  apt:
-    packages:
-      - libc6-i386
-      - clisp
-
 os:
   - linux
   - osx

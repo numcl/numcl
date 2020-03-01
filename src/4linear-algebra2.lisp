@@ -180,9 +180,8 @@ to minimize the size of the intermediate matrix."
                (cond ((atom tree) (nth tree args))
                      ((consp tree)
                       (assert (= 2 (length tree)) nil "Tree must be binary")
-                      (list 'numcl:matmul
-                            (process-tree (first tree))
-                            (process-tree (second tree)))))))
+                      (matmul (process-tree (first tree))
+                              (process-tree (second tree)))))))
       (process-tree tree))))
 
 (define-compiler-macro matmul* (&whole form &rest args)

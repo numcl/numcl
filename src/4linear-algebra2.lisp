@@ -158,12 +158,22 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
               (setf (aref a i j) (expt (aref v i) e)))))
       a)))
 
-;;;
+;;; multi-arg GEMM
 
+;; naive version
+
+#+(or)
+(defun matmul* (&rest args)
+  "Takes an arbitrary number of matrices and performs multiplication."
+  (reduce (lambda (acc m)
+            (matmul acc m))
+          (cdr args)
+          :initial-value (car args)))
 
 (defun matmul* (&rest args)
-  "Takes an arbitrary number of matrices and performs multiplication.
-It optimizes the multiplication order using the associativity."
+  "Takes an arbitrary number of matrices and performs multiplication,
+optimizing the order using the shape information and the associativity
+to minimize the size of the intermediate matrix."
   (let* ((dimension-vector (map 'vector #'array-dimensions args))
          (tree (car (%build-tree dimension-vector))))
     (labels ((process-tree (tree)
@@ -244,3 +254,72 @@ It optimizes the multiplication order using the associativity."
   (loop :for i :from 1 :below (length sizes)
         :with fh := (car (aref sizes 0))
         :sum (* fh (car (aref sizes i)) (cadr (aref sizes i)))))
+
+;; performance testing
+
+(defun test1-base ()
+  (let ((*print-array* nil))
+    (time (print
+           (matmul (zeros '(1000 1000) :type 'fixnum)
+                   (zeros '(1000 1000) :type 'fixnum)))))
+  nil)
+
+;; should be same as test1-base
+(defun test2-check-compiler-macro ()
+  (let ((*print-array* nil))
+    (time (print
+           (matmul* (zeros '(1000 1000) :type 'fixnum)
+                    (zeros '(1000 1000) :type 'fixnum)))))
+  nil)
+
+
+;; test the effect
+(defun test3 ()
+  (let ((*print-array* nil))
+    (time (print
+           ;; naive approach will generate a 1000x1000 intermediate matrix
+           (matmul* (zeros '(1000 1) :type 'fixnum)
+                    (zeros '(1 1000) :type 'fixnum)
+                    (zeros '(1000 1000) :type 'fixnum)))))
+  nil)
+
+;; Results
+
+#|
+
+Environment: sbcl 1.5.9, RYZEN 1700
+
+* Naive
+
+IMPL> (test3)
+
+#<(ARRAY FIXNUM (1000 1000)) {1004500D1F}> 
+Evaluation took:
+  4.646 seconds of real time
+  4.643399 seconds of total run time (4.635514 user, 0.007885 system)
+  99.94% CPU
+  6 forms interpreted
+  410 lambdas converted
+  13,910,318,070 processor cycles
+  30,318,096 bytes consed
+  
+NIL
+
+
+
+* proposed
+
+IMPL> (test2)
+
+(MATMUL #<(ARRAY FIXNUM (1000 1)) {1005BC1F5F}>
+        (MATMUL #<(ARRAY FIXNUM (1 1000)) {1005BC3F9F}> #<(ARRAY FIXNUM (1000 1000)) {1005BC408F}>)) 
+Evaluation took:
+  0.003 seconds of real time
+  0.002612 seconds of total run time (0.002612 user, 0.000000 system)
+  100.00% CPU
+  7,659,570 processor cycles
+  8,025,856 bytes consed
+  
+NIL
+
+|#

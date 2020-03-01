@@ -1,4 +1,4 @@
-language: common-lisp
+language: bash
 sudo: false
 
 addons:

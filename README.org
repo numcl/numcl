@@ -2,9 +2,36 @@
 
 This is a Numpy clone in Common Lisp.
 At the moment the library is written in pure Common Lisp, focusing more on correctness and usefulness, not speed.
-Track the progress at https://github.com/numcl/numcl/projects/1 .
+
++ NUMCL is currently available in Quicklisp.
++ [[./example.lisp]] contains a script that you can explore the functions already implemented in NUMCL.
++ Find the full documentation at: https://numcl.github.io/numcl/
 
 [[https://asciinema.org/a/245792][https://asciinema.org/a/245792.svg]]
+
+** Quick tutorial
+
+In order to guarantee the speed and to simplify the implementation, the arrays
+given to numcl functions must satisfy the following two conditions:
+
++ It is a specialized array. Things of type =(array single-float)=, =(array (unsigned-byte 16))= etc.
++ It is an array displaced to a simple 1D specialized array.
+  "[[http://www.lispworks.com/documentation/HyperSpec/Body/t_smp_ar.htm][Simple array]]" means a non-displaced, non-adjustable array without fill pointer.
+
+This means you cannot directly feed the arrays such as =#2A((0.0 1.0) (2.0 3.0))=,
+which is an array of type =(simple-array T)=.
+
+There are two ways to create an array similar to what you have and is compatible to numcl:
+
++ =(reshape (arange 4.0) '(2 2))=
++ =(asarray #2A((0.0 1.0) (2.0 3.0)))=
+  + or =(asarray '((0.0 1.0) (2.0 3.0)))=
+  + or =(asarray '(#(0.0 1.0) #(2.0 3.0)))=.
++ =(let ((a (zeros '(2 2) :type 'single-float))) (dotimes (i 2) (dotimes (j 2) (setf (aref a i j) ...))))=.
+
+The names and the parameters of numcl functions mostly (rather strictly) follows
+the numpy counterpart. There are even numpy names, such as =dtype=, which are
+just aliases for =array-element-type=.
 
 ** Goals
 
@@ -35,16 +62,7 @@ Track the progress at https://github.com/numcl/numcl/projects/1 .
     representing an array.
   + See [[doc/DETAILS.org#representation][doc/DETAILS.org#representation]] .
 
-** Examples & documentation
-
-[[./example.lisp]] contains a script that you can explore the functionality already
-implemented in NUMCL.
-
-See [[doc/DETAILS.org]] for the types available in numcl, and object representation.
-
 ** Dependencies
-
-NUMCL is currently available in Quicklisp.
 
 This library is at least tested on implementation listed below:
 
@@ -61,32 +79,6 @@ This library is at least tested on implementation listed below:
 Dependency graph:
 
 [[./numcl.png]]
-
-** Quick tutorial
-
-In order to guarantee the speed and to simplify the implementation, the arrays
-given to numcl functions must satisfy the following two conditions:
-
-+ It is a specialized array. Things of type =(array single-float)=, =(array (unsigned-byte 16))= etc.
-+ It is an array displaced to a simple 1D specialized array.
-  "[[http://www.lispworks.com/documentation/HyperSpec/Body/t_smp_ar.htm][Simple array]]" means a non-displaced, non-adjustable array without fill pointer.
-
-This means you cannot directly feed the arrays such as =#2A((0.0 1.0) (2.0 3.0))=,
-which is an array of type =(simple-array T)=.
-
-There are two ways to create an array similar to what you have and is compatible to numcl:
-
-+ =(reshape (arange 4.0) '(2 2))=
-+ =(asarray #2A((0.0 1.0) (2.0 3.0)))=
-  + or =(asarray '((0.0 1.0) (2.0 3.0)))=
-  + or =(asarray '(#(0.0 1.0) #(2.0 3.0)))=.
-+ =(let ((a (zeros '(2 2) :type 'single-float))) (dotimes (i 2) (dotimes (j 2) (setf (aref a i j) ...))))=.
-
-The names and the parameters of numcl functions mostly (rather strictly) follows
-the numpy counterpart. There are even numpy names, such as =dtype=, which are
-just aliases for =array-element-type=.
-
-See the complete list of functions in https://numcl.github.io/numcl/.
 
 ** Author, License, Copyright
 

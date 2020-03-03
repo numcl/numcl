@@ -217,3 +217,122 @@ to minimize the size of the intermediate matrix."
 
 ;;; performance testing
 
+;; #+(or)
+(defun matmul*-test ()
+  (labels ((run (fn dims)
+             (print fn)
+             (time (print
+                    ;; naive approach will generate a 1000x1000 intermediate matrix
+                    (apply fn
+                           (iter (for j in dims)
+                                 (for i previous j)
+                                 (unless (first-iteration-p)
+                                   (collecting
+                                    (ones (list i j) :type 'fixnum))))))))
+           (run-all (dims &optional *print-array*)
+             (let ((a (run #'matmul*           dims))
+                   (b (run #'matmul*-thrashdin dims))
+                   (c (run #'matmul*-naive     dims)))
+               (assert (and (equalp a b)
+                            (equalp b c))))))
+    
+    (format t "~&###############################~%")
+    (format t "~&#### test 1 : basic feasibility~%")
+    (format t "~&###############################~%")
+    (run-all '(1000 1 1000 1000))
+    ;; ^^^ same as
+    #+(or)
+    (matmul*-naive (ones '(1000 1) :type 'fixnum)
+                   (ones '(1 1000) :type 'fixnum)
+                   (ones '(1000 1000) :type 'fixnum))
+
+    (format t "~&###############################~%")
+    (format t "~&#### test 2 : correctness")
+    (format t "~&###############################~%")
+    (dotimes (i 5)
+      (run-all (shuffle (iota 5 :start 2 :step 2))))
+
+    (format t "~&###############################~%")
+    (format t "~&#### test 3-1 : optimization runtime -- 10 arrays")
+    (format t "~&###############################~%")
+    (run-all (shuffle (shuffle (iota 10 :start 10 :step 100))))
+    (format t "~&###############################~%")
+    (format t "~&#### test 3-2 : optimization runtime -- 20 arrays")
+    (format t "~&###############################~%")
+    (run-all (shuffle (shuffle (iota 20 :start 10 :step 50))))
+    
+    nil))
+
+
+#| RESULT
+
+###############################
+#### test 3-1 : optimization runtime -- 10 arrays
+###############################
+
+#<FUNCTION MATMUL*> 
+#<(ARRAY FIXNUM (10 910)) {10019C1C9F}> 
+Evaluation took:
+  0.070 seconds of real time
+  0.072223 seconds of total run time (0.072208 user, 0.000015 system)
+  102.86% CPU
+  210,020,730 processor cycles
+  17,711,408 bytes consed
+  
+
+#<FUNCTION MATMUL*-THRASHDIN> 
+#<(ARRAY FIXNUM (10 910)) {10017C1C9F}> 
+Evaluation took:
+  0.666 seconds of real time
+  0.666617 seconds of total run time (0.654636 user, 0.011981 system)
+  [ Run times consist of 0.015 seconds GC time, and 0.652 seconds non-GC time. ]
+  100.15% CPU
+  1,994,323,800 processor cycles
+  19,811,328 bytes consed
+  
+
+#<FUNCTION MATMUL*-NAIVE> 
+#<(ARRAY FIXNUM (10 910)) {10018C1C9F}> 
+Evaluation took:
+  0.068 seconds of real time
+  0.067969 seconds of total run time (0.067969 user, 0.000000 system)
+  100.00% CPU
+  203,607,420 processor cycles
+  17,699,408 bytes consed
+  
+###############################
+#### test 3-2 : optimization runtime -- 20 arrays
+###############################
+
+#<FUNCTION MATMUL*> 
+#<(ARRAY FIXNUM (960 910)) {1001A6311F}> 
+Evaluation took:
+  0.175 seconds of real time
+  0.174834 seconds of total run time (0.170714 user, 0.004120 system)
+  [ Run times consist of 0.005 seconds GC time, and 0.170 seconds non-GC time. ]
+  100.00% CPU
+  522,777,720 processor cycles
+  36,652,016 bytes consed
+  
+
+#<FUNCTION MATMUL*-THRASHDIN> 
+#<(ARRAY FIXNUM (960 910)) {1001DE6F9F}> 
+Evaluation took:
+  2.298 seconds of real time
+  2.297257 seconds of total run time (2.281381 user, 0.015876 system)
+  99.96% CPU
+  6,880,376,190 processor cycles
+  42,824,464 bytes consed
+  
+
+#<FUNCTION MATMUL*-NAIVE> 
+#<(ARRAY FIXNUM (960 910)) {10018B271F}> 
+Evaluation took:
+  11.991 seconds of real time
+  11.987833 seconds of total run time (11.983856 user, 0.003977 system)
+  [ Run times consist of 0.008 seconds GC time, and 11.980 seconds non-GC time. ]
+  99.97% CPU
+  35,905,185,720 processor cycles
+  92,989,040 bytes consed
+
+|#

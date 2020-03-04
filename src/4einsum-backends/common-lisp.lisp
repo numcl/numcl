@@ -18,6 +18,24 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 |#
 
+#|
+
+Basic implementation without much optimization.
+
++ EINSUM-BODY is the global entry point to this set of functions.
++ %EINSUM-LOOP is a dispatch function.
++ %EINSUM-EARLY-BINDING does a very limited form of loop invariant analysis.
+  It tries to bind the array element as early as possible.
+  This does not mean all loop variants (e.g. index calcurations) are detected.
++ %EINSUM-STATIC and %EINSUM-BROADCAST implements a loop.
++ %EINSUM-BROADCAST generates a loop for broadcasting, which must loop over multiple axes
+  using the dynamic information stored in the PLAN array.
++ %EINSUM-STATIC generates a loop for a non-broadcasting axis.
++ %EINSUM-LEAF performs the base-level loop.
++ See EINSUM-SPECS for the datastructure description.
+
+|#
+
 (in-package :numcl.impl)
 
 (defvar *used-evars*)

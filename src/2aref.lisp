@@ -132,12 +132,16 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
                      (make-list (- (length shape)
                                    (- (length subscripts) 1)) :initial-element t)
                      (subseq subscripts (1+ pos))))
-           (if (< (length subscripts) (length shape))
-               (append subscripts
-                       (make-list (- (length shape)
-                                     (length subscripts))
-                                  :initial-element t))
-               subscripts))))
+           (cond
+             ((< (length subscripts) (length shape))
+              (append subscripts
+                      (make-list (- (length shape)
+                                    (length subscripts))
+                                 :initial-element t)))
+             ((> (length subscripts) (length shape))
+              (error "The array (shape: ~a) does not have enough rank for the subscript ~a" shape subscript))
+             ((= (length subscripts) (length shape))
+              subscripts)))))
     (let ((i 0))
       (handler-bind
           ((invalid-array-index-error

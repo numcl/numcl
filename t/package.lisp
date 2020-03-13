@@ -68,7 +68,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (is-false (eq (copy a) (copy a)))
     (is-true  (equalp a (copy a)))))
 
-(test (aref :compile-at :run-time :fixture muffle)
+(test (aref-shape1 :compile-at :run-time :fixture muffle)
   (let* ((a (zeros '(3 4 5 6))))
     
     (is-true (same-base-array-p a a))
@@ -100,10 +100,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
     ;; range indices outside the shape are ignored
     (is (equal (shape (aref a '(0 6)))
-               (shape (aref a '(0 4))))))
+               (shape (aref a '(0 4)))))))
 
   
   
+(test (aref-shape2 :compile-at :run-time :fixture muffle)
   (let ((a (reshape (arange 100) '(4 5 5))))
     (is-type a
              '(array (integer 0 100) (4 5 5)))
@@ -118,12 +119,14 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (is-type (aref a '(0 2) '(0 2) 0)
              '(array (integer 0 100) (2 2)))
     (is-type (aref a '- '(0 2))
-             '(array (integer 0 100) (4 5 2))))
+             '(array (integer 0 100) (4 5 2)))))
 
+(test (aref1 :compile-at :run-time :fixture muffle)
   (let ((a (zeros 4 :type 'bit)))
     (setf (aref a '(0 4 2)) 1)
-    (is (equalp a #(1 0 1 0))))
+    (is (equalp a #(1 0 1 0)))))
 
+(test (aref2 :compile-at :run-time :fixture muffle)
   (let ((a (arange 4)))
 
     (signals invalid-array-index-error (aref a 5))
@@ -133,11 +136,23 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (iter (for i from -4 to -1)
           (for j from 0 to 3)
           (is (= j (aref a i))))
-    (signals invalid-array-index-error (aref a -5)))
+    (signals invalid-array-index-error (aref a -5))))
 
-  (is (equalp (aref (arange 5) '(-3 -1)) #(3 4)))
+(test (aref3 :compile-at :run-time :fixture muffle)
+  ;; note: end index = -1 in the single index acess: last element
+  (is (equalp (aref (arange 5) -1) 4))
+  ;; note: end index = -1 in the slice means NOT the last element, but the second-last element 
+  (is (equalp (aref (arange 5) '(-3 -1)) #(2 3)))
+  ;; to denote the last element use T
+  (is (equalp (aref (arange 5) '(-3 t)) #(2 3 4)))
   
   ;; range access : when part of the range is out-of-range, it is ignored
+  (is (equalp (aref (arange 5) '(-5 t))
+              (aref (arange 5) '(-6 t))))
+  (is (equalp (aref (arange 5) '(-5 t))
+              (aref (arange 5) '(-7 t))))
+  (is (equalp (aref (arange 5) '(-5 t))
+              (aref (arange 5) '(-8 t))))
   (is (equalp (aref (arange 5) '(-5 -1))
               (aref (arange 5) '(-6 -1))))
   (is (equalp (aref (arange 5) '(-5 -1))
@@ -154,13 +169,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (equalp (zeros '(0 100))
               (aref (zeros '(0 100)) t)))
   (is (equalp (zeros '(0 100))
-              (aref (zeros '(5 100)) '(6 10))))
-              
-      
-
-
-
-  )
+              (aref (zeros '(5 100)) '(6 10)))))
 
 (test (aset-fill :compile-at :run-time :fixture muffle)
   (let ((a (zeros '(2 2) :type 'fixnum)))

@@ -109,8 +109,8 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
                   (<= (- dim) stop))
              nil
              'invalid-array-index-error)
-     (let* ((start (if (minusp start) (1+ (mod start dim)) (min start dim)))
-            (stop  (if (minusp stop)  (1+ (mod stop dim))  (min stop  dim)))
+     (let* ((start (if (minusp start) (mod start dim) (min start dim)))
+            (stop  (if (minusp stop)  (mod stop  dim) (min stop  dim)))
             (width  (ceiling (- stop start) step)))
        ;; step could be negative
        (sub start stop step width

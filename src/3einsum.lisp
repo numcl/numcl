@@ -274,7 +274,7 @@ you will get an array C with shape (2 5 5).
 (declaim (inline normalize-index))
 (defun normalize-index (index dimension)
   (if (minusp index)
-      (1+ (mod index dimension))
+      (mod index dimension)
       (min index dimension)))
 
 (declaim (inline range-width))
@@ -304,14 +304,14 @@ out-p: Produces the binding for output arrays."
                 (setf broadcast-used t
                       broadcast-start i)
                 (finish))
-              (destructuring-bind (&whole dimopt &key (start 0) (end -1) (step 1)) (cdr (assoc dim option))
+              (destructuring-bind (&whole dimopt &key (start t) (end t) (step 1)) (cdr (assoc dim option))
                 ;; Note: to specify the varaible step, you should construct a list dynamically.
                 ;; Do not embed a form.
                 (assert (constantp start) nil "~s = ~s in ~s: iteration specifier option should be constant" :start start dimopt)
                 (assert (constantp end)   nil "~s = ~s in ~s: iteration specifier option should be constant" :end   end   dimopt)
                 (assert (constantp step)  nil "~s = ~s in ~s: iteration specifier option should be constant" :step  step  dimopt)
                 (when (eq t start) (setf start 0))
-                (when (eq t end )  (setf end  -1))
+                (when (eq t   end) (setf end   `(array-dimension ,var ,i)))
                 ;; unify d to the variable (? dim)
                 (with-gensyms (w)
                   (in outer
@@ -325,12 +325,12 @@ out-p: Produces the binding for output arrays."
                 (when (= dim -1)
                   (setf broadcast-end i)
                   (finish))
-                (destructuring-bind (&whole dimopt &key (start 0) (end -1) (step 1)) (cdr (assoc dim option))
+                (destructuring-bind (&whole dimopt &key (start t) (end t) (step 1)) (cdr (assoc dim option))
                   (assert (constantp start) nil "~s = ~s in ~s: iteration specifier option should be constant" :start start dimopt)
                   (assert (constantp end)   nil "~s = ~s in ~s: iteration specifier option should be constant" :end   end   dimopt)
                   (assert (constantp step)  nil "~s = ~s in ~s: iteration specifier option should be constant" :step  step  dimopt)
                   (when (eq t start) (setf start 0))
-                  (when (eq t end )  (setf end  -1))
+                  (when (eq t   end) (setf end   `(array-dimension ,var ,i)))
                   (with-gensyms (w)
                     (in outer
                         (collecting `(,w (range-width ,var (- (array-rank ,var) ,(1+ i)) ,start ,end ,step))

@@ -501,6 +501,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (= 10 (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 10 :step 1))) (ones 10))))
   (is (= 5  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 10 :step 2))) (ones 10))))
   (is (= 4  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 10 :step 3))) (ones 10))))
+
+  (is (= 9  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end -1))) (ones 10))))
   
   (is (= 3  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 3  :step 1))) (ones 10))))
   (is (= 5  (einsum '(i -> (cl:+ @1 $1) -> -> ((i :start 0 :end 5  :step 1))) (ones 10))))

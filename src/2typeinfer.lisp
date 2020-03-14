@@ -229,6 +229,8 @@ interprets a form consisting of functions and type specifiers (at the leafs).
      ((and-type types)
       (reduce #'intersection-to-float-type types :key #'log-inferer)))))
 
+(set-type-inferer 'expt (defun expt-inferer (base power) (interpret-type `(exp (* (log ,base) ,power)))))
+
 ;; %log2
 (set-type-inferer
  '%log2

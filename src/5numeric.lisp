@@ -517,6 +517,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun numcl:max (&rest args) (reduce (lambda (x y) (broadcast 'max x y)) args))
 (defun numcl:min (&rest args) (reduce (lambda (x y) (broadcast 'min x y)) args))
 
+(defun numcl:expt (base power) (broadcast 'expt base power))
+
 (defun numcl:-   (first &rest args)
   (if args
       (reduce (lambda (x y) (broadcast '- x y)) args :initial-value first)

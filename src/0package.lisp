@@ -94,6 +94,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:map-array-into
    #:broadcast
 
+   #:expt
+   
    #:sin #:cos #:tan
    #:asin #:acos #:atan
    #:sinh #:cosh #:tanh

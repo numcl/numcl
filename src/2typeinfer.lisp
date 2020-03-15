@@ -604,3 +604,16 @@ interprets a form consisting of functions and type specifiers (at the leafs).
      ((and-type types)
       (reduce #'intersection-to-float-type types :key #'conjugate-inferer)))))
 
+;; Note on SQRT:
+;; According to CLHS,
+;;
+;;  If number is a positive rational, it is implementation-dependent whether
+;;  root is a rational or a float. If number is a negative rational, it is
+;;  implementation-dependent whether root is a complex rational or a
+;;  complex float.
+;;
+;; However, numcl always assume it is converted to float.
+;; 
+(set-type-inferer 'sqrt (defun sqrt-inferer (x) (interpret-type `(exp (/ (log ,x) 2)))))
+
+(set-type-inferer 'isqrt (defun isqrt-inferer (x) (interpret-type `(floor (sqrt ,x)))))

@@ -462,6 +462,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                    (flatten y))
            y))))
 
+(define-simple-mapper numcl:sqrt sqrt)
+(define-simple-mapper numcl:isqrt isqrt)
 (define-simple-mapper numcl:sin sin)
 (define-simple-mapper numcl:cos cos)
 (define-simple-mapper numcl:tan tan)

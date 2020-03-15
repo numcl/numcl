@@ -124,6 +124,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
    #:square
    #:sqrt
+   #:isqrt
    #:log2
    
    #:logand  

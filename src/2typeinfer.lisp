@@ -47,26 +47,38 @@ interprets a form consisting of functions and type specifiers (at the leafs).
 (defun interpret-type (form)
   "Form is a cons tree in which:
  form : (inferer args*)
- arg  : type | form "
-  (ematch form
+ arg  : type | form | singleton
+ singleton : number "
+  (match form
+    ;; interpret lambda form
     ((list* (list 'lambda (list* arg args) body) type types)
      (interpret-type
       `((lambda ,args ,(subst type arg body)) ,@types)))
     ((list (list 'lambda nil body))
      (interpret-type
       body))
-    ((list* name types)
-     (if (inferer-boundp name)
-         (apply #'infer-type
-                name
-                (mapcar #'interpret-type types))
-         form))
+    ;; if the head is a name of inferer, run it
+    ((list* (and name (satisfies inferer-boundp)) types)
+     (apply #'infer-type
+            name
+            (mapcar #'interpret-type types)))
+    ;; if it is a cons which is not an inferer, it should be
+    ;; a type specifier. Expand it
+    ((type cons)
+     (typexpand form))
+    ;; if it is a nil, it should be a NIL type.
+    (nil
+     nil)
+    ;; For any type (X ...), X itself is also a valid type specifier.
+    ((type symbol)
+     (typexpand form))
+    ;; special handling of numbers.
+    ((type number)
+     (if (realp form)
+         `(,(first (ensure-list (type-of form))) ,form ,form)
+         'complex))
     (_
-     (if (numberp form)
-         (if (realp form)
-             `(,(first (ensure-list (type-of form))) ,form ,form)
-             'complex)
-         form))))
+     (error "INTERPRET-TYPE: invalid value ~a " form))))
 
 (defun funcall* (fn x &optional (default '*))
   (if (numberp x)

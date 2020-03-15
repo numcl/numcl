@@ -572,14 +572,41 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (declaim (inline >/bit))
 (defun >/bit  (x y) (if (>  x y) 1 0))
 
+(declaim (inline =/2 /=/2 <=/2 >=/2 </2 >/2))
+(declaim (inline boolean-wrapper))
+
+(defun =/2  (x y) (broadcast '=/bit  x y :atomic #'= ))
+(defun /=/2 (x y) (broadcast '/=/bit x y :atomic #'/=))
+(defun <=/2 (x y) (broadcast '<=/bit x y :atomic #'<=))
+(defun >=/2 (x y) (broadcast '>=/bit x y :atomic #'>=))
+(defun </2  (x y) (broadcast '</bit  x y :atomic #'< ))
+(defun >/2  (x y) (broadcast '>/bit  x y :atomic #'> ))
+
+(defun boolean-wrapper (x y more binary multiary)
+  (declare (function binary multiary))
+  (let ((result (funcall binary x y)))
+    (if more
+        (let ((result2 (apply multiary y more)))
+          (numcl:logand result result2))
+        result)))
+
+#+(or)
+(defun numcl:=  (x y &rest more)
+  (let ((result (funcall #'=/2 x y)))
+    (if more
+        (let ((result2 (apply #'numcl:= y more)))
+          (numcl:logand result result2))
+        result)))
+
 (declaim (inline numcl:= numcl:/= numcl:<= numcl:>= numcl:< numcl:>))
 
-(defun numcl:=  (x y) (broadcast '=/bit  x y :atomic #'= ))
-(defun numcl:/= (x y) (broadcast '/=/bit x y :atomic #'/=))
-(defun numcl:<= (x y) (broadcast '<=/bit x y :atomic #'<=))
-(defun numcl:>= (x y) (broadcast '>=/bit x y :atomic #'>=))
-(defun numcl:<  (x y) (broadcast '</bit  x y :atomic #'< ))
-(defun numcl:>  (x y) (broadcast '>/bit  x y :atomic #'> ))
+(defun numcl:=  (x y &rest more) (boolean-wrapper x y more #'=/2  #'numcl:= ))
+(defun numcl:/= (x y &rest more) (boolean-wrapper x y more #'/=/2 #'numcl:/=))
+(defun numcl:<= (x y &rest more) (boolean-wrapper x y more #'<=/2 #'numcl:<=))
+(defun numcl:>= (x y &rest more) (boolean-wrapper x y more #'>=/2 #'numcl:>=))
+(defun numcl:<  (x y &rest more) (boolean-wrapper x y more #'</2  #'numcl:<))
+(defun numcl:>  (x y &rest more) (boolean-wrapper x y more #'>/2  #'numcl:>))
+
 
 ;; better trivia pattern integration
 

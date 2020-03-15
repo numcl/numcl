@@ -276,11 +276,13 @@ interprets a form consisting of functions and type specifiers (at the leafs).
 
 (set-type-inferer 'tanh (defun tanh-inferer (x) (interpret-type `(/ (sinh ,x) (cosh ,x)))))
 
-;; (set-type-inferer 'coth (defun coth-inferer (x) (interpret-type `(/ (cosh ,x) (sinh ,x)))))
-;; 
-;; (set-type-inferer 'sech (defun cosh-inferer (x) (interpret-type `(/ 2 (+ (exp ,x) (exp (- ,x)))))))
-;; 
-;; (set-type-inferer 'cosech (defun sinh-inferer (x) (interpret-type `(/ 2 (- (exp ,x) (exp (- ,x)))))))
+(set-type-inferer 'acosh (defun acosh-inferer (x) (interpret-type `(* 2 (log (+ (sqrt (/ (+ x, 1) 2)) (sqrt (/ (- x, 1) 2))))))))
+
+(set-type-inferer 'asinh (defun asinh-inferer (x) (interpret-type `(log (+ ,x (sqrt (+ 1 (* ,x ,x))))))))
+
+(set-type-inferer 'atanh (defun atanh-inferer (x) (interpret-type `(/ (- (log (+ 1 ,x)) (log (- 1 ,x))) 2))))
+
+
 
 ;; acos
 (set-type-inferer

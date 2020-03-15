@@ -99,6 +99,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:sin #:cos #:tan
    #:asin #:acos #:atan
    #:sinh #:cosh #:tanh
+   #:asinh #:acosh #:atanh
    #:exp #:log
    #:abs #:signum
    #:1+ #:1-

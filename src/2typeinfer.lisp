@@ -152,30 +152,15 @@ interprets a form consisting of functions and type specifiers (at the leafs).
         ,(coerce -1 %float%)
         ,(coerce 1 %float%)))
      ((real-subtype low high)
-      (assert (< low high))
-      (let* ((low-next-quater-n (ceiling low +quater+))
-             ;; 0+4n->0+4n ; 1+4n->0+4(n+1); 2+4n->0+4(n+1); 3+4n->0+4(n+1)
-             (low-next-r (* +quater+ (+ (* 4 (ceiling (- low-next-quater-n 0) 4)) 0)))
-             ;; 0+4n->1+4n ; 1+4n->1+4n; 2+4n->1+4(n+1); 3+4n->1+4(n+1)
-             ;; (low-next-t (* +quater+ (+ (* 4 (ceiling (- low-next-quater-n 1) 4)) 1)))
-             ;; 0+4n->2+4n ; 1+4n->2+4n; 2+4n->2+4n; 3+4n->2+4(n+1)
-             (low-next-l (* +quater+ (+ (* 4 (ceiling (- low-next-quater-n 2) 4)) 2)))
-             ;; 0+4n->3+4n ; 1+4n->3+4n; 2+4n->3+4n; 3+4n->3+4n
-             ;; (low-next-b (* +quater+ (+ (* 4 (ceiling (- low-next-quater-n 3) 4)) 3)))
-             (high-previous-quater-n (floor high +quater+))
-             ;; 0+4n->0+4n ; 1+4n->0+4n; 2+4n->0+4n; 3+4n->0+4n
-             (high-previous-r (* +quater+ (+ (* 4 (floor (- high-previous-quater-n 0) 4)) 0)))
-             ;; 0+4n->1+4(n-1) ; 1+4n->1+4n; 2+4n->1+4n; 3+4n->1+4n
-             ;; (high-previous-t (* +quater+ (+ (* 4 (floor (- high-previous-quater-n 1) 4)) 1)))
-             ;; 0+4n->2+4(n-1) ; 1+4n->2+4(n-1); 2+4n->2+4n; 3+4n->2+4n
-             (high-previous-l (* +quater+ (+ (* 4 (floor (- high-previous-quater-n 2) 4)) 2)))
-             ;; 0+4n->3+4(n-1) ; 1+4n->3+4(n-1); 2+4n->3+4(n-1); 3+4n->3+4n
-             ;; (high-previous-b (* +quater+ (+ (* 4 (floor (- high-previous-quater-n 3) 4)) 3)))
-             )
+      (assert (<= low high))
+      (let* ((low-next-pi      (* pi (ceiling low pi)))
+             (high-prev-pi     (* pi (floor high pi))))
         (flet ((in-range (x) (<= low x high)))
+          (let ((keypoints (remove-if-not #'in-range (list low  low-next-pi  (+ low-next-pi pi)
+                                                           high high-prev-pi (- high-prev-pi pi)))))
           `(,%float%
-            ,(coerce (reduce #'min (remove-if-not #'in-range (list low low-next-r high-previous-r high)) :key #'cos) %float%)
-            ,(coerce (reduce #'max (remove-if-not #'in-range (list low low-next-l high-previous-l high)) :key #'cos) %float%)))))
+            ,(coerce (reduce #'min keypoints :key #'cos) %float%)
+            ,(coerce (reduce #'max keypoints :key #'cos) %float%))))))
      ((complex-type)
       ;; TBD
       'complex)

@@ -91,6 +91,8 @@ interprets a form consisting of functions and type specifiers (at the leafs).
 
 ;; (interpret-type '(+ (integer 0 100) (integer -10 100))) -> (integer -10 200)
 
+;;; basic arithmetic functions
+
 ;; +
 (set-type-inferer
  '+
@@ -136,7 +138,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
  (defun min-to-float-type (&rest typespecs)
    (infer-rational-arithmetic-result #'interval-min typespecs 'integer)))
 
-;; transcendental functions
+;;; transcendental functions
 
 ;; cos
 (set-type-inferer
@@ -359,11 +361,12 @@ interprets a form consisting of functions and type specifiers (at the leafs).
      ((and-type types)
       (reduce #'intersection-to-float-type types :key #'abs-inferer)))))
 
-;; floor is same as / except the handling of integer-integer
+;;; float rounding functions
 
 ;; floor
 (set-type-inferer
  'floor
+ ;; same as / except the handling of integer-integer
  (defun floor-inferer (x &optional (y '(integer 1 1)))
    (declare (trivia:optimizer :trivial))
    (ematch* (x y)
@@ -464,6 +467,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
 (defun float          (x) )
 |#
 
+;;; comparison functions
 
 (set-type-inferer '=/bit (constantly 'bit))
 (set-type-inferer '/=/bit (constantly 'bit))
@@ -471,6 +475,8 @@ interprets a form consisting of functions and type specifiers (at the leafs).
 (set-type-inferer '<=/bit (constantly 'bit))
 (set-type-inferer '>/bit (constantly 'bit))
 (set-type-inferer '</bit (constantly 'bit))
+
+;;; bitwise functions
 
 ;; logior
 (set-type-inferer
@@ -578,6 +584,8 @@ interprets a form consisting of functions and type specifiers (at the leafs).
 (set-type-inferer 'logorc2 (defun infer-logorc2 (x y) (infer-logior x (infer-lognot y))))
 (set-type-inferer 'lognand (defun infer-lognand (x y) (infer-lognot (infer-logand x y))))
 (set-type-inferer 'lognor  (defun infer-lognor  (x y) (infer-lognot (infer-logior x y))))
+
+;;; complex functions
 
 ;; conjugate
 (set-type-inferer

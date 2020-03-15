@@ -452,16 +452,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   ;; ;; `(1 3 2)                                           : constant
   )
 
-#+(or)
-(defun numcl:sin (x)
-  (if (numberp x)
-      (sin x)
-      (let ((y (empty (shape x) :type (infer-type 'sin (array-element-type x)))))
-        (einsum '(i -> (sin $1) -> i)
-                (flatten x)
-                (flatten y))
-        y)))
-
 (defmacro define-simple-mapper (numcl-fn cl-fn)
   `(defun ,numcl-fn (x)
      (if (numberp x)

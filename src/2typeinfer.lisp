@@ -44,11 +44,24 @@ interprets a form consisting of functions and type specifiers (at the leafs).
         (warn "Missing type inference function for ~a, defaults to T" name)
         t)))
 
-(defun interpret-type (form)
-  "Form is a cons tree in which:
+(let (cache)
+  (defun interpret-type (form)
+    "Form is a cons tree in which:
  form : (inferer args*)
  arg  : type | form | singleton
  singleton : number "
+    (if (null cache)
+        (unwind-protect
+             (progn (setf cache (make-hash-table :test 'equal))
+                    (print :setup)
+                    (interpret-type form))
+          (setf cache nil))
+        (multiple-value-bind (res found) (gethash form cache)
+          (if found
+              res
+              (setf (gethash form cache) (%interpret-type form)))))))
+
+(defun %interpret-type (form)
   (match form
     ;; interpret lambda form
     ((list* (list 'lambda (list* arg args) body) type types)

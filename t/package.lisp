@@ -630,3 +630,36 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (is (typep a 'bit-vector))
     (is (typep (- 1 a) 'bit-vector))))
 
+(test (cos-inferer :fixture muffle)
+  (is (equal '(SINGLE-FLOAT 1.0 1.0)
+             (numcl.impl::interpret-type `(cl:cos (single-float 0 0)))))
+  (is (equal '(SINGLE-FLOAT -1.0 1.0)
+             (numcl.impl::interpret-type `(cl:cos (single-float 0 ,pi)))))
+  (is (equal '(SINGLE-FLOAT -1.0 1.0)
+             (numcl.impl::interpret-type `(cl:cos (single-float 0 4)))))
+  (is (equal '(SINGLE-FLOAT -1.0 1.0)
+             (numcl.impl::interpret-type `(cl:cos (single-float 0 6)))))
+  
+  (is (subtypep (numcl.impl::interpret-type `(cl:cos (single-float 1.58 ,pi))) ; slightly past pi/2
+                '(SINGLE-FLOAT -1.0 0.0)))
+
+  (is (subtypep (numcl.impl::interpret-type `(cl:cos (single-float 4.72 6.27))) ; slightly past 3/2 * pi, before 2 * pi
+                '(SINGLE-FLOAT 0.0 1.0)))
+
+  (is (subtypep (numcl.impl::interpret-type `(cl:cos (single-float 4.72 7)))
+                '(SINGLE-FLOAT 0.0 1.0)))
+
+  (signals error
+    (numcl.impl::interpret-type `(cl:cos (single-float 1.0 0.0))))
+  
+  (iter (for i from -20.0 to 20.0)
+        (iter (for j from i)
+              (for pj previous j)
+              (repeat 40)
+              (for res = (numcl.impl::interpret-type `(cl:cos (single-float ,i ,j))))
+              (for pres previous res)
+              (unless (first-iteration-p)
+                (is (subtypep pres res)
+                    "~%type inference of ~a : ~a~%type inference of ~a : ~a --- should be a supertype"
+                    `(cl:cos (single-float ,i ,pj)) pres
+                    `(cl:cos (single-float ,i ,j)) res)))))

@@ -478,7 +478,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (define-simple-mapper numcl:atanh atanh)
 (define-simple-mapper numcl:exp exp)
 (define-simple-mapper numcl:log log)
-(define-simple-mapper numcl:sqrt sqrt)
 (define-simple-mapper numcl:abs abs)
 (define-simple-mapper numcl:signum signum)
 (define-simple-mapper numcl:cis cis)

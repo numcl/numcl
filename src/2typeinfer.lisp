@@ -53,7 +53,6 @@ interprets a form consisting of functions and type specifiers (at the leafs).
     (if (null cache)
         (unwind-protect
              (progn (setf cache (make-hash-table :test 'equal))
-                    (print :setup)
                     (interpret-type form))
           (setf cache nil))
         (multiple-value-bind (res found) (gethash form cache)

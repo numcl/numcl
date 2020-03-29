@@ -28,17 +28,9 @@ during computation.")
 
 ;;;; interval arithmetic
 
-(defun interval-preprocess-low (x)
-  (ematch x
-    ('* 'float-features:long-float-negative-infinity)
-    (_ x)))
-
-(defun interval-preprocess-high (x)
-  (ematch x
-    ('* 'float-features:long-float-positive-infinity)
-    (_ x)))
-
-;; these are agnostic
+;; low-level functions.
+;; These are used for computing the result for the lower/upper bounds.
+;; It assumes a number, potentially including a float infinity or quiet NaN.
 
 (defun %interval-max (x y)
   (float-features:with-float-traps-masked (:invalid)
@@ -92,24 +84,66 @@ during computation.")
   (float-features:with-float-traps-masked (:invalid)
     (/= x y)))
 
+;; converters used for passing values to the low-level functions.
 
-(defun interval-min          (l1 h1 l2 h2) (list (interval1-min l1 l2) (interval2-min h1 h2)))
-(defun interval-max          (l1 h1 l2 h2) (list (interval1-max l1 l2) (interval2-max h1 h2)))
-(defun interval-union        (l1 h1 l2 h2) (list (interval1-min l1 l2) (interval2-max h1 h2)))
-(defun interval-intersection (l1 h1 l2 h2) (list (interval1-max l1 l2) (interval2-min h1 h2)))
+(defun interval-preprocess-low (x)
+  (ematch x
+    ('* float-features:long-float-negative-infinity)
+    (_ x)))
 
-(defun interval-add (l1 h1 l2 h2) (list (%interval-add l1 l2) (%interval-add h1 h2)))
-(defun interval-sub (l1 h1 l2 h2) (list (%interval-sub l1 h2) (%interval-sub h1 l2)))
+(defun interval-preprocess-high (x)
+  (ematch x
+    ('* float-features:long-float-positive-infinity)
+    (_ x)))
+
+(defun interval-postprocess-low (x)
+  (cond
+    ((and (floatp x) (float-features:float-infinity-p x) (minusp x)) '*)
+    ((and (floatp x) (float-features:float-infinity-p x) (plusp  x)) (throw 'empty-interval nil))
+    ((and (floatp x) (float-features:float-nan-p x)) '*)
+    (t x)))
+
+(defun interval-postprocess-high (x)
+  (cond
+    ((and (floatp x) (float-features:float-infinity-p x) (plusp  x)) '*)
+    ((and (floatp x) (float-features:float-infinity-p x) (minusp x)) (throw 'empty-interval nil))
+    ((and (floatp x) (float-features:float-nan-p x)) '*)
+    (t x)))
+
+
+(defmacro without-* (&body body)
+  "Internal macro"
+  `(let ((l1 (interval-preprocess-low l1))
+         (l2 (interval-preprocess-low l2))
+         (h1 (interval-preprocess-high h1))
+         (h2 (interval-preprocess-high h2)))
+     ,@body))
+
+(defun postprocess (interval)
+  (list (interval-postprocess-low (first interval))
+        (interval-postprocess-high (second interval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 
+
+
+(defun interval-min          (l1 h1 l2 h2) (without-* (postprocess (list (%interval-min l1 l2) (%interval-min h1 h2)))))
+(defun interval-max          (l1 h1 l2 h2) (without-* (postprocess (list (%interval-max l1 l2) (%interval-max h1 h2)))))
+(defun interval-union        (l1 h1 l2 h2) (without-* (postprocess (list (%interval-min l1 l2) (%interval-max h1 h2)))))
+(defun interval-intersection (l1 h1 l2 h2) (without-* (postprocess (list (%interval-max l1 l2) (%interval-min h1 h2)))))
+
+(defun interval-add (l1 h1 l2 h2) (without-* (postprocess (list (%interval-add l1 l2) (%interval-add h1 h2)))))
+(defun interval-sub (l1 h1 l2 h2) (without-* (postprocess (list (%interval-sub l1 h2) (%interval-sub h1 l2)))))
 
 (defun interval-op (fn l1 h1 l2 h2)
-  (assert (if (and (numberp l1) (numberp h1)) (<= l1 h1) t))
-  (assert (if (and (numberp l2) (numberp h2)) (<= l2 h2) t))
-  (let ((v0 (funcall fn l1 l2))
-        (v1 (funcall fn l1 h2))
-        (v2 (funcall fn h1 l2))
-        (v3 (funcall fn h1 h2)))
-    (list (reduce #'interval1-min (list v0 v1 v2 v3))
-          (reduce #'interval2-max (list v0 v1 v2 v3)))))
+  (without-*
+    (let ((v0 (funcall fn l1 l2))
+          (v1 (funcall fn l1 h2))
+          (v2 (funcall fn h1 l2))
+          (v3 (funcall fn h1 h2)))
+      (postprocess
+       (list (reduce #'%interval-min (list v0 v1 v2 v3))
+             (reduce #'%interval-max (list v0 v1 v2 v3)))))))
 
 (defun interval-mul (l1 h1 l2 h2) (interval-op '%interval-mul l1 h1 l2 h2))
 
@@ -124,8 +158,8 @@ during computation.")
 (defun interval-ftruncate (l1 h1 l2 h2) (interval-op '%interval-ftruncate l1 h1 l2 h2))
 
 (defun interval-connected-p (l1 h1 l2 h2)
-  (destructuring-bind (l h) (interval-intersection l1 h1 l2 h2)
-    (<= l h)))
+  (without-*
+    (%interval-<= (%interval-max l1 l2) (%interval-min h1 h2))))
 
 (defun interval-< (l1 h1 l2 h2)
   "Sort types accorting to the interval-designators. Provides a full ordering"

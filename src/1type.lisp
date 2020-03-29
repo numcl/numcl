@@ -28,70 +28,40 @@ during computation.")
 
 ;;;; interval arithmetic
 
-;; for the start of the interval
+(defun interval-preprocess-low (x)
+  (ematch x
+    ('* 'float-features:long-float-negative-infinity)
+    (_ x)))
 
-(defun interval1-min (x y)
-  (ematch* (x y)
-    (('* _) '*)
-    ((_ '*) '*)
-    ((_ _) (min x y))))
-
-(defun interval1-max (x y)
-  (ematch* (x y)
-    (('* _) y)
-    ((_ '*) x)
-    ((_ _) (max x y))))
-
-;; for the end of the interval
-
-(defun interval2-min (x y)
-  (ematch* (x y)
-    (('* _) y)
-    ((_ '*) x)
-    ((_ _) (min x y))))
-
-(defun interval2-max (x y)
-  (ematch* (x y)
-    (('* _) '*)
-    ((_ '*) '*)
-    ((_ _) (max x y))))
+(defun interval-preprocess-high (x)
+  (ematch x
+    ('* 'float-features:long-float-positive-infinity)
+    (_ x)))
 
 ;; these are agnostic
 
+(defun %interval-max (x y)
+  (float-features:with-float-traps-masked (:invalid)
+    (max x y)))
+(defun %interval-min (x y)
+  (float-features:with-float-traps-masked (:invalid)
+    (min x y)))
 (defun %interval-add (x y)
-  (match* (x y)
-    (('* _) '*)
-    ((_ '*) '*)
-    ((_ _) (+ x y))))
-
+  (float-features:with-float-traps-masked (:invalid)
+    (+ x y)))
 (defun %interval-sub (x y)
-  (match* (x y)
-    (('* _) '*)
-    ((_ '*) '*)
-    ((_ _) (- x y))))
-
+  (float-features:with-float-traps-masked (:invalid)
+    (- x y)))
 (defun %interval-mul (x y)
-  (match* (x y)
-    ;; since '* does not mean infinity, (* 0 '*) = 0
-    (((= 0) _    ) 0)
-    ((_     (= 0)) 0)
-    (('* _) '*)
-    ((_ '*) '*)
-    ((_ _) (* x y))))
-
+  (float-features:with-float-traps-masked (:invalid)
+    (* x y)))
 (defun %interval-divlike (fn x y)
-  (match* (x y)
-    ;; compute the maximum of x+ε / y+ε
-    ;; note: '* ~= +infty
-    (((= 0)   (= 0)) '*)
-    (('*      (= 0)) '*)
-    (((= 0)   '*   )  0)
-    (('*      '*   ) '*)
-    (((= 0)   _    )  0)
-    (('*      _    ) '*)
-    ((_       (= 0)) '*)
-    ((_       '*   )  0)
-    ((_       _    ) (funcall fn x y))))
+  (handler-case
+      (float-features:with-float-traps-masked (:invalid :divide-by-zero)
+        (funcall fn x y))
+    (division-by-zero ()
+      (float-features:with-float-traps-masked (:divide-by-zero)
+        (/ 1.0 0.0)))))
 
 (defun %interval-div       (number divisor) (%interval-divlike '/         number divisor))
 (defun %interval-round     (number divisor) (%interval-divlike 'round     number divisor))
@@ -102,6 +72,25 @@ during computation.")
 (defun %interval-ffloor    (number divisor) (%interval-divlike 'ffloor    number divisor))
 (defun %interval-fceiling  (number divisor) (%interval-divlike 'fceiling  number divisor))
 (defun %interval-ftruncate (number divisor) (%interval-divlike 'ftruncate number divisor))
+
+(defun %interval-< (x y)
+  (float-features:with-float-traps-masked (:invalid)
+    (< x y)))
+(defun %interval-> (x y)
+  (float-features:with-float-traps-masked (:invalid)
+    (> x y)))
+(defun %interval-= (x y)
+  (float-features:with-float-traps-masked (:invalid)
+    (= x y)))
+(defun %interval-<= (x y)
+  (float-features:with-float-traps-masked (:invalid)
+    (<= x y)))
+(defun %interval->= (x y)
+  (float-features:with-float-traps-masked (:invalid)
+    (>= x y)))
+(defun %interval-/= (x y)
+  (float-features:with-float-traps-masked (:invalid)
+    (/= x y)))
 
 
 (defun interval-min          (l1 h1 l2 h2) (list (interval1-min l1 l2) (interval2-min h1 h2)))
@@ -155,31 +144,12 @@ during computation.")
     ((_  _  _  _ ) (or (<= l1 h2 h1)
                        (<= l1 l2 h1)))))
 
-(defun interval1-< (l1 l2)
-  (match* (l1 l2)
-    (('* '*) nil)
-    ((_  '*) t)
-    (('* _ ) nil)
-    ((_  _ ) (< l1 l2))))
-(defun interval2-< (h1 h2)
-  (match* (h1 h2)
-    (('* '*) nil)
-    ((_  '*) nil)
-    (('* _ ) t)
-    ((_  _ ) (< h1 h2))))
-(defun %interval-= (l1 l2)
-  (match* (l1 l2)
-    (('* '*) t)
-    ((_  '*) nil)
-    (('* _ ) nil)
-    ((_  _ ) (= l1 l2))))
-
 (defun interval-< (l1 h1 l2 h2)
   "Sort types accorting to the interval-designators. Provides a full ordering"
-  (if (interval1-< l1 l2)
+  (if (%interval-< l1 l2)
       t
       (if (%interval-= l1 l2)
-          (interval2-< h1 h2)
+          (%interval-< h1 h2)
           nil)))
 
 (defun %interval-coerce (value type)

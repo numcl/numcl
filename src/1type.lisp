@@ -419,19 +419,20 @@ If you want them to be merged as a single type, use bind-to-float-type."
                 (let ((type (float-contagion prev now)))
                   (flet ((c (value) (interval-coerce value type)))
                     (if (interval-connected-p l1 h1 l2 h2)
-                        (ematch (interval-union l1 h1 l2 h2)
-                          ((list low high)
-                           (if (or (eq low '*) (eq high '*) (<= low high))
-                               (if (eq type 'integer)
-                                   (progn
-                                     (check-type low  (or integer (eql *)))
-                                     (check-type high (or integer (eql *)))
-                                     `(integer ,@(interval-intersection
-                                                  low high
-                                                  most-negative-fixnum
-                                                  most-positive-fixnum)))
-                                   `(,type ,(c low) ,(c high)))
-                               nil)))
+                        (catch 'empty-interval
+                          (ematch (interval-union l1 h1 l2 h2)
+                            ((list low high)
+                             (if (or (eq low '*) (eq high '*) (<= low high))
+                                 (if (eq type 'integer)
+                                     (progn
+                                       (check-type low  (or integer (eql *)))
+                                       (check-type high (or integer (eql *)))
+                                       `(integer ,@(interval-intersection
+                                                    low high
+                                                    most-negative-fixnum
+                                                    most-positive-fixnum)))
+                                     `(,type ,(c low) ,(c high)))
+                                 nil))))
                         `(or (,type ,(c l1) ,(c h1))
                              (,type ,(c l2) ,(c h2))))))))))
     
@@ -467,19 +468,20 @@ to the least specific FLOAT type when any one of them are not fixnums."
                (((real-subtype l1 h1) (real-subtype l2 h2))
                 (let ((type (float-contagion prev now  :int-int-result int-int-result)))
                   (flet ((c (value) (interval-coerce value type)))
-                    (ematch (funcall interval-op l1 h1 l2 h2)
-                      ((list low high)
-                       (if (or (eq low '*) (eq high '*) (<= low high))
-                           (if (eq type 'integer)
-                               (progn
-                                 (check-type low  (or integer (eql *)))
-                                 (check-type high (or integer (eql *)))
-                                 `(integer ,@(interval-intersection
-                                              low high
-                                              most-negative-fixnum
-                                              most-positive-fixnum)))
-                               `(,type ,(c low) ,(c high)))
-                           nil)))))))))
+                    (catch 'empty-interval
+                      (ematch (funcall interval-op l1 h1 l2 h2)
+                        ((list low high)
+                         (if (or (eq low '*) (eq high '*) (<= low high))
+                             (if (eq type 'integer)
+                                 (progn
+                                   (check-type low  (or integer (eql *)))
+                                   (check-type high (or integer (eql *)))
+                                   `(integer ,@(interval-intersection
+                                                low high
+                                                most-negative-fixnum
+                                                most-positive-fixnum)))
+                                 `(,type ,(c low) ,(c high)))
+                             nil))))))))))
     (reduce #'fn typespecs)))
 
 (constantfold intersection-to-float-type :associative t :commutative t)

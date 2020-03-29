@@ -135,7 +135,7 @@ during computation.")
           (%interval-< h1 h2)
           nil)))
 
-(defun %interval-coerce (value type)
+(defun interval-coerce (value type)
   (declare ((or number (eql *)) value))
   (if (eq '* value)
       '*
@@ -383,7 +383,7 @@ If you want them to be merged as a single type, use bind-to-float-type."
                
                (((real-subtype l1 h1) (real-subtype l2 h2))
                 (let ((type (float-contagion prev now)))
-                  (flet ((c (value) (%interval-coerce value type)))
+                  (flet ((c (value) (interval-coerce value type)))
                     (if (interval-connected-p l1 h1 l2 h2)
                         (ematch (interval-union l1 h1 l2 h2)
                           ((list low high)
@@ -432,7 +432,7 @@ to the least specific FLOAT type when any one of them are not fixnums."
 
                (((real-subtype l1 h1) (real-subtype l2 h2))
                 (let ((type (float-contagion prev now  :int-int-result int-int-result)))
-                  (flet ((c (value) (%interval-coerce value type)))
+                  (flet ((c (value) (interval-coerce value type)))
                     (ematch (funcall interval-op l1 h1 l2 h2)
                       ((list low high)
                        (if (or (eq low '*) (eq high '*) (<= low high))

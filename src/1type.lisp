@@ -126,36 +126,53 @@ during computation.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
 
+(defun interval-min          (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-min l1 l2) (%interval-min h1 h2)))))
+(defun interval-max          (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-max l1 l2) (%interval-max h1 h2)))))
+(defun interval-union        (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-min l1 l2) (%interval-max h1 h2)))))
+(defun interval-intersection (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-max l1 l2) (%interval-min h1 h2)))))
 
-(defun interval-min          (l1 h1 l2 h2) (without-* (postprocess (list (%interval-min l1 l2) (%interval-min h1 h2)))))
-(defun interval-max          (l1 h1 l2 h2) (without-* (postprocess (list (%interval-max l1 l2) (%interval-max h1 h2)))))
-(defun interval-union        (l1 h1 l2 h2) (without-* (postprocess (list (%interval-min l1 l2) (%interval-max h1 h2)))))
-(defun interval-intersection (l1 h1 l2 h2) (without-* (postprocess (list (%interval-max l1 l2) (%interval-min h1 h2)))))
+(defun interval-add (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-add l1 l2) (%interval-add h1 h2)))))
+(defun interval-sub (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-sub l1 h2) (%interval-sub h1 l2)))))
 
-(defun interval-add (l1 h1 l2 h2) (without-* (postprocess (list (%interval-add l1 l2) (%interval-add h1 h2)))))
-(defun interval-sub (l1 h1 l2 h2) (without-* (postprocess (list (%interval-sub l1 h2) (%interval-sub h1 l2)))))
-
-(defun interval-op (fn l1 h1 l2 h2)
+(defun interval-mul (l1 h1 l2 h2 &key)
   (without-*
-    (let ((v0 (funcall fn l1 l2))
-          (v1 (funcall fn l1 h2))
-          (v2 (funcall fn h1 l2))
-          (v3 (funcall fn h1 h2)))
+    (let ((v0 (%interval-mul l1 l2))
+          (v1 (%interval-mul l1 h2))
+          (v2 (%interval-mul h1 l2))
+          (v3 (%interval-mul h1 h2)))
       (postprocess
        (list (reduce #'%interval-min (list v0 v1 v2 v3))
              (reduce #'%interval-max (list v0 v1 v2 v3)))))))
 
-(defun interval-mul (l1 h1 l2 h2) (interval-op '%interval-mul l1 h1 l2 h2))
+;; division: split the divisor interval into positive/negative and combine results
 
-(defun interval-div       (l1 h1 l2 h2) (interval-op '%interval-div       l1 h1 l2 h2))
-(defun interval-round     (l1 h1 l2 h2) (interval-op '%interval-round     l1 h1 l2 h2))
-(defun interval-floor     (l1 h1 l2 h2) (interval-op '%interval-floor     l1 h1 l2 h2))
-(defun interval-ceiling   (l1 h1 l2 h2) (interval-op '%interval-ceiling   l1 h1 l2 h2))
-(defun interval-truncate  (l1 h1 l2 h2) (interval-op '%interval-truncate  l1 h1 l2 h2))
-(defun interval-fround    (l1 h1 l2 h2) (interval-op '%interval-fround    l1 h1 l2 h2))
-(defun interval-ffloor    (l1 h1 l2 h2) (interval-op '%interval-ffloor    l1 h1 l2 h2))
-(defun interval-fceiling  (l1 h1 l2 h2) (interval-op '%interval-fceiling  l1 h1 l2 h2))
-(defun interval-ftruncate (l1 h1 l2 h2) (interval-op '%interval-ftruncate l1 h1 l2 h2))
+(defun interval-divlike (fn l1 h1 l2 h2 &key divisor-type)
+  (without-*
+    (if (< l2 0 h2)
+        ;; divide into positive divisor and negative divisor
+        (apply #'interval-union
+               (if (eq divisor-type 'integer)
+                   (append (interval-divlike fn l1 h1 l2 -1 :divisor-type divisor-type)
+                           (interval-divlike fn l1 h1 1 h2  :divisor-type divisor-type))
+                   (append (interval-divlike fn l1 h1 l2 -0.0 :divisor-type divisor-type)
+                           (interval-divlike fn l1 h1 0.0 h2  :divisor-type divisor-type))))
+        (let ((v0 (funcall fn l1 l2))
+              (v1 (funcall fn l1 h2))
+              (v2 (funcall fn h1 l2))
+              (v3 (funcall fn h1 h2)))
+          (postprocess
+           (list (reduce #'%interval-min (list v0 v1 v2 v3))
+                 (reduce #'%interval-max (list v0 v1 v2 v3))))))))
+
+(defun interval-div       (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-div       l1 h1 l2 h2 :divisor-type divisor-type))
+(defun interval-round     (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-round     l1 h1 l2 h2 :divisor-type divisor-type))
+(defun interval-floor     (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-floor     l1 h1 l2 h2 :divisor-type divisor-type))
+(defun interval-ceiling   (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-ceiling   l1 h1 l2 h2 :divisor-type divisor-type))
+(defun interval-truncate  (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-truncate  l1 h1 l2 h2 :divisor-type divisor-type))
+(defun interval-fround    (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-fround    l1 h1 l2 h2 :divisor-type divisor-type))
+(defun interval-ffloor    (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-ffloor    l1 h1 l2 h2 :divisor-type divisor-type))
+(defun interval-fceiling  (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-fceiling  l1 h1 l2 h2 :divisor-type divisor-type))
+(defun interval-ftruncate (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-ftruncate l1 h1 l2 h2 :divisor-type divisor-type))
 
 (defun interval-connected-p (l1 h1 l2 h2)
   (without-*
@@ -469,7 +486,9 @@ to the least specific FLOAT type when any one of them are not fixnums."
                 (let ((type (float-contagion prev now  :int-int-result int-int-result)))
                   (flet ((c (value) (interval-coerce value type)))
                     (catch 'empty-interval
-                      (ematch (funcall interval-op l1 h1 l2 h2)
+                      (ematch (funcall interval-op l1 h1 l2 h2
+                                       :divisor-type (float-substitution now)
+                                       :allow-other-keys t)
                         ((list low high)
                          (if (or (eq low '*) (eq high '*) (<= low high))
                              (if (eq type 'integer)

@@ -48,12 +48,25 @@ during computation.")
   (float-features:with-float-traps-masked (:invalid)
     (* x y)))
 (defun %interval-divlike (fn x y)
-  (handler-case
-      (float-features:with-float-traps-masked (:invalid :divide-by-zero)
-        (funcall fn x y))
-    (division-by-zero ()
-      (float-features:with-float-traps-masked (:divide-by-zero)
-        (/ 1.0 0.0)))))
+  (float-features:with-float-traps-masked (:invalid :divide-by-zero)
+    #+(or)
+    (funcall fn x y)
+    (handle-sbcl-bug fn x y)))
+
+;; SBCL bug:
+;; (floor float-features:single-float-positive-infinity 1.0) --> error
+;; (round float-features:single-float-positive-infinity 1.0) --> error
+;; (ceiling float-features:single-float-positive-infinity 1.0) --> error
+
+(defun handle-sbcl-bug (fn x y)
+  (if (integerp y)
+      (cond                             ; note: y cannot be infinity or NaN.
+        ((and (floatp x) (float-features:float-infinity-p x))
+         (* x (signum y)))
+        ((and (floatp x) (float-features:float-nan-p x))
+         x)
+        (t (funcall fn x (float y))))
+      (funcall fn x y)))
 
 (defun %interval-div       (number divisor) (%interval-divlike '/         number divisor))
 (defun %interval-round     (number divisor) (%interval-divlike 'round     number divisor))

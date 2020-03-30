@@ -212,7 +212,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
       (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
         ;; when minus, may become complex
         (cond
-          ((interval2-< low 0)
+          ((%interval-< (interval-preprocess-low low) 0)
            `(complex ,head))
           ((= low 0)
            `(,head * ,(funcall* 'log high)))
@@ -238,7 +238,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
       (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
         ;; when minus, may become complex
         (cond
-          ((interval2-< low 0)
+          ((%interval-< (interval-preprocess-low low) 0)
            `(complex ,head))
           ((= low 0)
            `(,head * ,(funcall* '%log2 high)))
@@ -288,8 +288,8 @@ interprets a form consisting of functions and type specifiers (at the leafs).
    (declare (trivia:optimizer :trivial))
    (ematch x
      ((real-subtype low high)
-      (if (and (interval2-< -1 low)
-               (interval1-< high 1))
+      (if (and (%interval-< -1 (interval-preprocess-low low))
+               (%interval-< (interval-preprocess-high high) 1))
           `(,(float-substitution x :int-result *numcl-default-float-format*)
              ,(funcall* 'acos high)
              ,(funcall* 'acos low))
@@ -309,8 +309,8 @@ interprets a form consisting of functions and type specifiers (at the leafs).
    (declare (trivia:optimizer :trivial))
    (ematch x
      ((real-subtype low high)
-      (if (and (interval2-< -1 low)
-               (interval1-< high 1))
+      (if (and (%interval-< -1 (interval-preprocess-low low))
+               (%interval-< (interval-preprocess-high high) 1))
           `(,(float-substitution x :int-result *numcl-default-float-format*)
              ,(funcall* 'asin low)
              ,(funcall* 'asin high))
@@ -489,14 +489,15 @@ interprets a form consisting of functions and type specifiers (at the leafs).
                 (((integer-subtype l1 h1) (integer-subtype l2 h2))
                  (flet ((integer-length* (x)
                           (if (eq x '*) '* (integer-length x))))
-                   `(,(if (or (interval1-< l1 0)
-                              (interval1-< l2 0))
+                   `(,(if (or (%interval-< (interval-preprocess-low l1) 0)
+                              (%interval-< (interval-preprocess-low l2) 0))
                           'signed-byte
                           'unsigned-byte)
-                      ,(interval2-max (interval2-max (integer-length* l1)
-                                                     (integer-length* h1))
-                                      (interval2-max (integer-length* l2)
-                                                     (integer-length* h2))))))
+                      ,(interval-postprocess-high
+                        (%interval-max (%interval-max (interval-preprocess-high (integer-length* l1))
+                                                      (interval-preprocess-high (integer-length* h1)))
+                                       (%interval-max (interval-preprocess-high (integer-length* l2))
+                                                      (interval-preprocess-high (integer-length* h2))))))))
                 (((or-type types1) _)
                  (simplify-or-types
                   (mapcar (lambda (type) (fn type now)) types1)))
@@ -515,14 +516,15 @@ interprets a form consisting of functions and type specifiers (at the leafs).
                 (((integer-subtype l1 h1) (integer-subtype l2 h2))
                  (flet ((integer-length* (x)
                           (if (eq x '*) '* (integer-length x))))
-                   `(,(if (and (interval1-< l1 0)
-                               (interval1-< l2 0))
+                   `(,(if (and (%interval-< (interval-preprocess-low l1) 0)
+                               (%interval-< (interval-preprocess-low l2) 0))
                           'signed-byte
                           'unsigned-byte)
-                      ,(interval2-min (interval2-max (integer-length* l1)
-                                                     (integer-length* h1))
-                                      (interval2-max (integer-length* l2)
-                                                     (integer-length* h2))))))
+                      ,(interval-postprocess-high
+                        (%interval-min (%interval-max (interval-preprocess-high (integer-length* l1))
+                                                      (interval-preprocess-high (integer-length* h1)))
+                                       (%interval-max (interval-preprocess-high (integer-length* l2))
+                                                      (interval-preprocess-high (integer-length* h2))))))))
                 (((or-type types1) _)
                  (simplify-or-types
                   (mapcar (lambda (type) (fn type now)) types1)))
@@ -542,10 +544,11 @@ interprets a form consisting of functions and type specifiers (at the leafs).
                  (flet ((integer-length* (x)
                           (if (eq x '*) '* (integer-length x))))
                    `(signed-byte
-                     ,(interval2-max (interval2-max (integer-length* l1)
-                                                    (integer-length* h1))
-                                     (interval2-max (integer-length* l2)
-                                                    (integer-length* h2))))))
+                     ,(interval-postprocess-high
+                       (%interval-max (%interval-max (interval-preprocess-high (integer-length* l1))
+                                                     (interval-preprocess-high (integer-length* h1)))
+                                      (%interval-max (interval-preprocess-high (integer-length* l2))
+                                                     (interval-preprocess-high (integer-length* h2))))))))
                 (((or-type types1) _)
                  (simplify-or-types
                   (mapcar (lambda (type) (fn type now)) types1)))
@@ -568,12 +571,13 @@ interprets a form consisting of functions and type specifiers (at the leafs).
             (fn (x)
               (ematch x
                 ((integer-subtype l1 h1)
-                 `(,(if (or (interval1-< (lognot* l1) 0)
-                            (interval1-< (lognot* h1) 0))
+                 `(,(if (or (%interval-< (interval-preprocess-low (lognot* l1)) 0)
+                            (%interval-< (interval-preprocess-low (lognot* h1)) 0))
                         'signed-byte
                         'unsigned-byte)
-                    ,(interval2-max (integer-length* l1)
-                                    (integer-length* h1))))
+                    ,(interval-postprocess-high
+                      (%interval-max (interval-preprocess-high (integer-length* l1))
+                                     (interval-preprocess-high (integer-length* h1))))))
                 ((or-type types1)
                  (simplify-or-types
                   (mapcar #'fn types1))))))

@@ -50,7 +50,7 @@
 (numcl:* (arange 5) (reshape (arange 3) '(3 1)))
 
 (defparameter *a* (arange 10))
-(defparameter *b* (reshape (asarray '(1 5 2)) '(t 1)))
+(defparameter *b* (reshape (asarray '(1 5 2)) '(-1 1)))
 *b*
 (* *b* *a*)
 (sin (* *b* *a*))
@@ -88,16 +88,16 @@
 (/ (arange 5) (arange 1 6))
 (type-of *)
 
-(= (arange 5) (reshape (arange 1 6) '(t 1))) ;; #2A((0 1 0 0 0) (0 0 1 0 0) (0 0 0 1 0) (0 0 0 0 1) (0 0 0 0 0))
-(< (arange 5) (reshape (arange 1 6) '(t 1))) ;; #2A((1 0 0 0 0) (1 1 0 0 0) (1 1 1 0 0) (1 1 1 1 0) (1 1 1 1 1))
+(= (arange 5) (reshape (arange 1 6) '(-1 1))) ;; #2A((0 1 0 0 0) (0 0 1 0 0) (0 0 0 1 0) (0 0 0 0 1) (0 0 0 0 0))
+(< (arange 5) (reshape (arange 1 6) '(-1 1))) ;; #2A((1 0 0 0 0) (1 1 0 0 0) (1 1 1 0 0) (1 1 1 1 0) (1 1 1 1 1))
 (logand (arange 5) (arange 1 6))
 
 ;; type inference on logand
-(logand (uniform 3 7 3) (reshape (uniform 3 7 3) '(t 1)))
-(logand (uniform 3 7 3) (reshape (uniform 3 7 3) '(t 1)))
-(logand (uniform -3 7 3) (reshape (uniform 3 7 3) '(t 1)))
+(logand (uniform 3 7 3) (reshape (uniform 3 7 3) '(-1 1)))
+(logand (uniform 3 7 3) (reshape (uniform 3 7 3) '(-1 1)))
+(logand (uniform -3 7 3) (reshape (uniform 3 7 3) '(-1 1)))
 ;; (logand minus minus) is guaranteed to be minus, therefore this is a signed-integer
-(logand (uniform -3 7 3) (reshape (uniform -3 7 3) '(t 1)))
+(logand (uniform -3 7 3) (reshape (uniform -3 7 3) '(-1 1)))
 
 
 ;; reduction

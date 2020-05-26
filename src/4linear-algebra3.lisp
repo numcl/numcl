@@ -184,6 +184,7 @@ to minimize the size of the intermediate matrix."
 
   (let ((cost  (make-array (list n n) :element-type 'single-float :initial-element 0.0))
         (index (make-array (list n n) :element-type 'fixnum :initial-element 0)))
+    (declare (dynamic-extent cost))
     (iter (declare (iterate:declare-variables))
           (declare (fixnum len))
           (for len from 2 to n)            ; e.g. n=10, len=4 : number of matrices involved

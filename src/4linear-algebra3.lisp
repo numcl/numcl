@@ -170,7 +170,7 @@ to minimize the size of the intermediate matrix."
             (args (coerce args 'vector))
             (*print-array* t))
         (declare (type (simple-array fixnum 2) order))
-        (print order)
+        ; (print order)
         (labels ((rec (i j)
                    (if (= i j)
                        (aref args i)

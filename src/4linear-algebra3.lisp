@@ -149,8 +149,6 @@ MatrixChainOrder(int dims[])
 
 |#
 
-(deftype array)
-
 (defun matmul* (&rest args)
   "Takes an arbitrary number of matrices and performs multiplication,
 optimizing the order using the shape information and the associativity
@@ -183,39 +181,39 @@ to minimize the size of the intermediate matrix."
   (declare (type (simple-array single-float 1) dims)
            (type (unsigned-byte 31) n)
            (optimize (speed 3) (safety 0) (compilation-speed 0)))
-  (let ((index (make-array (list n n) :element-type 'fixnum :initial-element 0))
-        (cost (make-array (list n n) :element-type 'single-float :initial-element 0.0)))
-    (iter (declare (iterate:declare-variables))
-      (declare (fixnum len))
-      (for len from 2 to n)     ; e.g. n=10, len=4 : number of matrices involved
-      (iter (declare (iterate:declare-variables))
-        (declare (fixnum i j))
-        (for i to (- n len))     ; 0 <= i <= 6 --- within range
-        (for j = (+ i len -1))  ; 3 <= j <= 9 --- within range (j=10 is invalid)
-        ;; computing the cost of multiplying [i..k] and [k..j]
-        (setf (aref cost i j) most-positive-single-float)
-        (iter (declare (iterate:declare-variables))
-          (declare (fixnum k))
-          (declare (single-float c))
-          (for k from i below j)
-          (for c = (+ (aref cost i k)        ; cost of [i..k]
-                      (aref cost (1+ k) j)   ; cost of [k+1..j]
-                      ;; e.g. i=2, k=3, j=5
-                      ;;
-                      ;; dims = [_, _, 2, 5, 3, 7, 4, _, _, _, _]
-                      ;; dimensions: [2x5, 5x3], [3x7, 7x4]
-                      ;; [i  ..k+1] = [2..3] = [2,5,3] --- result : 2x3
-                      ;; [k+1..j+1] = [4..5] = [3,7,4] --- result : 3x4
-                      ;;
-                      ;; computation -- (3 mul + 2 add) x 4 x 2
-                      (* (aref dims i)           ; first  dim of i
-                         (aref dims (1+ k))      ; second dim of k
-                         (aref dims (1+ j)))))   ; second dim of j
-          (when (< c (aref cost i j))
-            (setf (aref cost  i j) c)
-            (setf (aref index i j) k)))))
-    index))
 
+  (let ((cost  (make-array (list n n) :element-type 'single-float :initial-element 0.0))
+        (index (make-array (list n n) :element-type 'fixnum :initial-element 0)))
+    (iter (declare (iterate:declare-variables))
+          (declare (fixnum len))
+          (for len from 2 to n)            ; e.g. n=10, len=4 : number of matrices involved
+          (iter (declare (iterate:declare-variables))
+                (declare (fixnum i j))
+                (for i to (- n len))       ; 0 <= i <= 6 --- within range
+                (for j = (+ i len -1))     ; 3 <= j <= 9 --- within range (j=10 is invalid)
+                ;; computing the cost of multiplying [i..k] and [k..j]
+                (setf (aref cost i j) most-positive-single-float)
+                (iter (declare (iterate:declare-variables))
+                      (declare (fixnum k))
+                      (declare (single-float c))
+                      (for k from i below j)
+                      (for c = (+ (aref cost i k)       ; cost of [i..k]
+                                  (aref cost (1+ k) j)  ; cost of [k+1..j]
+                                  ;; e.g. i=2, k=3, j=5
+                                  ;;
+                                  ;; dims = [_, _, 2, 5, 3, 7, 4, _, _, _, _]
+                                  ;; dimensions: [2x5, 5x3], [3x7, 7x4]
+                                  ;; [i  ..k+1] = [2..3] = [2,5,3] --- result : 2x3
+                                  ;; [k+1..j+1] = [4..5] = [3,7,4] --- result : 3x4
+                                  ;;
+                                  ;; computation -- (3 mul + 2 add) x 4 x 2
+                                  (* (aref dims i)          ; first  dim of i
+                                     (aref dims (1+ k))     ; second dim of k
+                                     (aref dims (1+ j))))) ; second dim of j
+                      (when (< c (aref cost i j))
+                        (setf (aref cost  i j) c
+                              (aref index i j) k)))))
+    index))
 
 ;;; performance testing
 

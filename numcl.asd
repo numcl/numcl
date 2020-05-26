@@ -21,6 +21,7 @@
               :cl-randist
               :float-features
               :function-cache
+              :static-vectors
               :specialized-function
               :gtype)
  :components ((:module "src"

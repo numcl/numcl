@@ -149,69 +149,71 @@ MatrixChainOrder(int dims[])
 
 |#
 
+(deftype array)
+
 (defun matmul* (&rest args)
   "Takes an arbitrary number of matrices and performs multiplication,
 optimizing the order using the shape information and the associativity
 to minimize the size of the intermediate matrix."
+  (declare (optimize (speed 3) (compilation-speed 0)))
+  (let ((n (length args)))
+    (static-vectors:with-static-vector (dims (1+ n) :element-type 'single-float)
+      (declare (type (simple-array single-float *) dims))
+      (setf (aref dims 0)
+            (float (array-dimension (first args) 0) 0.0))
+      (loop :for arg :in args
+            :for i :from 1
+            :do (setf (aref dims i)
+                      (float (array-dimension arg 1) 0.0)))
 
-  (let* ((n (length args))
-         (dims (make-array (1+ n) :element-type 'single-float)))
-    (setf (aref dims 0)
-          (float (array-dimension (first args) 0) 0.0))
-    (iter (for arg in args)
-          (for i from 1)
-          (setf (aref dims i)
-                (float (array-dimension arg 1) 0.0)))
-
-    (let ((order (matrix-chain-order dims n))
-          (args (coerce args 'vector))
-          (*print-array* t))
-      (declare (type (simple-array fixnum 2) order))
-      ;; (print order)
-      (labels ((rec (i j)
-                 (if (= i j)
-                     (aref args i)
-                     (let ((k (aref order i j)))
-                       (matmul (rec i k)
-                               (rec (1+ k) j))))))
-        (rec 0 (1- n))))))
+      (let ((order (matrix-chain-order dims n))
+            (args (coerce args 'vector))
+            (*print-array* t))
+        (declare (type (simple-array fixnum 2) order))
+        (print order)
+        (labels ((rec (i j)
+                   (if (= i j)
+                       (aref args i)
+                       (let ((k (aref order i j)))
+                         (matmul (rec i k)
+                                 (rec (1+ k) j))))))
+          (rec 0 (1- n)))))))
 
 (defun matrix-chain-order (dims n)
   (declare (type (simple-array single-float 1) dims)
            (type (unsigned-byte 31) n)
-           (optimize (speed 3) (safety 0))
-           )
-  (let ((cost  (make-array (list n n) :element-type 'single-float :initial-element 0.0))
-        (index (make-array (list n n) :element-type 'fixnum :initial-element 0)))
+           (optimize (speed 3) (safety 0) (compilation-speed 0)))
+  (let ((index (make-array (list n n) :element-type 'fixnum :initial-element 0))
+        (cost (make-array (list n n) :element-type 'single-float :initial-element 0.0)))
     (iter (declare (iterate:declare-variables))
-          (declare (fixnum len))
-          (for len from 2 to n)            ; e.g. n=10, len=4 : number of matrices involved
-          (iter (declare (iterate:declare-variables))
-                (declare (fixnum i j))
-                (for i to (- n len))       ; 0 <= i <= 6 --- within range
-                (for j = (+ i len -1))     ; 3 <= j <= 9 --- within range (j=10 is invalid)
-                ;; computing the cost of multiplying [i..k] and [k..j]
-                (setf (aref cost i j) most-positive-single-float)
-                (iter (declare (iterate:declare-variables))
-                      (declare (fixnum k))
-                      (declare (single-float c))
-                      (for k from i below j)
-                      (for c = (+ (aref cost i k)       ; cost of [i..k]
-                                  (aref cost (1+ k) j)  ; cost of [k+1..j]
-                                  ;; e.g. i=2, k=3, j=5
-                                  ;; 
-                                  ;; dims = [_, _, 2, 5, 3, 7, 4, _, _, _, _]
-                                  ;; dimensions: [2x5, 5x3], [3x7, 7x4]
-                                  ;; [i  ..k+1] = [2..3] = [2,5,3] --- result : 2x3
-                                  ;; [k+1..j+1] = [4..5] = [3,7,4] --- result : 3x4
-                                  ;; 
-                                  ;; computation -- (3 mul + 2 add) x 4 x 2
-                                  (* (aref dims i)          ; first  dim of i
-                                     (aref dims (1+ k))     ; second dim of k
-                                     (aref dims (1+ j))))) ; second dim of j
-                      (when (< c (aref cost i j))
-                        (setf (aref cost  i j) c)
-                        (setf (aref index i j) k)))))
+      (declare (fixnum len))
+      (for len from 2 to n)     ; e.g. n=10, len=4 : number of matrices involved
+      (iter (declare (iterate:declare-variables))
+        (declare (fixnum i j))
+        (for i to (- n len))     ; 0 <= i <= 6 --- within range
+        (for j = (+ i len -1))  ; 3 <= j <= 9 --- within range (j=10 is invalid)
+        ;; computing the cost of multiplying [i..k] and [k..j]
+        (setf (aref cost i j) most-positive-single-float)
+        (iter (declare (iterate:declare-variables))
+          (declare (fixnum k))
+          (declare (single-float c))
+          (for k from i below j)
+          (for c = (+ (aref cost i k)        ; cost of [i..k]
+                      (aref cost (1+ k) j)   ; cost of [k+1..j]
+                      ;; e.g. i=2, k=3, j=5
+                      ;;
+                      ;; dims = [_, _, 2, 5, 3, 7, 4, _, _, _, _]
+                      ;; dimensions: [2x5, 5x3], [3x7, 7x4]
+                      ;; [i  ..k+1] = [2..3] = [2,5,3] --- result : 2x3
+                      ;; [k+1..j+1] = [4..5] = [3,7,4] --- result : 3x4
+                      ;;
+                      ;; computation -- (3 mul + 2 add) x 4 x 2
+                      (* (aref dims i)           ; first  dim of i
+                         (aref dims (1+ k))      ; second dim of k
+                         (aref dims (1+ j)))))   ; second dim of j
+          (when (< c (aref cost i j))
+            (setf (aref cost  i j) c)
+            (setf (aref index i j) k)))))
     index))
 
 
@@ -285,7 +287,7 @@ Evaluation took:
 Evaluation took:
   0.666 seconds of real time
   0.666617 seconds of total run time (0.654636 user, 0.011981 system)
-  [ Run times consist of 0.015 seconds GC time, and 0.652 seconds non-GC time. ]
+  [ Run times consist of 0.015 seconds GC time, and 0.652 seconds non-GC time.]
   100.15% CPU
   1,994,323,800 processor cycles
   19,811,328 bytes consed
@@ -309,7 +311,7 @@ Evaluation took:
 Evaluation took:
   0.175 seconds of real time
   0.174834 seconds of total run time (0.170714 user, 0.004120 system)
-  [ Run times consist of 0.005 seconds GC time, and 0.170 seconds non-GC time. ]
+  [ Run times consist of 0.005 seconds GC time, and 0.170 seconds non-GC time.]
   100.00% CPU
   522,777,720 processor cycles
   36,652,016 bytes consed
@@ -330,7 +332,7 @@ Evaluation took:
 Evaluation took:
   11.991 seconds of real time
   11.987833 seconds of total run time (11.983856 user, 0.003977 system)
-  [ Run times consist of 0.008 seconds GC time, and 11.980 seconds non-GC time. ]
+  [ Run times consist of 0.008 seconds GC time, and 11.980 seconds non-GC time.]
   99.97% CPU
   35,905,185,720 processor cycles
   92,989,040 bytes consed

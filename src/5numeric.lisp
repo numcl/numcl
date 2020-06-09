@@ -452,8 +452,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   ;; ;; `(1 3 2)                                           : constant
   )
 
-(defmacro define-simple-mapper (numcl-fn cl-fn)
+(defmacro define-simple-mapper (numcl-fn cl-fn &optional docstring)
+  (check-type docstring (or null string))
   `(defun ,numcl-fn (x)
+     ,@(when docstring (list docstring))
      (if (numberp x)
          (,cl-fn x)
          (let ((y (empty (shape x) :type (infer-type ',cl-fn (array-element-type x)))))
@@ -493,13 +495,24 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline %square))
 (defun %square (x) (* x x))
-(define-simple-mapper numcl:square %square)
+(define-simple-mapper numcl:square %square "Square function f(x)= x * x.")
 
 (declaim (inline %logr))
 (defun %logr (x) (declare (type (real 0.0) x)) (log x))
-(define-simple-mapper numcl:log %logr)
+(define-simple-mapper numcl:log %logr
+  "Logarithmic function.
+Unlike Common Lisp LOG, it assumes that the input is a positive real, in favor of efficiency.
+Another reason is that most Common Lisp implementations do not have specialized arrays for
+positive-only / negative-only floats, thus the runtime type inference cannot deduce whether
+the resulting array element type have to be a complex or a real.
+")
 
-(define-simple-mapper numcl:logc log)
+(define-simple-mapper numcl:logc log
+  "Logarithmic function.
+This function behaves exactly like Common Lisp LOG.
+Unless it can be proven from the input array element type, such as the input being
+a specialized array of unsigned-int, it takes a conservative approach, i.e., it returns arrays
+specialized to the complex numbers.")
 
 (declaim (inline %log2))
 (defun %log2 (x) (declare (type (real 0.0) x)) (log x 2))

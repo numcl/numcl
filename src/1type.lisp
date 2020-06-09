@@ -169,13 +169,48 @@ during computation.")
                            (interval-divlike fn l1 h1 1 h2  :divisor-type divisor-type))
                    (append (interval-divlike fn l1 h1 l2 -0.0 :divisor-type divisor-type)
                            (interval-divlike fn l1 h1 0.0 h2  :divisor-type divisor-type))))
-        (let ((v0 (funcall fn l1 l2))
-              (v1 (funcall fn l1 h2))
-              (v2 (funcall fn h1 l2))
-              (v3 (funcall fn h1 h2)))
-          (postprocess
-           (list (reduce #'%interval-min (list v0 v1 v2 v3))
-                 (reduce #'%interval-max (list v0 v1 v2 v3))))))))
+        (flet ((fn-ub (x y)
+                 ;; return the upper bound
+                 (let ((r (funcall fn x y)))
+                   (if (float-features:float-nan-p r)
+                       (progn
+                         (assert (and (float-features:float-infinity-p x)
+                                      (float-features:float-infinity-p y)))
+                         ;; note that this is handling the range.
+                         (if (plusp (* x y))
+                             ;; x, y = +inf / +inf, -inf / -inf
+                             float-features:long-float-positive-infinity
+                             ;; x, y = +inf / -inf, -inf / +inf
+                             -0.0))
+                       r)))
+               (fn-lb (x y)
+                 ;; return the lower bound
+                 (let ((r (funcall fn x y)))
+                   (if (float-features:float-nan-p r)
+                       (progn
+                         (assert (and (float-features:float-infinity-p x)
+                                      (float-features:float-infinity-p y)))
+                         ;; note that this is handling the range.
+                         (if (plusp (* x y))
+                             ;; x, y = +inf / +inf, -inf / -inf
+                             0.0
+                             ;; x, y = +inf / -inf, -inf / +inf
+                             float-features:long-float-negative-infinity))
+                       r))))
+          
+          (let ((ub0 (fn-ub l1 l2))
+                (ub1 (fn-ub l1 h2))
+                (ub2 (fn-ub h1 l2))
+                (ub3 (fn-ub h1 h2))
+                (lb0 (fn-lb l1 l2))
+                (lb1 (fn-lb l1 h2))
+                (lb2 (fn-lb h1 l2))
+                (lb3 (fn-lb h1 h2)))
+            ;; Issue #42
+            (assert (notany #'float-features:float-nan-p (list lb0 lb1 lb2 lb3 ub0 ub1 ub2 ub3)))
+            (postprocess
+             (list (reduce #'%interval-min (list lb0 lb1 lb2 lb3))
+                   (reduce #'%interval-max (list ub0 ub1 ub2 ub3)))))))))
 
 (defun interval-div       (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-div       l1 h1 l2 h2 :divisor-type divisor-type))
 (defun interval-round     (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-round     l1 h1 l2 h2 :divisor-type divisor-type))

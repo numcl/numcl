@@ -648,3 +648,13 @@ interprets a form consisting of functions and type specifiers (at the leafs).
 (set-type-inferer 'sqrt (defun sqrt-inferer (x) (interpret-type `(exp (/ (log ,x) 2)))))
 
 (set-type-inferer 'isqrt (defun isqrt-inferer (x) (interpret-type `(floor (sqrt ,x)))))
+
+(set-type-inferer
+ '1+
+ (defun 1+-inferer (typespec)
+   (interpret-type `(+ 1 ,typespec))))
+
+(set-type-inferer
+ '1-
+ (defun 1+-inferer (typespec)
+   (interpret-type `(- ,typespec 1))))

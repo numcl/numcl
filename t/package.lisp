@@ -664,6 +664,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                     `(cl:cos (single-float ,i ,pj)) pres
                     `(cl:cos (single-float ,i ,j)) res)))))
 
-(test (division :compile-at :run-time :fixture muffle)
-      (finishes (numcl:/ (numcl:asarray '(1.0 2.0 3.0))
-                         (numcl:asarray '(2.0 4.0 6.0)))))
+(test (issue-42 :compile-at :run-time :fixture muffle)
+  (is (equalp 
+       (asarray '(0.5 0.5 0.5))
+       (/ (asarray '(1.0 2.0 3.0))
+          (asarray '(2.0 4.0 6.0))))))

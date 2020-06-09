@@ -175,8 +175,12 @@ during computation.")
                    (if (and (floatp r)
                             (float-features:float-nan-p r))
                        (progn
-                         (assert (and (float-features:float-infinity-p x)
-                                      (float-features:float-infinity-p y)))
+                         (assert (or (and (floatp x)
+                                          (floatp y)
+                                          (float-features:float-infinity-p x)
+                                          (float-features:float-infinity-p y))
+                                     (and (zerop x)
+                                          (zerop y))))
                          ;; note that this is handling the range.
                          (if (plusp (* x y))
                              ;; x, y = +inf / +inf, -inf / -inf
@@ -190,8 +194,12 @@ during computation.")
                    (if (and (floatp r)
                             (float-features:float-nan-p r))
                        (progn
-                         (assert (and (float-features:float-infinity-p x)
-                                      (float-features:float-infinity-p y)))
+                         (assert (or (and (floatp x)
+                                          (floatp y)
+                                          (float-features:float-infinity-p x)
+                                          (float-features:float-infinity-p y))
+                                     (and (zerop x)
+                                          (zerop y))))
                          ;; note that this is handling the range.
                          (if (plusp (* x y))
                              ;; x, y = +inf / +inf, -inf / -inf

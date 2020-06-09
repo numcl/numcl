@@ -172,7 +172,8 @@ during computation.")
         (flet ((fn-ub (x y)
                  ;; return the upper bound
                  (let ((r (funcall fn x y)))
-                   (if (float-features:float-nan-p r)
+                   (if (and (floatp r)
+                            (float-features:float-nan-p r))
                        (progn
                          (assert (and (float-features:float-infinity-p x)
                                       (float-features:float-infinity-p y)))
@@ -186,7 +187,8 @@ during computation.")
                (fn-lb (x y)
                  ;; return the lower bound
                  (let ((r (funcall fn x y)))
-                   (if (float-features:float-nan-p r)
+                   (if (and (floatp r)
+                            (float-features:float-nan-p r))
                        (progn
                          (assert (and (float-features:float-infinity-p x)
                                       (float-features:float-infinity-p y)))
@@ -207,7 +209,8 @@ during computation.")
                 (lb2 (fn-lb h1 l2))
                 (lb3 (fn-lb h1 h2)))
             ;; Issue #42
-            (assert (notany #'float-features:float-nan-p (list lb0 lb1 lb2 lb3 ub0 ub1 ub2 ub3)))
+            (assert (notany (conjoin #'floatp #'float-features:float-nan-p)
+                            (list lb0 lb1 lb2 lb3 ub0 ub1 ub2 ub3)))
             (postprocess
              (list (reduce #'%interval-min (list lb0 lb1 lb2 lb3))
                    (reduce #'%interval-max (list ub0 ub1 ub2 ub3)))))))))

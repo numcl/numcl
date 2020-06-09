@@ -477,7 +477,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (define-simple-mapper numcl:acosh acosh)
 (define-simple-mapper numcl:atanh atanh)
 (define-simple-mapper numcl:exp exp)
-(define-simple-mapper numcl:log log)
 (define-simple-mapper numcl:abs abs)
 (define-simple-mapper numcl:signum signum)
 (define-simple-mapper numcl:cis cis)
@@ -496,9 +495,14 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun %square (x) (* x x))
 (define-simple-mapper numcl:square %square)
 
+(declaim (inline %logr))
+(defun %logr (x) (declare (type (real 0.0) x)) (log x))
+(define-simple-mapper numcl:log %logr)
+
+(define-simple-mapper numcl:logc log)
 
 (declaim (inline %log2))
-(defun %log2 (x) (log x 2))
+(defun %log2 (x) (declare (type (real 0.0) x)) (log x 2))
 (define-simple-mapper numcl:log2 %log2)
 
 

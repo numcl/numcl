@@ -100,7 +100,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
    #:asin #:acos #:atan
    #:sinh #:cosh #:tanh
    #:asinh #:acosh #:atanh
-   #:exp #:log
+   #:exp #:log #:logc
    #:abs #:signum
    #:1+ #:1-
    #:cis #:conjugate #:phase #:realpart #:imagpart

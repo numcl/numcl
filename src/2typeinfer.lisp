@@ -202,7 +202,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
      ((and-type types)
       (reduce #'intersection-to-float-type types :key #'exp-inferer)))))
 
-;; log
+;; log  --- note, this is used by numcl:logc function, rather than numcl:log -- see next
 (set-type-inferer
  'log
  (defun log-inferer (x)
@@ -214,6 +214,32 @@ interprets a form consisting of functions and type specifiers (at the leafs).
         (cond
           ((%interval-< (interval-preprocess-low low) 0)
            `(complex ,head))
+          ((= low 0)
+           `(,head * ,(funcall* 'log high)))
+          (t
+           `(,head ,(funcall* 'log low) ,(funcall* 'log high))))))
+     ((complex-type)
+      ;; TBD
+      'complex)
+     ((or-type types)
+      (reduce #'union-to-float-type types :key #'log-inferer))
+     ((and-type types)
+      (reduce #'intersection-to-float-type types :key #'log-inferer)))))
+
+(set-type-inferer
+ '%logr
+ (defun logr-inferer (x)
+   "Inferer for the logarithm in positive inputs"
+   (declare (trivia:optimizer :trivial))
+   (ematch x
+     ((real-subtype low high)
+      (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
+        ;; when minus, may become complex
+        (cond
+          ((%interval-< (interval-preprocess-low low) 0)
+           ;; ignore
+           ;; `(complex ,head)
+           `(,head * ,(funcall* 'log high)))
           ((= low 0)
            `(,head * ,(funcall* 'log high)))
           (t
@@ -239,7 +265,9 @@ interprets a form consisting of functions and type specifiers (at the leafs).
         ;; when minus, may become complex
         (cond
           ((%interval-< (interval-preprocess-low low) 0)
-           `(complex ,head))
+           ;; ignore
+           ;; `(complex ,head)
+           `(,head * ,(funcall* '%log2 high)))
           ((= low 0)
            `(,head * ,(funcall* '%log2 high)))
           (t

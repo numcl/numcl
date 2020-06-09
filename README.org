@@ -6,6 +6,7 @@ At the moment the library is written in pure Common Lisp, focusing more on corre
 + NUMCL is currently available in Quicklisp.
 + [[./example.lisp]] contains a script that you can explore the functions already implemented in NUMCL.
 + Find the full documentation at: https://numcl.github.io/numcl/
++ Check the latest benchmark result against numpy in https://github.com/numcl/numcl-benchmarks/ .
 
 [[https://asciinema.org/a/245792][https://asciinema.org/a/245792.svg]]
 

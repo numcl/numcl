@@ -516,7 +516,7 @@ specialized to the complex numbers.")
 
 (declaim (inline %log2))
 (defun %log2 (x) (declare (type (real 0.0) x)) (log x 2))
-(define-simple-mapper numcl:log2 %log2)
+(define-simple-mapper numcl:log2 %log2 "Logarithm of base 2.")
 
 
 ;; type upgrading. Why this is not available by default in common lisp??

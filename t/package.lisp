@@ -668,4 +668,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (equalp 
        (asarray '(0.5 0.5 0.5))
        (/ (asarray '(1.0 2.0 3.0))
-          (asarray '(2.0 4.0 6.0))))))
+          (asarray '(2.0 4.0 6.0)))))
+  (is (equalp
+       (asarray '(0.5 0.5 0.5))
+       (/ (asarray '(1 2 3))
+          (asarray '(2 4 6))))))

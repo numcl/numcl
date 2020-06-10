@@ -144,6 +144,56 @@ during computation.")
 (defun interval-union        (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-min l1 l2) (%interval-max h1 h2)))))
 (defun interval-intersection (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-max l1 l2) (%interval-min h1 h2)))))
 
+#|
+
+IEEE Std 754-2008
+IEEE Standard for Floating-Point Arithmetic
+
+7.2 Invalid operation
+
+The invalid operation exception is signaled if and only if there is no usefully definable result. In these cases
+the operands are invalid for the operation to be performed.
+For operations producing results in floating-point format, the default result of an operation that signals the
+invalid operation exception shall be a quiet NaN that should provide some diagnostic information (see 6.2).
+
+These operations are:
+a) any general-computational or signaling-computational operation on a signaling NaN (see 6.2),except for some conversions (see 5.12)
+b) multiplication: multiplication(0, ∞) or multiplication(∞, 0)
+c) fusedMultiplyAdd: fusedMultiplyAdd(0, ∞, c) or fusedMultiplyAdd(∞, 0, c) unless c is a quiet NaN; if c is a quiet NaN then it is implementation defined whether the invalid operation exception is signaled
+d) addition or subtraction or fusedMultiplyAdd: magnitude subtraction of infinities, such as: addition(+∞, −∞)
+e) division: division(0, 0) or division(∞, ∞)
+f) remainder: remainder(x, y), when y is zero or x is infinite and neither is NaN
+g) squareRoot if the operand is less than zero
+h) quantize when the result does not fit in the destination format or when one operand is finite and the other is infinite
+
+For operations producing no result in floating-point format, the operations that signal the invalid operation
+exception are:
+
+i) conversion of a floating-point number to an integer format, when the source is NaN, infinity, or a value that would convert to an integer outside the range of the result format under the applicable rounding attribute
+j) comparison by way of unordered-signaling predicates listed in Table 5.2, when the operands are unordered
+k) logB(NaN), logB(∞), or logB(0) when logBFormat is an integer format (see 5.3.3).
+
+7.3 Division by zero
+
+The divideByZero exception shall be signaled if and only if an exact infinite result is defined for an
+operation on finite operands. The default result of divideByZero shall be an ∞ correctly signed according to
+the operation:
+
+- For division, when the divisor is zero and the dividend is a finite non-zero number, the sign of the
+infinity is the exclusive OR of the operands’ signs (see 6.3).
+- For logB(0) when logBFormat is a floating-point format, the sign of the infinity is minus (−∞).
+
+------------------------------------
+
+If the pointwise operation returns NaN, it is due to invalid operations, and
+additionally division-by-zero in case of division.
+We need to handle them case-by-case.
+
+In add, there is no possibility of +inf + -inf (or its inverse), since it is computed between the lower / upper bounds.
+In sub, there is no possibility of +inf - +inf (or its inverse), since it is computed between the different side of the bounds.
+
+|#
+
 (defun interval-add (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-add l1 l2) (%interval-add h1 h2)))))
 (defun interval-sub (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-sub l1 h2) (%interval-sub h1 l2)))))
 

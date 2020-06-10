@@ -28,6 +28,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (defun asarray (contents &key type)
   #.*asarray-documentation*
   (when (subtypep 'array type)
+    ;; TYPE can be a vector type, but should not be multidimensional arrays (see docstring)
     (assert (subtypep 'vector type)))
   (identity
    ;; ensure-singleton
@@ -116,14 +117,23 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   "Walk over the CONTENTS recursively and decides the output shape and the element type.
 When TYPE is non-nil, it overrides the type deduction."
   (cond
+    ;; CONTENTS is a multi-dimensional array
     ((and (arrayp contents)
           (> (rank contents) 1))
-     
-     (values (array-dimensions contents)
-             (if type
-                 type
-                 (array-element-type contents))))
+     (if type
+         (values (array-dimensions contents) type)
+         (if (eq T (array-element-type contents))
+             ;; needs recursion
+             (let ((contents-flat (make-array (array-total-size contents) :displaced-to contents)))
+               (multiple-value-bind (_ type) (determine-array-spec contents-flat type)
+                 (declare (ignorable _))
+                 (values (array-dimensions contents)
+                         type)))
+             ;; specialized array; do not need recursion
+             (values (array-dimensions contents)
+                     (array-element-type contents)))))
 
+    ;; TYPE explicitly tells you to keep the leaf element to be a vector, e.g. strings
     ((and (subtypep type 'vector)
           (typep contents type)
           (notevery (of-type type) contents))
@@ -131,7 +141,8 @@ When TYPE is non-nil, it overrides the type deduction."
              (if type
                  type
                  (strict-type-of contents))))
-    
+
+    ;; CONTENTS is a 1D-like sequence
     ((typep contents 'sequence)
      (if (every (lambda (x) (typep x 'sequence)) contents)
 

@@ -197,15 +197,52 @@ In sub, there is no possibility of +inf - +inf (or its inverse), since it is com
 (defun interval-add (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-add l1 l2) (%interval-add h1 h2)))))
 (defun interval-sub (l1 h1 l2 h2 &key) (without-* (postprocess (list (%interval-sub l1 h2) (%interval-sub h1 l2)))))
 
+(defun safe-float-nan-p (x)
+  (and (floatp x) (float-features:float-nan-p x)))
+(defun safe-float-infinity-p (x)
+  (and (floatp x) (float-features:float-infinity-p x)))
+
+;; convert zeros (0, +0.0, -0.0) to the correct zeros (+0.0 for lb, -0.0 for ub) when another operand is also a float
+(defun signed-zero-lb (x other) (if (and (floatp other) (zerop x)) 0.0l0 x))
+(defun signed-zero-ub (x other) (if (and (floatp other) (zerop x)) -0.0l0 x))
+
+(defun nan-result-positive-lb (x) (if (safe-float-nan-p x) 0.0l0 x))
+(defun nan-result-positive-ub (x) (if (safe-float-nan-p x) float-features:long-float-positive-infinity x))
+(defun nan-result-negative-lb (x) (if (safe-float-nan-p x) float-features:long-float-negative-infinity x))
+(defun nan-result-negative-ub (x) (if (safe-float-nan-p x) -0.0l0 x))
+
 (defun interval-mul (l1 h1 l2 h2 &key)
   (without-*
-    (let ((v0 (%interval-mul l1 l2))
-          (v1 (%interval-mul l1 h2))
-          (v2 (%interval-mul h1 l2))
-          (v3 (%interval-mul h1 h2)))
+    (let* ((v0 (%interval-mul (signed-zero-lb l1 l2) (signed-zero-lb l2 l1)))
+           (v1 (%interval-mul (signed-zero-lb l1 h2) (signed-zero-ub h2 l1)))
+           (v2 (%interval-mul (signed-zero-ub h1 l2) (signed-zero-lb l2 h1)))
+           (v3 (%interval-mul (signed-zero-ub h1 h2) (signed-zero-ub h2 h1)))
+           ;;
+           ;; In multiplication, possible modes of nan are 0 * inf or inf * 0.
+           ;; We can determine the sign of the inifinity from whether the number is
+           ;; a lower bound (in which case it should be -inf) or an upper bound (should be +inf).
+           ;; We can also determine the sign of zeros (lb -> +0, ub -> -0)
+           ;; 
+           ;; +0 * -inf, -inf * +0 . Result range is from -inf to -0
+           (lb0 (nan-result-negative-lb v0))
+           ;; +0 * +inf, -inf * -0 . Result range is from +0 to +inf
+           (lb1 (nan-result-positive-lb v1))
+           ;; -0 * -inf, +inf * +0 . Result range is from +0 to +inf
+           (lb2 (nan-result-positive-lb v2))
+           ;; -0 * +inf, +inf * -0 . Result range is from -inf to -0
+           (lb3 (nan-result-negative-lb v3))
+           ;;
+           ;; +0 * -inf, -inf * +0 . Result range is from -inf to -0
+           (ub0 (nan-result-negative-ub v0))
+           ;; +0 * +inf, -inf * -0 . Result range is from +0 to +inf
+           (ub1 (nan-result-positive-ub v1))
+           ;; -0 * -inf, +inf * +0 . Result range is from +0 to +inf
+           (ub2 (nan-result-positive-ub v2))
+           ;; -0 * +inf, +inf * -0 . Result range is from -inf to -0
+           (ub3 (nan-result-negative-ub v3)))
       (postprocess
-       (list (reduce #'%interval-min (list v0 v1 v2 v3))
-             (reduce #'%interval-max (list v0 v1 v2 v3)))))))
+       (list (reduce #'%interval-min (list lb0 lb1 lb2 lb3))
+             (reduce #'%interval-max (list ub0 ub1 ub2 ub3)))))))
 
 ;; division: split the divisor interval into positive/negative and combine results
 
@@ -219,13 +256,33 @@ In sub, there is no possibility of +inf - +inf (or its inverse), since it is com
                            (interval-divlike fn l1 h1 1 h2  :divisor-type divisor-type))
                    (append (interval-divlike fn l1 h1 l2 -0.0 :divisor-type divisor-type)
                            (interval-divlike fn l1 h1 0.0 h2  :divisor-type divisor-type))))
-        (let ((v0 (funcall fn l1 l2))
-              (v1 (funcall fn l1 h2))
-              (v2 (funcall fn h1 l2))
-              (v3 (funcall fn h1 h2)))
+        (let* ((v0 (funcall fn (signed-zero-lb l1 l2) (signed-zero-lb l2 l1)))
+               (v1 (funcall fn (signed-zero-lb l1 h2) (signed-zero-ub h2 l1)))
+               (v2 (funcall fn (signed-zero-ub h1 l2) (signed-zero-lb l2 h1)))
+               (v3 (funcall fn (signed-zero-ub h1 h2) (signed-zero-ub h2 h1)))
+               ;; 
+               ;; in division, possible modes of nan is 0 / 0 and inf / inf
+               ;; 
+               ;; -inf / -inf, +0 / +0 . Result range is from +0 to +inf
+               (lb0 (nan-result-positive-lb v0))
+               ;; -inf / +inf, +0 / -0 . Result range is from -inf to -0
+               (lb1 (nan-result-negative-lb v1))
+               ;; +inf / -inf, -0 / +0 . Result range is from -inf to -0
+               (lb2 (nan-result-negative-lb v2))
+               ;; +inf / +inf, -0 / -0 . Result range is from +0 to +inf
+               (lb3 (nan-result-positive-lb v3))
+               ;;
+               ;; -inf / -inf, +0 / +0 . Result range is from +0 to +inf
+               (ub0 (nan-result-positive-ub v0))
+               ;; -inf / +inf, +0 / -0 . Result range is from -inf to -0
+               (ub1 (nan-result-negative-ub v1))
+               ;; +inf / -inf, -0 / +0 . Result range is from -inf to -0
+               (ub2 (nan-result-negative-ub v2))
+               ;; +inf / +inf, -0 / -0 . Result range is from +0 to +inf
+               (ub3 (nan-result-positive-ub v3)))
           (postprocess
-           (list (reduce #'%interval-min (list v0 v1 v2 v3))
-                 (reduce #'%interval-max (list v0 v1 v2 v3))))))))
+           (list (reduce #'%interval-min (list lb0 lb1 lb2 lb3))
+                 (reduce #'%interval-max (list ub0 ub1 ub2 ub3))))))))
 
 (defun interval-div       (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-div       l1 h1 l2 h2 :divisor-type divisor-type))
 (defun interval-round     (l1 h1 l2 h2 &key divisor-type) (interval-divlike '%interval-round     l1 h1 l2 h2 :divisor-type divisor-type))

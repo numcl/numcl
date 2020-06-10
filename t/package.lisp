@@ -707,3 +707,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
        (asarray '(0.5 -0.5 -0.5))
        (/ (asarray '(1 2 -3))
           (asarray '(2 -4 6))))))
+
+(test (issue-44 :compile-at :run-time :fixture muffle)
+  (is (alexandria:type=
+       'single-float
+       (numcl.impl::infer-type 'cl:* 'single-float 'bit))))

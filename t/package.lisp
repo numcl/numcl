@@ -388,6 +388,27 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (cl:= 1 (array-rank (asarray #(#(1 2) #(3 4 5)) :type 'vector))))
   (is (cl:= 1 (array-rank (asarray #("aa" "aa")  :type 'string))))
   (is (cl:= 1 (array-rank (asarray #("aa" "aaa") :type 'string))))
+
+  (flet ((uaet (x) (upgraded-array-element-type x)))
+    (is (alexandria:type= T (array-element-type (asarray '((1) (1 2))))))
+    (is (alexandria:type= T (array-element-type (asarray '(((1) (1 2)) ((3) (3 4)))))))
+    (is (alexandria:type= (uaet '(integer 0 4)) (array-element-type (asarray '((1 2) (3 4))))))
+    (is (alexandria:type= (uaet '(integer 0 4)) (array-element-type (asarray #(#(1 2) #(3 4))))))
+    (is (alexandria:type= (uaet '(integer 0 4)) (array-element-type (asarray #((1 2) (3 4))))))
+    (is (alexandria:type= (uaet '(integer 0 4)) (array-element-type (asarray #2A((1 2) (3 4))))))
+    
+    (is (alexandria:type= (uaet '(integer 0 4)) (array-element-type (asarray #(#(1 2) #(3 4))))))
+    (is (alexandria:type= T (array-element-type (asarray #(#(1 2) #(3 4 5))))))
+    ;; currently does not support character arrays
+    ;; (is (alexandria:type= (uaet (type-of #\a)) (array-element-type (asarray #("aa" "aa")))))
+    (is (alexandria:type= T (array-element-type (asarray #("aa" "aa")))))
+    (is (alexandria:type= T (array-element-type (asarray #("aa" "aaa")))))
+    
+    (is (alexandria:type= T (array-element-type (asarray #(#(1 2) #(3 4))   :type 'vector))))
+    (is (alexandria:type= T (array-element-type (asarray #(#(1 2) #(3 4 5)) :type 'vector))))
+    (is (alexandria:type= T (array-element-type (asarray #("aa" "aa")  :type 'string))))
+    (is (alexandria:type= T (array-element-type (asarray #("aa" "aaa") :type 'string)))))
+
   (signals error
     (asarray '((1 2) (3 4))   :type '(array fixnum (* *))))
 

@@ -73,7 +73,7 @@ just aliases for =array-element-type=.
 
 ** Dependencies
 
-This library is at least tested on implementation listed below:
+This library is *at least* tested on implementation listed below (note: I am lazy to update the version list below, but I regularly use it on much newer versions and never encountered a problem. As of writing, it works on 2.0.5.) :
 
 + SBCL 1.4.12 on X86-64 Linux 4.4.0-141-generic (author's environment)
 + SBCL 1.5.1  on X86-64 Linux 4.4.0-141-generic (author's environment)

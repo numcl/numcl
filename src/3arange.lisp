@@ -253,8 +253,10 @@ Don't worry, we provide a compiler-macro to avoid the runtime dispatch.
          (lst (loop for i from 0 below (1- num)
                     for x from start by step
                     collect x))
-         (lst (if endpoint (append lst (list stop)) lst)))
-    (asarray lst :type type)))
+         (lst (if endpoint (append lst (list stop)) lst))
+         (arr (asarray lst :type type)))
+    (values arr step)))
+
 
 #+(or)
 (progn

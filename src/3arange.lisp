@@ -242,13 +242,19 @@ Don't worry, we provide a compiler-macro to avoid the runtime dispatch.
 
 
 (declaim (inline linspace))
-(defun linspace (start stop length &key type endpoint)
-  (declare (fixnum length))
-  (let* ((length (if endpoint (1+ length) length))
-         (step (/ (- stop start) length)))
-    (if type
-        (arange start stop step :type type)
-        (arange start stop step))))
+(defun linspace (start stop num &key (endpoint t) type)
+  (declare (fixnum num))
+  (declare (number start stop))
+  (let* ((step (/ (- stop start) (1- num)))
+         (type (or type (%arange-infer-type start stop step)))
+         (start (coerce start type))
+         (stop  (coerce stop  type))
+         (step  (coerce step  type))
+         (lst (loop for i from 0 below (1- num)
+                    for x from start by step
+                    collect x))
+         (lst (if endpoint (append lst (list stop)) lst)))
+    (asarray lst :type type)))
 
 #+(or)
 (progn

@@ -62,7 +62,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
            '(array bit (5)))
   (is-type (arange 10)
            '(array (integer 0 10) (10)))
-  (is-type (linspace 1 10 10)
+  (is-type (linspace 1 10 :num 10)
            '(array (integer 0 10) (10)))
 
   (let ((a (arange 100)))
@@ -71,11 +71,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (is-true  (equalp a (copy a)))))
 
 (test (linspace :compile-at :run-time :fixture muffle)
-  (is (equalp (linspace 2 3 5) (values (asarray #(2.0 2.25 2.5 2.75 3.0)) 0.25)))
-  (is (equalp (linspace 2 3 5 :endpoint t) (values (asarray #(2.0 2.25 2.5 2.75 3.0)) 0.25)))
-  (is (equalp (linspace 2 3 5 :endpoint nil) (values (asarray #(2.0 2.25 2.5 2.75)) 0.25)))
-  (is (equalp (linspace 2.0d0 3 5) (values (asarray #(2.0d0 2.25d0 2.5d0 2.75d0 3.0d0)) 0.25d0)))
-  (is (equalp (linspace 2 3 5 :type 'double-float) (values (asarray #(2.0d0 2.25d0 2.5d0 2.75d0 3.0d0)) 0.25d0))))
+  (is (equalp (linspace 2 3 :num 5) (values (asarray #(2.0 2.25 2.5 2.75 3.0)) 0.25)))
+  (is (equalp (linspace 2 3 :num 5 :endpoint t) (values (asarray #(2.0 2.25 2.5 2.75 3.0)) 0.25)))
+  (is (equalp (linspace 2 3 :num 5 :endpoint nil) (values (asarray #(2.0 2.25 2.5 2.75)) 0.25)))
+  (is (equalp (linspace 2.0d0 3 :num 5) (values (asarray #(2.0d0 2.25d0 2.5d0 2.75d0 3.0d0)) 0.25d0)))
+  (is (equalp (linspace 2 3 :num 5 :type 'double-float) (values (asarray #(2.0d0 2.25d0 2.5d0 2.75d0 3.0d0)) 0.25d0))))
 
 (test (aref-shape1 :compile-at :run-time :fixture muffle)
   (let* ((a (zeros '(3 4 5 6))))

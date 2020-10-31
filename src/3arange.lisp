@@ -242,7 +242,7 @@ Don't worry, we provide a compiler-macro to avoid the runtime dispatch.
 
 
 (declaim (inline linspace))
-(defun linspace (start stop num &key (endpoint t) type)
+(defun linspace (start stop &key (num 50) (endpoint t) type)
   (declare (fixnum num))
   (declare (number start stop))
   (let* ((step (/ (- stop start) (1- num)))

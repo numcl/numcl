@@ -143,62 +143,62 @@
 
 ;; gemm
 (einsum '(ij jk -> ik)
-        #2A((0 1) (2 3))
-        #2A((5 6) (7 8)))
+        (asarray #2A((0 1) (2 3)))
+        (asarray #2A((5 6) (7 8))))
 
 ;; equivalent
 (einsum '((i j) (j k) -> (i k))
-        #2A((0 1) (2 3))
-        #2A((5 6) (7 8)))
+        (asarray #2A((0 1) (2 3)))
+        (asarray #2A((5 6) (7 8))))
 
 ;; diagonal
-(einsum '(ii -> i) #2A((0 1) (2 3)))
+(einsum '(ii -> i) (asarray #2A((0 1) (2 3))))
 ;; equivalent
-(einsum '(ii) #2A((0 1) (2 3)))
+(einsum '(ii) (asarray #2A((0 1) (2 3))))
 
 ;; sum of diagonal
-(einsum '(ii ->) #2A((0 1) (2 3)))
+(einsum '(ii ->) (asarray #2A((0 1) (2 3))))
 
 ;; provide an output array
 (let ((result (zeros '(2 2) :type 'single-float)))
   (einsum '(ij -> ji)
-          #2A((0 1) (2 3))
+          (asarray #2A((0 1) (2 3)))
           result))
 
 ;; return multiple arrays
 (einsum '(ijk -> ij ik jk)
-        #3A(((0 1) (2 3)) ((4 5) (6 7))))
+        (asarray #3A(((0 1) (2 3)) ((4 5) (6 7)))))
 
 ;; linear algebra
 
-(transpose #2A((0 1) (2 3)))
+(transpose (asarray #2A((0 1) (2 3))))
 
-(matmul #2A((0 1) (2 3))
-        #2A((5 6) (7 8)))
+(matmul (asarray #2A((0 1) (2 3)))
+        (asarray #2A((5 6) (7 8))))
 
-(vdot #(0 1 2 3)
-      #(5 6 7 8))
+(vdot (asarray #(0 1 2 3))
+      (asarray #(5 6 7 8)))
 
-(outer #(0 1 2 3)
-       #(5 6 7 8))
+(outer (asarray #(0 1 2 3))
+       (asarray #(5 6 7 8)))
 
-(kron #2A((0 1) (2 3))
-      #2A((5 6) (7 8)))
+(kron (asarray #2A((0 1) (2 3)))
+      (asarray #2A((5 6) (7 8))))
 
-(diag #2A((0  1  2  3)
-          (4  5  6  7)
-          (8  9  10 11)
-          (12 13 14 15)))
+(diag (asarray #2A((0  1  2  3)
+                   (4  5  6  7)
+                   (8  9  10 11)
+                   (12 13 14 15))))
 
-(tril #2A((0  1  2  3)
-          (4  5  6  7)
-          (8  9  10 11)
-          (12 13 14 15)))
+(tril (asarray #2A((0  1  2  3)
+                   (4  5  6  7)
+                   (8  9  10 11)
+                   (12 13 14 15))))
 
-(triu #2A((0  1  2  3)
-          (4  5  6  7)
-          (8  9  10 11)
-          (12 13 14 15)))
+(triu (asarray #2A((0  1  2  3)
+                   (4  5  6  7)
+                   (8  9  10 11)
+                   (12 13 14 15))))
 
 (tri 3)
 (tri 3 :m 5)
@@ -209,5 +209,5 @@
 (eye 3 :m 5 :k 2)
 
 
-(vander #(1 2 3 5) :n 3)
-(vander #(1 2 3 5) :n 3 :increasing t)
+(vander (asarray #(1 2 3 5) :n) 3)
+(vander (asarray #(1 2 3 5) :n) 3 :increasing t)

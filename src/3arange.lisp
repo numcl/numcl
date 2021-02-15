@@ -32,10 +32,18 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; (print (arange 1 2 3))
 ;; (print (arange 1 2))
 ;; (print (arange 1))
+(defun calculate-range (start stop)
+  (let* ((diff (- stop start))
+	 (inc1p (minusp (logxor stop start)))
+	 (pos-inc (plusp diff)))
+    (cond
+      ((and inc1p pos-inc) (1+ diff))
+      (inc1p (1- diff))
+      (t diff))))
 
-(declaim (inline %arange))
+(declaim (inline %arange))  
 (defun %arange (start stop step type)
-  (let* ((length (max 0 (floor (- stop start) step))))
+  (let* ((length (max 0 (floor (calculate-range start stop) step))))
     (declare (fixnum length))
     (multiple-value-bind (a base) (%make-array length :element-type type)
       ;; benchnmark1 0.321 seconds

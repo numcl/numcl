@@ -32,9 +32,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 ;; (print (arange 1 2 3))
 ;; (print (arange 1 2))
 ;; (print (arange 1))
+(declaim (inline calculate-range))  
 (defun calculate-range (start stop)
   (let* ((diff (- stop start))
-	 (inc1p (minusp (logxor stop start)))
+	 (inc1p (or (and (minusp stop) (plusp start))
+		    (and (plusp stop) (minusp start))))
 	 (pos-inc (plusp diff)))
     (cond
       ((and inc1p pos-inc) (1+ diff))

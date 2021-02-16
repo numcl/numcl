@@ -370,7 +370,10 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (test (arange :compile-at :run-time :fixture muffle)
   (is (cl:= 5 (length (arange 5))))
-  (is (cl:= 5 (length (arange 5 10)))))
+  (is (cl:= 5 (length (arange 5 10))))
+  (is (cl:= 10 (length (arange -5 5))))
+  (is (cl:= 8 (length (arange -10 5 2))))
+  (is (cl:= 5 (length (arange -20 -5 3)))))
 
 (test (asarray :compile-at :run-time :fixture muffle)
   (is (cl:= 1 (array-rank (asarray '((1) (1 2))))))

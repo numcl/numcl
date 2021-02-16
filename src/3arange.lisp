@@ -35,7 +35,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (declaim (inline %arange))
 (defun %arange (start stop step type)
-  (let* ((length (max 0 (floor (- stop start) step))))
+  (let* ((length (max 0 (ceiling (- stop start) step))))
     (declare (fixnum length))
     (multiple-value-bind (a base) (%make-array length :element-type type)
       ;; benchnmark1 0.321 seconds

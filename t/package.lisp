@@ -373,7 +373,19 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (cl:= 5 (length (arange 5 10))))
   (is (cl:= 10 (length (arange -5 5))))
   (is (cl:= 8 (length (arange -10 5 2))))
-  (is (cl:= 5 (length (arange -20 -5 3)))))
+  (is (cl:= 5 (length (arange -20 -5 3))))
+  
+  (is (cl:= 5 (length (arange 5.0))))
+  (is (cl:= 5 (length (arange 5.0 10.0))))
+  (is (cl:= 10 (length (arange -5.0 5.0))))
+  (is (cl:= 8 (length (arange -10.0 5.0 2.0))))
+  (is (cl:= 5 (length (arange -20.0 -5.0 3.0))))
+  
+  (is (cl:= 5 (length (arange 0 1 1/5))))
+  (is (cl:= 5 (length (arange 1/2 1 1/10))))
+  (is (cl:= 10 (length (arange -1/2 1/2 1/10))))
+  (is (cl:= 8 (length (arange -2 1 2/5))))
+  (is (cl:= 5 (length (arange -4 -1 3/5)))))
 
 (test (asarray :compile-at :run-time :fixture muffle)
   (is (cl:= 1 (array-rank (asarray '((1) (1 2))))))

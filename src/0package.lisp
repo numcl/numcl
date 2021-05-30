@@ -263,5 +263,18 @@ This package replaces COMMON-LISP package by shadowing-import symbols from
 NUMCL.EXPORTED on top of COMMON-LISP package.
 "))
 
+
+(in-package :numcl.impl)
+
 #+sbcl
 (declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
+
+#+sbcl
+(progn
+  ;; (format t "dynamic space size is ~a~%" (sb-ext:dynamic-space-size))
+  ;; (format t "dynamic space size must be larger than ~a~%" 2000000000)
+  (when (< (sb-ext:dynamic-space-size) 2000000000)
+    (format t
+     "~&Detected that SBCL's dynamic-space-size is ~aMB, less than 2000MB.~
+      ~%Numcl requires a relatively large large heap. Retry with a larger heap if it failed.~%"
+     (/ (sb-ext:dynamic-space-size) 1000000.0))))

@@ -139,7 +139,7 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
                                     (length subscripts))
                                  :initial-element t)))
              ((> (length subscripts) (length shape))
-              (error "The array (shape: ~a) does not have enough rank for the subscript ~a" shape subscript))
+              (error "The array (shape: ~a) does not have enough rank for the subscript ~a" shape subscripts))
              ((= (length subscripts) (length shape))
               subscripts)))))
     (let ((i 0))

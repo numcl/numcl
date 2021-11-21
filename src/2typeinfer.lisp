@@ -301,7 +301,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
 
 (set-type-inferer 'tanh (defun tanh-inferer (x) (interpret-type `(/ (sinh ,x) (cosh ,x)))))
 
-(set-type-inferer 'acosh (defun acosh-inferer (x) (interpret-type `(* 2 (log (+ (sqrt (/ (+ x, 1) 2)) (sqrt (/ (- x, 1) 2))))))))
+(set-type-inferer 'acosh (defun acosh-inferer (x) (interpret-type `(* 2 (log (+ (sqrt (/ (+ ,x 1) 2)) (sqrt (/ (- ,x 1) 2))))))))
 
 (set-type-inferer 'asinh (defun asinh-inferer (x) (interpret-type `(log (+ ,x (sqrt (+ 1 (* ,x ,x))))))))
 

@@ -783,8 +783,6 @@ an array displaced to a non-displaced 1D array."
 
 (deftype index () (upgraded-array-element-type `(integer 0 (,array-dimension-limit))))
 
-(deftype numcl:* () '*)                 ; alias to cl:*
-
 (defun typexpand (type &optional env)
   (declare (type (or symbol cons) type)
            #+(or ecl lispworks) (ignore env))

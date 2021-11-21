@@ -114,7 +114,7 @@ We thank Baggers' TAMEI library for the reference database.
 (declaim (inline csubtypep))
 
 #+sbcl
-(sb-c:defknown csubtypep (* *) (values boolean boolean &optional) (sb-c:foldable sb-c:unsafely-flushable)
+(sb-c:defknown csubtypep (t t) (values boolean boolean &optional) (sb-c:foldable sb-c:unsafely-flushable)
                :overwrite-fndb-silently t)
 
 (defun csubtypep (x y)
@@ -131,7 +131,7 @@ We thank Baggers' TAMEI library for the reference database.
 (declaim (inline cupgraded-array-element-type))
 
 #+sbcl
-(sb-c:defknown cupgraded-array-element-type (*) * (sb-c:foldable sb-c:unsafely-flushable)
+(sb-c:defknown cupgraded-array-element-type (t) (or cons symbol) (sb-c:foldable sb-c:unsafely-flushable)
                :overwrite-fndb-silently t)
 
 (defun cupgraded-array-element-type (x)
@@ -147,7 +147,7 @@ We thank Baggers' TAMEI library for the reference database.
 (declaim (inline cupgraded-complex-part-type))
 
 #+sbcl
-(sb-c:defknown cupgraded-complex-part-type (*) * (sb-c:foldable sb-c:unsafely-flushable)
+(sb-c:defknown cupgraded-complex-part-type (t) (or cons symbol) (sb-c:foldable sb-c:unsafely-flushable)
                :overwrite-fndb-silently t)
 
 (defun cupgraded-complex-part-type (x)

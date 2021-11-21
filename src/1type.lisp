@@ -20,10 +20,6 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :numcl.impl)
 
-(defconstant *numcl-default-float-format* 'single-float
-  "The default format for numcl arrays. Bignums and ratios are coerced into this type
-during computation.")
-
 (define-symbol-macro %float% *numcl-default-float-format*)
 
 ;;;; interval arithmetic

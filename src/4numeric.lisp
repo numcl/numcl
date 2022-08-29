@@ -519,14 +519,6 @@ specialized to the complex numbers.")
 (define-simple-mapper numcl:log2 %log2 "Logarithm of base 2.")
 
 
-;; type upgrading. Why this is not available by default in common lisp??
-
-(declaim (inline numcl:1+))
-(defun numcl:1+ (array) (numcl:+ array 1))
-
-(declaim (inline numcl:1-))
-(defun numcl:1- (array) (numcl:- array 1))
-
 ;; TODO: optimizing broadcast ordering
 ;; TODO: optimize by reusing intermediate results
 ;; TODO: optimize by loop fusion
@@ -550,6 +542,16 @@ specialized to the complex numbers.")
       (broadcast '/ 1 first)))
 
 (defun numcl:clip (array min max) (broadcast 'max min (broadcast 'min array max)))
+
+
+;; type upgrading. Why this is not available by default in common lisp??
+
+(declaim (inline numcl:1+))
+(defun numcl:1+ (array) (numcl:+ array 1))
+
+(declaim (inline numcl:1-))
+(defun numcl:1- (array) (numcl:- array 1))
+
 
 (define-symbol-macro numcl:+ +)
 (define-symbol-macro numcl:++ ++)
@@ -577,6 +579,28 @@ specialized to the complex numbers.")
 (defun numcl:ffloor    (number &optional (divisor 1)) (broadcast 'ffloor    number divisor))
 (defun numcl:fceiling  (number &optional (divisor 1)) (broadcast 'fceiling  number divisor))
 (defun numcl:ftruncate (number &optional (divisor 1)) (broadcast 'ftruncate number divisor))
+
+
+;; bitwise operations
+
+(declaim (inline numcl:logand numcl:logandc1 numcl:logandc2 numcl:logeqv
+                 numcl:logior numcl:lognand numcl:lognor numcl:logorc1
+                 numcl:logorc2 numcl:logxor numcl:lognot))
+
+
+(defun numcl:logand   (&rest args) (reduce (lambda (x y) (broadcast 'logand   x y)) args))
+(defun numcl:logandc1 (&rest args) (reduce (lambda (x y) (broadcast 'logandc1 x y)) args))
+(defun numcl:logandc2 (&rest args) (reduce (lambda (x y) (broadcast 'logandc2 x y)) args))
+(defun numcl:logeqv   (&rest args) (reduce (lambda (x y) (broadcast 'logeqv   x y)) args))
+(defun numcl:logior   (&rest args) (reduce (lambda (x y) (broadcast 'logior   x y)) args))
+(defun numcl:lognand  (&rest args) (reduce (lambda (x y) (broadcast 'lognand  x y)) args))
+(defun numcl:lognor   (&rest args) (reduce (lambda (x y) (broadcast 'lognor   x y)) args))
+(defun numcl:logorc1  (&rest args) (reduce (lambda (x y) (broadcast 'logorc1  x y)) args))
+(defun numcl:logorc2  (&rest args) (reduce (lambda (x y) (broadcast 'logorc2  x y)) args))
+(defun numcl:logxor   (&rest args) (reduce (lambda (x y) (broadcast 'logxor   x y)) args))
+
+(define-simple-mapper numcl:lognot lognot)
+
 
 ;; comparisons
 
@@ -639,26 +663,3 @@ specialized to the complex numbers.")
 (defpattern numcl:>= (x) `(>= ,x))
 (defpattern numcl:<  (x) `(<  ,x))
 (defpattern numcl:>  (x) `(>  ,x))
-
-
-;; bitwise operations
-
-(declaim (inline numcl:logand numcl:logandc1 numcl:logandc2 numcl:logeqv
-                 numcl:logior numcl:lognand numcl:lognor numcl:logorc1
-                 numcl:logorc2 numcl:logxor numcl:lognot))
-
-
-(defun numcl:logand   (&rest args) (reduce (lambda (x y) (broadcast 'logand   x y)) args))
-(defun numcl:logandc1 (&rest args) (reduce (lambda (x y) (broadcast 'logandc1 x y)) args))
-(defun numcl:logandc2 (&rest args) (reduce (lambda (x y) (broadcast 'logandc2 x y)) args))
-(defun numcl:logeqv   (&rest args) (reduce (lambda (x y) (broadcast 'logeqv   x y)) args))
-(defun numcl:logior   (&rest args) (reduce (lambda (x y) (broadcast 'logior   x y)) args))
-(defun numcl:lognand  (&rest args) (reduce (lambda (x y) (broadcast 'lognand  x y)) args))
-(defun numcl:lognor   (&rest args) (reduce (lambda (x y) (broadcast 'lognor   x y)) args))
-(defun numcl:logorc1  (&rest args) (reduce (lambda (x y) (broadcast 'logorc1  x y)) args))
-(defun numcl:logorc2  (&rest args) (reduce (lambda (x y) (broadcast 'logorc2  x y)) args))
-(defun numcl:logxor   (&rest args) (reduce (lambda (x y) (broadcast 'logxor   x y)) args))
-
-(define-simple-mapper numcl:lognot lognot)
-
-

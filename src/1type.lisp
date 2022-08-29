@@ -635,6 +635,31 @@ to the least specific FLOAT type when any one of them are not fixnums."
   "Returns the upper/lower bound of the number type specifiers."
   (infer-rational-arithmetic-result #'interval-union typespecs 'integer))
 
+
+;;;; helper functions for ensuring bit length
+
+(declaim (inline ub))
+(defun ub (N num)
+  "Truncate NUM as (unsigned-byte N) integer, ignoring the sign"
+  (logand num (1- (expt 2 N))))
+(declaim (inline sb))
+(defun sb (N num)
+  "Truncate NUM as (signed-byte N) integer, preserving the sign"
+  (- (mod (+ num (expt 2 (1- N)))
+          (expt 2 N))
+     (expt 2 (1- N))))
+;; is this the most efficient pattern??
+
+;; (defun fn (x)
+;;   (declare (fixnum x)
+;;            (optimize (speed 3)))
+;;   (ub 4 x))
+;; (defun fn (x)
+;;   (declare (fixnum x)
+;;            (optimize (speed 3)))
+;;   (sb 4 x))
+
+
 ;;;; coercing
 
 (constantfold float-to-integer-p)
@@ -716,29 +741,6 @@ to the least specific FLOAT type when any one of them are not fixnums."
      `(long-float ,x ,x))
     (t
      (type-of x))))
-
-;;;; helper functions for ensuring bit length
-
-(declaim (inline ub))
-(defun ub (N num)
-  "Truncate NUM as (unsigned-byte N) integer, ignoring the sign"
-  (logand num (1- (expt 2 N))))
-(declaim (inline sb))
-(defun sb (N num)
-  "Truncate NUM as (signed-byte N) integer, preserving the sign"
-  (- (mod (+ num (expt 2 (1- N)))
-          (expt 2 N))
-     (expt 2 (1- N))))
-;; is this the most efficient pattern??
-
-;; (defun fn (x)
-;;   (declare (fixnum x)
-;;            (optimize (speed 3)))
-;;   (ub 4 x))
-;; (defun fn (x)
-;;   (declare (fixnum x)
-;;            (optimize (speed 3)))
-;;   (sb 4 x))
 
 #+(or)
 (print

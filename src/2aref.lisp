@@ -174,6 +174,13 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
                 (every #'sub-full rest)))))
     (single* subscripts)))
 
+(declaim (inline ensure-singleton))
+(defun ensure-singleton (array-or-number)
+  (if (zerop (array-rank array-or-number))
+      ;; singleton array #0A<number>
+      (aref array-or-number)
+      array-or-number))
+
 (defun numcl:aref (array &rest subscripts)
   #.*aref-documentation*
   (declare (numcl-array array))
@@ -205,13 +212,6 @@ SINGLETON   Differentiates the index (2 3) (== python [2:3]) and 2
             ;; above stack could return nil when the leftmost axis is 0,
             ;; in which case we return the width 0 array as is
             (empty (list* 0 (rest (shape array))) :type (dtype array))))))))
-
-(declaim (inline ensure-singleton))
-(defun ensure-singleton (array-or-number)
-  (if (zerop (array-rank array-or-number))
-      ;; singleton array #0A<number>
-      (aref array-or-number)
-      array-or-number))
 
 (defun (setf numcl:aref) (newvar array &rest subscripts)
   (declare (numcl-array array))

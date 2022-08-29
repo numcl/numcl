@@ -76,9 +76,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
           (let ((contents (map 'simple-vector
                                (lambda (x)
                                  (typecase x
-                                   (rational (complex (coerce x *numcl-default-float-format*)))
+                                   (rational (complex (coerce x +numcl-default-float-format+)))
                                    (float    (complex x))
-                                   (complex  (coerce x `(complex ,*numcl-default-float-format*)))))
+                                   (complex  (coerce x `(complex ,+numcl-default-float-format+)))))
                                contents))
                 (type (reduce #'float-contagion contents :key #'strict-type-of)))
             (list 'complex
@@ -105,9 +105,9 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                `(complex (,type
                           ,(coerce (min (realpart x) (imagpart x)) type)
                           ,(coerce (max (realpart x) (imagpart x)) type)))))
-            
+
             ((complex rational)
-             (let ((type *numcl-default-float-format*))
+             (let ((type +numcl-default-float-format+))
                `(complex (,type
                           ,(coerce (min (realpart x) (imagpart x)) type)
                           ,(coerce (max (realpart x) (imagpart x)) type)))))))

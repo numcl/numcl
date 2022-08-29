@@ -128,15 +128,15 @@ interprets a form consisting of functions and type specifiers (at the leafs).
  (defun mul-to-float-type (&rest typespecs)
    (infer-rational-arithmetic-result #'interval-mul typespecs 'integer)))
 
-;; division may result in ratios; we coerce it into *numcl-default-float-format*
+;; division may result in ratios; we coerce it into +numcl-default-float-format+
 
 ;; /
 (set-type-inferer
  '/
  (defun div-to-float-type (first &rest typespecs)
    (if typespecs
-       (infer-rational-arithmetic-result #'interval-div (cons first typespecs) *numcl-default-float-format*)
-       (infer-rational-arithmetic-result #'interval-div (list '(integer 1 1) first) *numcl-default-float-format*))))
+       (infer-rational-arithmetic-result #'interval-div (cons first typespecs) +numcl-default-float-format+)
+       (infer-rational-arithmetic-result #'interval-div (list '(integer 1 1) first) +numcl-default-float-format+))))
 
 ;; max
 (set-type-inferer
@@ -192,7 +192,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
    (declare (trivia:optimizer :trivial))
    (ematch x
      ((real-subtype low high)
-      (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
+      (let ((head (float-substitution x :int-result +numcl-default-float-format+)))
         `(,head ,(funcall* 'exp low (coerce 0 head)) ,(funcall* 'exp high))))
      ((complex-type)
       ;; TBD
@@ -209,7 +209,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
    (declare (trivia:optimizer :trivial))
    (ematch x
      ((real-subtype low high)
-      (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
+      (let ((head (float-substitution x :int-result +numcl-default-float-format+)))
         ;; when minus, may become complex
         (cond
           ((%interval-< (interval-preprocess-low low) 0)
@@ -233,7 +233,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
    (declare (trivia:optimizer :trivial))
    (ematch x
      ((real-subtype low high)
-      (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
+      (let ((head (float-substitution x :int-result +numcl-default-float-format+)))
         ;; when minus, may become complex
         (cond
           ((%interval-< (interval-preprocess-low low) 0)
@@ -261,7 +261,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
    (declare (trivia:optimizer :trivial))
    (ematch x
      ((real-subtype low high)
-      (let ((head (float-substitution x :int-result *numcl-default-float-format*)))
+      (let ((head (float-substitution x :int-result +numcl-default-float-format+)))
         ;; when minus, may become complex
         (cond
           ((%interval-< (interval-preprocess-low low) 0)
@@ -318,10 +318,10 @@ interprets a form consisting of functions and type specifiers (at the leafs).
      ((real-subtype low high)
       (if (and (%interval-< -1 (interval-preprocess-low low))
                (%interval-< (interval-preprocess-high high) 1))
-          `(,(float-substitution x :int-result *numcl-default-float-format*)
+          `(,(float-substitution x :int-result +numcl-default-float-format+)
              ,(funcall* 'acos high)
              ,(funcall* 'acos low))
-          `(complex ,(float-substitution x :int-result *numcl-default-float-format*))))
+          `(complex ,(float-substitution x :int-result +numcl-default-float-format+))))
      ((complex-type)
       ;; TBD
       'complex)
@@ -339,10 +339,10 @@ interprets a form consisting of functions and type specifiers (at the leafs).
      ((real-subtype low high)
       (if (and (%interval-< -1 (interval-preprocess-low low))
                (%interval-< (interval-preprocess-high high) 1))
-          `(,(float-substitution x :int-result *numcl-default-float-format*)
+          `(,(float-substitution x :int-result +numcl-default-float-format+)
              ,(funcall* 'asin low)
              ,(funcall* 'asin high))
-          `(complex ,(float-substitution x :int-result *numcl-default-float-format*))))
+          `(complex ,(float-substitution x :int-result +numcl-default-float-format+))))
      ((complex-type)
       ;; TBD
       'complex)
@@ -357,7 +357,7 @@ interprets a form consisting of functions and type specifiers (at the leafs).
  (defun atan-inferer (x)
    (ematch x
      ((real-subtype low high)
-      (let ((type (float-substitution x :int-result *numcl-default-float-format*)))
+      (let ((type (float-substitution x :int-result +numcl-default-float-format+)))
         `(,type
           ,(funcall* 'atan low (%coerce -1 type))
           ,(funcall* 'atan high (%coerce -1 type)))))

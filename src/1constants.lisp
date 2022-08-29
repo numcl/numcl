@@ -20,7 +20,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :numcl.impl)
 
-(defconstant *numcl-default-float-format* 'single-float
+(defconstant +numcl-default-float-format+ 'single-float
   "The default format for numcl arrays. Bignums and ratios are coerced into this type
 during computation.")
 
@@ -30,7 +30,7 @@ during computation.")
 (defun zero-value (type)
   (ematch type
     ((or (ratio-type) (float-type))
-     (case *numcl-default-float-format*
+     (case +numcl-default-float-format+
        (short-float  0.0s0)
        (single-float 0.0f0)
        (double-float 0.0d0)
@@ -45,7 +45,7 @@ during computation.")
 (defun one-value (type)
   (ematch type
     ((or (ratio-type) (float-type))
-     (case *numcl-default-float-format*
+     (case +numcl-default-float-format+
        (short-float  1.0s0)
        (single-float 1.0f0)
        (double-float 1.0d0)
@@ -61,7 +61,7 @@ during computation.")
   (ematch type
     ((fixnum-subtype _ high) high)
     ((or (ratio-type) (float-type) (integer-subtype))
-     (case *numcl-default-float-format*
+     (case +numcl-default-float-format+
        (short-float  most-positive-short-float)
        (single-float most-positive-single-float)
        (double-float most-positive-double-float)
@@ -77,7 +77,7 @@ during computation.")
   (ematch type
     ((fixnum-subtype low _) low)
     ((or (ratio-type) (float-type) (integer-subtype))
-     (case *numcl-default-float-format*
+     (case +numcl-default-float-format+
        (short-float  most-negative-short-float)
        (single-float most-negative-single-float)
        (double-float most-negative-double-float)

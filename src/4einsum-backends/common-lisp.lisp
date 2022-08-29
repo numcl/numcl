@@ -67,7 +67,7 @@ Basic implementation without much optimization.
 
 (defun %einsum-early-binding (rest ev)
   (match ev
-    ((einsum-specs i-options o-options i-specs o-specs
+    ((einsum-specs i-specs o-specs
                    :i-specs (structure i- :avars  i-avars :evars i-evars :idxs  i-idxs)
                    :o-specs (structure o- :avars  o-avars :evars o-evars :idxs  o-idxs))
      
@@ -75,7 +75,6 @@ Basic implementation without much optimization.
            (for i from 0)
            ;; For each input/output array,
            (for a-specs in (append o-specs i-specs))
-           (for a-opts  in (append o-options i-options))
            (for out-p =  (< i (length o-specs)))
            (for index in (append o-idxs i-idxs))    ; index variable for accessing the array element
            (for var   in (append o-avars i-avars))  ; array variable
@@ -110,8 +109,8 @@ Basic implementation without much optimization.
   (match* (iter-specs ev)
     (((list* spec rest)
       (einsum-specs i-options o-options i-specs o-specs
-                    :i-specs (structure i- :avars  i-avars :evars i-evars :idxs  i-idxs)
-                    :o-specs (structure o- :avars  o-avars :evars o-evars :idxs  o-idxs)))
+                    :i-specs (structure i- :idxs  i-idxs)
+                    :o-specs (structure o- :idxs  o-idxs)))
      
      (iter MIDDLE
            (for i from 0)
@@ -120,8 +119,6 @@ Basic implementation without much optimization.
            (for a-opts  in (append o-options i-options))
            (for out-p =  (< i (length o-specs)))
            (for index in (append o-idxs i-idxs))    ; index variable for accessing the array element
-           (for var   in (append o-avars i-avars))  ; array variable
-           (for evar  in (append o-evars i-evars))  ; array element variable, i.e., evar = (aref var index)
 
            ;; Generating the index updating information.
            (iter INNER
@@ -180,15 +177,13 @@ Basic implementation without much optimization.
   (match* (iter-specs ev)
     (((list* spec rest)
       (einsum-specs i-specs o-specs
-                    :i-specs (structure i- :avars  i-avars :evars i-evars :idxs  i-idxs)
-                    :o-specs (structure o- :avars  o-avars :evars o-evars :idxs  o-idxs)))
+                    :i-specs (structure i- :idxs  i-idxs)
+                    :o-specs (structure o- :idxs  o-idxs)))
      (iter MIDDLE ; For each input/output array,
            (for i from 0)
            (for a-specs in (append o-specs i-specs))
            (for out-p =  (< i (length o-specs)))
            (for index in (append o-idxs i-idxs))    ; index variable for accessing the array element
-           (for var   in (append o-avars i-avars))    ; array variable
-           (for evar  in (append o-evars i-evars))  ; array element variable, i.e., evar = (aref var index)
            
            ;; Generating the index updating information.
            (iter INNER ; For each axis of each array,
@@ -233,7 +228,6 @@ Basic implementation without much optimization.
   ;; Invoked by the bottom loop expander.
   ;; Also a special case for when there are no loop variables.
   (iter (for transform in (einsum-specs-transforms ev))
-        (for o-avar    in (o-avars (einsum-specs-o-specs ev)))
         (for o-evar    in (o-evars (einsum-specs-o-specs ev)))
         (when (first-iteration-p)
           (collecting 'progn))

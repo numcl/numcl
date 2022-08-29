@@ -346,7 +346,7 @@ out-p: Produces the binding for output arrays."
          (return-from shape-resolver
            (list*
             (append bindings
-                    (iter (for (unified sources . rest) on unifiers-plist by #'cddr)
+                    (iter (for (unified sources) on unifiers-plist by #'cddr)
                           (collecting
                            (if out-p
                                `(,unified (progn (assert (= ,unified ,@sources)) ,unified))

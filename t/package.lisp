@@ -667,7 +667,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
     (is (subtypep '(integer -10 0)
                   (array-element-type a))))
   (let ((a (/ (uniform 1 10 10))))
-    (is (subtypep numcl.impl::*numcl-default-float-format*
+    (is (subtypep numcl.impl::+numcl-default-float-format+
                   (array-element-type a)))))
 
 (test (issue-19 :compile-at :run-time :fixture muffle)

@@ -20,7 +20,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :numcl.impl)
 
-(define-symbol-macro %float% *numcl-default-float-format*)
+(define-symbol-macro %float% +numcl-default-float-format+)
 
 ;;;; interval arithmetic
 
@@ -331,7 +331,7 @@ The behavior depends on the implementation and is called `float substitution rul
 
 ---
 
-In NUMCL, RATIO does not exist: They are always converted to *numcl-default-float-format*.
+In NUMCL, RATIO does not exist: They are always converted to +numcl-default-float-format+.
 This means that / always returns a float array (except atomic numbers are given).
 We also assume irrational functions always return floats.
 
@@ -370,10 +370,10 @@ The optional key argument :int-result can alter the behavior when the input is a
 This is useful for specifying the appropriate default behavior for rational functions
 (e.g. mod: integer -> integer) and irrational functions (e.g. exp: integer -> float).
 
-If the argument is FLOAT (without precision), it returns *numcl-default-float-format*.
+If the argument is FLOAT (without precision), it returns +numcl-default-float-format+.
 If the argument is a type specifier for a concrete float subtype, it returns its primary type (e.g. 'single-float).
 If the argument is a type specifier for an integer subtype, it returns the value of an optional key argument int-result, defaulted to 'integer.
-If the argument is a type specifier for a real subtype, it returns *numcl-default-float-format*.
+If the argument is a type specifier for a real subtype, it returns +numcl-default-float-format+.
 If the argument is a complex type, it applies itself to the complex element type.
 
 If the argument is a compound type (OR/AND), it applies itself to each type.
@@ -391,18 +391,18 @@ For an unsupported type, it signals an error.
                (t t)
                (nil nil)
                ;; irrationals
-               ((float-type)                *numcl-default-float-format*)
+               ((float-type)                +numcl-default-float-format+)
                ((long-float-type)           'long-float)
                ((double-float-type)         'double-float)
                ((single-float-type)         'single-float)
                ((short-float-type)          'short-float)
                ;; rationals
                ((integer-subtype)           int-result)
-               ((ratio-type)                *numcl-default-float-format*)
+               ((ratio-type)                +numcl-default-float-format+)
                ((real-subtype)              (error "this should not happen"))
                ((complex-type element-type) `(complex ,(float-substitution
                                                         element-type
-                                                        :int-result *numcl-default-float-format*)))
+                                                        :int-result +numcl-default-float-format+)))
                ((or-type types)             `(or ,@(remove-duplicates (remove nil (mapcar #'rec types)))))
                ((and-type types)
                 (match (mapcar #'rec types)
@@ -423,7 +423,7 @@ Specifically, it returns one of 'integer, 'short-float, ... 'long-float, '(compl
 '(complex short-float) ... '(complex long-float) or nil (i.e. empty type).
 
 The rule applied here is stricter than in CL.
-All ratios are converted to *numcl-default-float-format*.
+All ratios are converted to +numcl-default-float-format+.
 NUMCL is aware of BIGNUM, but never handles it.
 When the result of numerical computation causes an overflow/underflow, it signals an error.
 
@@ -450,8 +450,8 @@ This is useful for specifying the appropriate default behavior for rational func
                (((single-float-type) _) 'single-float)
                ((_ (short-float-type))  'short-float)
                (((short-float-type) _)  'short-float)
-               ((_ (float-type))        *numcl-default-float-format*)
-               (((float-type) _)        *numcl-default-float-format*)
+               ((_ (float-type))        +numcl-default-float-format+)
+               (((float-type) _)        +numcl-default-float-format+)
                ;; no contagion.
                (((integer-subtype) (integer-subtype))
                 ;; this should be altered in some rational function (especially / )

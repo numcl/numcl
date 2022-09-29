@@ -119,12 +119,21 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (declaim (inline %arange-infer-type))
 (defun %arange-infer-type (start stop step)
   (let* ((head (float-contagion
-                (type-of step)
-                (float-contagion (type-of start) (type-of stop)))))
+		(type-of step)
+		(float-contagion (type-of start) (type-of stop))))
+	 (all-values (list (realpart start) (imagpart start) (realpart stop) (imagpart stop)))
+	 (minimum (reduce #'min all-values))
+	 (maximum (reduce #'max all-values)))
     (upgraded-array-element-type
      ;; without it, the compiler complains when START is non-0
-     `(,head ,(%coerce (min start stop) head)
-             ,(%coerce (max start stop) head)))))
+     (if (and (consp head) (eq (car head) 'complex))
+	 (list (car head)
+	       (list (cadr head)
+		     (%coerce minimum (cadr head))
+		     (%coerce maximum (cadr head))))
+	 (list head
+	       (%coerce minimum head)
+	       (%coerce maximum head))))))
 
 (declaim (inline arange))
 (defun arange (&rest args)
@@ -250,13 +259,12 @@ Don't worry, we provide a compiler-macro to avoid the runtime dispatch.
          (start (coerce start type))
          (stop  (coerce stop  type))
          (step  (coerce step  type))
-         (lst (loop for i from 0 below (1- num)
-                    for x from start by step
-                    collect x))
-         (lst (if endpoint (append lst (list stop)) lst))
-         (arr (asarray lst :type type)))
+         (lst (do ((n 1 (1+ n))
+		   (x (list start) (push (+ step (car x)) x)))
+		  ((>= n (1- num)) (reverse x))))
+	 (lst (if endpoint (append lst (list stop)) lst))
+	 (arr (asarray lst :type type)))
     (values arr step)))
-
 
 #+(or)
 (progn

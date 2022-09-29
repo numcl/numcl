@@ -398,7 +398,8 @@ For an unsupported type, it signals an error.
                ((short-float-type)          'short-float)
                ;; rationals
                ((integer-subtype)           int-result)
-               ((ratio-type)                +numcl-default-float-format+)
+	       ((ratio-type)                +numcl-default-float-format+)
+	       ((rational-type)             +numcl-default-float-format+)
                ((real-subtype)              (error "this should not happen"))
                ((complex-type element-type) `(complex ,(float-substitution
                                                         element-type
@@ -442,6 +443,12 @@ This is useful for specifying the appropriate default behavior for rational func
                ((_ t) t)
                ((nil _) nil)
                ((_ nil) nil)
+	       (((complex-type t1) (complex-type t2))
+                `(complex ,(rec t1 t2)))
+               (((complex-type t1) t2)
+                `(complex ,(rec t1 t2)))
+               ((t1 (complex-type t2))
+                `(complex ,(rec t1 t2)))
                ((_ (long-float-type))   'long-float)
                (((long-float-type) _)   'long-float)
                ((_ (double-float-type)) 'double-float)
@@ -463,12 +470,6 @@ This is useful for specifying the appropriate default behavior for rational func
                ((_ (real-subtype))      (error "this should not happen"))
                (((real-subtype) _)      (error "this should not happen"))
 
-               (((complex-type t1) (complex-type t2))
-                `(complex-type ,(rec t1 t2)))
-               (((complex-type t1) t2)
-                `(complex-type ,(rec t1 t2)))
-               ((t1 (complex-type t2))
-                `(complex-type ,(rec t1 t2)))
                ;; compound types
                (((or-type types) _)
                 (rec (reduce #'rec types) t2))

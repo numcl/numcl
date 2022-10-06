@@ -131,8 +131,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
      ;; without it, the compiler complains when START is non-0
      (match head
        ((complex-type typespec)
-        `(complex (,typespec ,(%coerce minimum typespec)
-                             ,(%coerce maximum typespec))))
+        (if (eq typespec '*)
+            `(complex (,+numcl-default-float-format+ ,(%coerce minimum +numcl-default-float-format+)
+                                                     ,(%coerce maximum +numcl-default-float-format+)))
+            `(complex (,typespec ,(%coerce minimum typespec)
+                                 ,(%coerce maximum typespec)))))
        (_
         `(,head ,(%coerce minimum head)
                 ,(%coerce maximum head)))))))

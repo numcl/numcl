@@ -121,19 +121,21 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (let* ((head (float-contagion
 		(type-of step)
 		(float-contagion (type-of start) (type-of stop))))
-	 (all-values (list (realpart start) (imagpart start) (realpart stop) (imagpart stop)))
-	 (minimum (reduce #'min all-values))
-	 (maximum (reduce #'max all-values)))
+         (r1 (realpart start))
+         (i1 (imagpart start))
+         (r2 (realpart stop))
+         (i2 (imagpart stop))
+	 (minimum (min r1 i1 r2 i2))
+	 (maximum (max r1 i1 r2 i2)))
     (upgraded-array-element-type
      ;; without it, the compiler complains when START is non-0
-     (if (and (consp head) (eq (car head) 'complex))
-	 (list (car head)
-	       (list (cadr head)
-		     (%coerce minimum (cadr head))
-		     (%coerce maximum (cadr head))))
-	 (list head
-	       (%coerce minimum head)
-	       (%coerce maximum head))))))
+     (match head
+       ((complex-type typespec)
+        `(complex (,typespec ,(%coerce minimum typespec)
+                             ,(%coerce maximum typespec))))
+       (_
+        `(,head ,(%coerce minimum head)
+                ,(%coerce maximum head)))))))
 
 (declaim (inline arange))
 (defun arange (&rest args)

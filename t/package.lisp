@@ -37,7 +37,7 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
 (def-suite :numcl)
 (in-suite :numcl)
 
-;; run test with (run! test-name) 
+;; run test with (run! 'test-name) 
 
 (defun same-base-array-p (a b)
   (match* (a b)
@@ -736,3 +736,11 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
   (is (alexandria:type=
        'single-float
        (numcl.impl::infer-type 'cl:* 'single-float 'bit))))
+
+(test (issue-62 :compile-at :run-time :fixture muffle)
+  (is-type (linspace 0d0 #C(9.0 9/2) :num 10)
+	   '(array (complex (double-float 0d0 9d0)) (10)))
+  
+  (is (equalp (linspace 0d0 #C(4 4) :num 5) (values (asarray #(#C(0.0d0 0.0d0) #C(1.0d0 1.0d0) #C(2.0d0 2.0d0) #C(3.0d0 3.0d0) #C(4.0d0 4.0d0))) #C(1d0 1d0))))
+
+  (is (cl:= 2 (array-rank (asarray '((#C(1 0)) (#C(1d0 5d0))))))))

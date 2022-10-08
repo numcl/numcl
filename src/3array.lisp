@@ -73,22 +73,23 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
             (list type
                   (coerce (reduce #'min contents) type)
                   (coerce (reduce #'max contents) type)))
-          (let ((contents (map 'simple-vector
-                               (lambda (x)
-                                 (typecase x
-                                   (rational (complex (coerce x +numcl-default-float-format+)))
-                                   (float    (complex x))
-                                   (complex  (coerce x `(complex ,+numcl-default-float-format+)))))
-                               contents))
-                (type (reduce #'float-contagion contents :key #'strict-type-of)))
-            (list 'complex
-                  (list type
-                        (coerce (min (reduce #'min contents :key #'realpart)
-                                     (reduce #'min contents :key #'imagpart))
-                                type)
-                        (coerce (max (reduce #'max contents :key #'realpart)
-                                     (reduce #'max contents :key #'imagpart))
-                                type)))))
+	  (let ((contents (map 'simple-vector
+			       (lambda (x)
+				 (typecase x
+				   (rational (complex (coerce x +numcl-default-float-format+)))
+				   (float    (complex x))
+				   (complex  x)))
+			       contents))
+		(type (ematch (reduce #'float-contagion contents :key #'strict-type-of)
+			((complex-type subtype) subtype))))
+	    (list 'complex
+		  (list type
+			(coerce (min (reduce #'min contents :key #'realpart)
+				     (reduce #'min contents :key #'imagpart))
+				type)
+			(coerce (max (reduce #'max contents :key #'realpart)
+				     (reduce #'max contents :key #'imagpart))
+				type)))))
       t))
 
 (defun infer-type-from-content (x)
@@ -101,7 +102,8 @@ NUMCL.  If not, see <http://www.gnu.org/licenses/>.
                   (coerce x type)))
           (etypecase x
             ((complex float)
-             (let ((type (float-substitution (strict-type-of x))))
+             (let ((type (ematch (float-substitution (strict-type-of x))
+			   ((complex-type subtype) subtype))))
                `(complex (,type
                           ,(coerce (min (realpart x) (imagpart x)) type)
                           ,(coerce (max (realpart x) (imagpart x)) type)))))

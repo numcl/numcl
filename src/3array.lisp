@@ -210,6 +210,8 @@ When TYPE is non-nil, it overrides the type deduction."
 
 (defun %nested-coerce-and-insert (base-array contents newtype level)
   (let ((index 0))
+    (if (listp contents)
+	(setf contents (coerce contents 'vector)))
     (labels ((rec (level contents)
                (if (= 0 level)
                    (setf (aref base-array index) (%coerce contents newtype)

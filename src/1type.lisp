@@ -675,7 +675,7 @@ to the least specific FLOAT type when any one of them are not fixnums."
   ;; wrong; could be used for char-conversions
   ;; (assert (numberp object))
   (cond ((search "byte" (symbol-name type) :test #'equalp)
-	 #.(iter (for width from 1 below 64)
+	 #.(iter (for width from 1 to 64)
              ;; Note : This implicitly covers the case of TYPE = FIXNUM, as long as
              ;; FIXNUM bit width being below 64
              (when (= width 1)

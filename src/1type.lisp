@@ -674,7 +674,8 @@ to the least specific FLOAT type when any one of them are not fixnums."
   "COERCE that additionally converts NUMBER into INTEGER by rounding, and NUMBER to (un/signed-byte N) by modular arithmetic."
   ;; wrong; could be used for char-conversions
   ;; (assert (numberp object))
-  (cond ((search "byte" (symbol-name type) :test #'equalp)
+  (cond ((and (listp type)
+	      (search "byte" (symbol-name (car type)) :from-end t :test #'equalp))
 	 #.(iter (for width from 1 to 64)
              ;; Note : This implicitly covers the case of TYPE = FIXNUM, as long as
              ;; FIXNUM bit width being below 64

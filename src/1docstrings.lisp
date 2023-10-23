@@ -153,7 +153,7 @@ For example, `(einsum '(ij jk) a b)` is equivalent to:
  (dotimes (i <max> <output>)
    (dotimes (j <max>)
      (dotimes (k <max>)
-       (setf (aref <output> i k) (* (aref a i j) (aref b j k))))))
+       (setf (aref <output> i j k) (* (aref a i j) (aref b j k))))))
 ```
 
 # Performance
